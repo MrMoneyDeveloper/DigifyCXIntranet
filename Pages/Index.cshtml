@@ -1,0 +1,92 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Home";
+}
+
+<section class="hero-panel mb-4 animate-card ring-1 ring-cyan-100/60">
+    <div class="mb-4 inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">Employee Platform</div>
+    <h1 class="h3 mb-2 text-slate-900">Welcome, @Model.DisplayName</h1>
+    <p class="text-muted mb-3">Your internal hub for policies, business notices, jobs, canteen services, and employee self-service actions.</p>
+    <div class="row g-3">
+        <div class="col-md-4">
+            <div class="dashboard-kpi">
+                <div class="small text-muted">Current month canteen spend</div>
+                <div class="h4 mb-0">R @Model.CurrentMonthCanteenTotal.ToString("N2")</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="dashboard-kpi">
+                <div class="small text-muted">Open internal jobs</div>
+                <div class="h4 mb-0">@Model.JobPostings.Count</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="dashboard-kpi">
+                <div class="small text-muted">Admin access</div>
+                <div class="h4 mb-0">@(Model.IsAdmin ? "Enabled" : "Employee")</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card-elevated p-3 h-100 animate-card">
+            <h2 class="h5 section-title">Pinned Announcements</h2>
+            @if (Model.Announcements.Count == 0)
+            {
+                <p class="text-muted mb-0">No announcements available.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                @foreach (var item in Model.Announcements)
+                {
+                    <li class="list-group-item px-0">
+                        <div class="fw-semibold">@item.Title</div>
+                        <div class="small text-muted">@item.Summary</div>
+                    </li>
+                }
+                </ul>
+            }
+            <a asp-page="/Announcements/Index" class="btn btn-sm btn-outline-primary mt-3">View All</a>
+        </section>
+    </div>
+    <div class="col-lg-4">
+        <section class="card-elevated p-3 h-100 animate-card">
+            <h2 class="h5 section-title">Latest Policies & Procedures</h2>
+            @if (Model.Policies.Count == 0)
+            {
+                <p class="text-muted mb-0">No active documents available.</p>
+            }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                @foreach (var item in Model.Policies)
+                {
+                    <li class="list-group-item px-0">
+                        <div class="fw-semibold">@item.Title</div>
+                        <div class="small text-muted">@item.ContentType - Effective @item.EffectiveDate.ToString("dd MMM yyyy")</div>
+                    </li>
+                }
+                </ul>
+            }
+            <a asp-page="/Policies/Index" class="btn btn-sm btn-outline-primary mt-3">Browse Policies</a>
+        </section>
+    </div>
+    <div class="col-lg-3">
+        <section class="card-elevated p-3 h-100 animate-card">
+            <h2 class="h5 section-title">Quick Actions</h2>
+            <div class="d-grid gap-2">
+                <a asp-page="/Canteen/Index" class="btn btn-primary btn-sm">Submit Canteen Request</a>
+                <a asp-page="/Jobs/Index" class="btn btn-outline-primary btn-sm">View Jobs</a>
+                <a asp-page="/Faq/Index" class="btn btn-outline-primary btn-sm">Read FAQs</a>
+                @if (Model.IsAdmin)
+                {
+                    <a asp-page="/Admin/Index" class="btn btn-outline-primary btn-sm">Open Admin Console</a>
+                }
+            </div>
+        </section>
+    </div>
+</div>

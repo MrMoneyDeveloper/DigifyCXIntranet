@@ -1,0 +1,24 @@
+@page
+@model DigifyCXIntranet.Pages.Faq.IndexModel
+@{
+    ViewData["Title"] = "FAQs";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-3">Frequently Asked Questions</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">No FAQs are available yet.</p>
+    }
+    else
+    {
+        @foreach (var item in Model.Items)
+        {
+            <details class="border rounded p-3 mb-2">
+                <summary class="fw-semibold">@item.Question</summary>
+                <div class="small text-muted mt-2">@item.Category</div>
+                <p class="mb-0 mt-2">@item.Answer</p>
+            </details>
+        }
+    }
+</section>

@@ -1,0 +1,37 @@
+<svg width="2100" height="2970" viewBox="0 0 2100 2970" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg1" x1="200" y1="160" x2="1820" y2="2860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C4A6E"/>
+      <stop offset="0.5" stop-color="#0E7490"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(420 520) rotate(32) scale(640 520)">
+      <stop stop-color="#67E8F9" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#67E8F9" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1720 2360) rotate(22) scale(760 620)">
+      <stop stop-color="#A5B4FC" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#A5B4FC" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="2100" height="2970" fill="url(#bg1)"/>
+  <rect width="2100" height="2970" fill="url(#glow1)"/>
+  <rect width="2100" height="2970" fill="url(#glow2)"/>
+
+  <g opacity="0.3">
+    <circle cx="1600" cy="700" r="340" stroke="#E0F2FE" stroke-width="6"/>
+    <circle cx="320" cy="2380" r="280" stroke="#BFDBFE" stroke-width="6"/>
+    <circle cx="1780" cy="2600" r="180" stroke="#E0E7FF" stroke-width="6"/>
+  </g>
+
+  <rect x="160" y="160" width="1780" height="2650" rx="56" stroke="#E2E8F0" stroke-opacity="0.45" stroke-width="4"/>
+
+  <text x="220" y="252" fill="#CFFAFE" font-family="Outfit, Arial, sans-serif" font-size="54" font-weight="700" letter-spacing="6">
+    DIGIFYCX CAREERS
+  </text>
+
+  <text x="220" y="2860" fill="#E2E8F0" font-family="Outfit, Arial, sans-serif" font-size="44" font-weight="500" opacity="0.86">
+    Placeholder A4 Job Ad Background Template
+  </text>
+</svg>

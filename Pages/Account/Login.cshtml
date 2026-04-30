@@ -1,0 +1,44 @@
+@page
+@model DigifyCXIntranet.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Sign In";
+}
+
+<section class="mx-auto max-w-lg rounded-3xl border border-slate-200 bg-white/80 p-8 shadow-xl shadow-slate-200/60 backdrop-blur-xl animate-card">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-slate-900">Sign In</h1>
+        <p class="mt-1 text-sm text-slate-600">Use a test account to access the intranet.</p>
+    </div>
+
+    <div asp-validation-summary="ModelOnly" class="mb-4 rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-700"></div>
+
+    <form method="post" class="space-y-4">
+        <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
+        <div>
+            <label asp-for="Input.Username" class="mb-1 block text-sm font-medium text-slate-700"></label>
+            <input asp-for="Input.Username" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+            <span asp-validation-for="Input.Username" class="text-sm text-rose-600"></span>
+        </div>
+        <div>
+            <label asp-for="Input.Password" class="mb-1 block text-sm font-medium text-slate-700"></label>
+            <input asp-for="Input.Password" class="w-full rounded-xl border border-slate-300 px-3 py-2 text-slate-900 shadow-sm outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100" />
+            <span asp-validation-for="Input.Password" class="text-sm text-rose-600"></span>
+        </div>
+        <button type="submit" class="w-full rounded-xl bg-gradient-to-r from-cyan-600 to-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-cyan-500/30 transition hover:-translate-y-0.5 hover:shadow-xl">
+            Sign In
+        </button>
+    </form>
+
+    <div class="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
+        <p class="mb-2 font-semibold text-slate-800">Test users</p>
+        <ul class="space-y-1">
+            <li><span class="font-medium">moham</span> / moham123</li>
+            <li><span class="font-medium">admin</span> / admin123</li>
+            <li><span class="font-medium">employee</span> / employee123</li>
+        </ul>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

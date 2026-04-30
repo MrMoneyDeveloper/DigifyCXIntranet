@@ -1,0 +1,58 @@
+@page
+@model DigifyCXIntranet.Pages.Jobs.IndexModel
+@{
+    ViewData["Title"] = "Job Postings";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-2">Internal Job Postings</h1>
+    <p class="text-muted mb-4">Job ads can be displayed in A4 visual format with text layered over admin-selected backgrounds.</p>
+
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">No active job postings.</p>
+    }
+    else
+    {
+        <div class="row g-4">
+        @foreach (var item in Model.Items)
+        {
+            <div class="col-lg-6">
+                <article class="rounded-4 border border-slate-200 bg-white p-3 shadow-sm h-100">
+                    @if (item.UseVisualAd)
+                    {
+                        var backgroundUrl = string.IsNullOrWhiteSpace(item.AdBackgroundImagePath)
+                            ? "/images/job-ad-a4-template.svg"
+                            : item.AdBackgroundImagePath;
+
+                        <div class="job-ad-a4 mb-3" style="background-image:linear-gradient(180deg,rgba(15,23,42,0.15),rgba(15,23,42,0.65)),url('@backgroundUrl');">
+                            <div class="job-ad-layer">
+                                <div class="job-ad-pill">@item.Department</div>
+                                <h2 class="job-ad-title">@(string.IsNullOrWhiteSpace(item.AdHeadline) ? item.Title : item.AdHeadline)</h2>
+                                <p class="job-ad-subtitle">
+                                    @(string.IsNullOrWhiteSpace(item.AdSubHeadline) ? item.Description : item.AdSubHeadline)
+                                </p>
+                                <div class="job-ad-footer">
+                                    <span>Closes @item.ClosingDate.ToString("dd MMM yyyy")</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <h2 class="h6 mb-1">@item.Title</h2>
+                    }
+
+                    <div class="small text-muted mb-2">@item.Department | Closes @item.ClosingDate.ToString("dd MMM yyyy")</div>
+                    <p class="mb-2">@item.Description</p>
+                    <div class="small mb-1"><span class="fw-semibold">Apply via:</span> @item.ApplicationRoute</div>
+                    @if (item.IsExternalReferral)
+                    {
+                        <span class="badge text-bg-warning">External referral workflow</span>
+                    }
+                </article>
+            </div>
+        }
+        </div>
+    }
+</section>

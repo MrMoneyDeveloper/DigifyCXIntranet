@@ -1,0 +1,110 @@
+@page
+@model DigifyCXIntranet.Pages.Canteen.IndexModel
+@{
+    ViewData["Title"] = "Canteen";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card-elevated p-4">
+            <h1 class="h5 mb-2">Submit Canteen Request</h1>
+            <p class="small text-muted">Orders are recorded for employee visibility and payroll reconciliation.</p>
+
+            <form method="post" asp-page-handler="Submit" class="row g-3">
+                <div class="col-12">
+                    <label asp-for="NewOrder.ItemSummary" class="form-label"></label>
+                    <input asp-for="NewOrder.ItemSummary" class="form-control" />
+                    <span asp-validation-for="NewOrder.ItemSummary" class="text-danger"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="NewOrder.OrderDate" class="form-label"></label>
+                    <input asp-for="NewOrder.OrderDate" type="date" class="form-control" />
+                    <span asp-validation-for="NewOrder.OrderDate" class="text-danger"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="NewOrder.TotalAmount" class="form-label"></label>
+                    <input asp-for="NewOrder.TotalAmount" type="number" step="0.01" class="form-control" />
+                    <span asp-validation-for="NewOrder.TotalAmount" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewOrder.EmploymentMonthsAtOrder" class="form-label"></label>
+                    <input asp-for="NewOrder.EmploymentMonthsAtOrder" type="number" class="form-control" />
+                    <span asp-validation-for="NewOrder.EmploymentMonthsAtOrder" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </div>
+            </form>
+        </section>
+    </div>
+
+    <div class="col-lg-7">
+        <section class="card-elevated p-4 mb-4">
+            <h2 class="h6 mb-3">My Monthly Tallies</h2>
+            @if (Model.MonthlyTallies.Count == 0)
+            {
+                <p class="text-muted mb-0">No canteen activity recorded yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Month</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.MonthlyTallies)
+                        {
+                            <tr>
+                                <td>@(new DateTime(item.Year, item.Month, 1).ToString("MMMM yyyy"))</td>
+                                <td>R @item.TotalAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">My Recent Orders</h2>
+            @if (Model.MyOrders.Count == 0)
+            {
+                <p class="text-muted mb-0">No orders submitted yet.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Item</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var order in Model.MyOrders)
+                        {
+                            <tr>
+                                <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                <td>@order.ItemSummary</td>
+                                <td>@order.Status</td>
+                                <td>R @order.TotalAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

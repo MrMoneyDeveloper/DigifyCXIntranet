@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36511.14 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DigifyCXIntranet", "DigifyCXIntranet.csproj", "{0CD55F1F-5561-4F07-85A5-743DDB5BB06D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0CD55F1F-5561-4F07-85A5-743DDB5BB06D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CD55F1F-5561-4F07-85A5-743DDB5BB06D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CD55F1F-5561-4F07-85A5-743DDB5BB06D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CD55F1F-5561-4F07-85A5-743DDB5BB06D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F0C35505-947B-4807-BC6F-B060DCC7D88C}
+	EndGlobalSection
+EndGlobal

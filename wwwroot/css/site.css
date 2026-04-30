@@ -1,0 +1,140 @@
+html {
+    font-size: 15px;
+}
+
+@media (min-width: 992px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+body {
+    font-family: "Outfit", sans-serif;
+}
+
+.hero-panel,
+.card-elevated {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    border-radius: 1rem;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    backdrop-filter: blur(8px);
+}
+
+.hero-panel {
+    padding: 1.5rem;
+}
+
+.dashboard-kpi {
+    background: linear-gradient(135deg, #ecfeff 0%, #eef2ff 100%);
+    border: 1px solid rgba(14, 116, 144, 0.2);
+    border-radius: 0.9rem;
+    padding: 0.9rem 1rem;
+}
+
+.section-title {
+    margin-bottom: 0.8rem;
+    font-weight: 700;
+}
+
+.text-muted {
+    color: #475569 !important;
+}
+
+.table > :not(caption) > * > * {
+    background-color: transparent;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: #06b6d4;
+    box-shadow: 0 0 0 0.25rem rgba(6, 182, 212, 0.16);
+}
+
+.btn-primary {
+    background-image: linear-gradient(135deg, #0891b2 0%, #1d4ed8 100%);
+    border: none;
+}
+
+.btn-outline-primary {
+    border-color: #0891b2;
+    color: #0e7490;
+}
+
+.btn-outline-primary:hover {
+    background-color: #0891b2;
+    color: #fff;
+}
+
+.animate-card {
+    animation: card-rise 480ms ease-out both;
+}
+
+.job-ad-a4 {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 210 / 297;
+    border-radius: 1rem;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(148, 163, 184, 0.35);
+}
+
+.job-ad-layer {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 1rem;
+    color: #f8fafc;
+}
+
+.job-ad-pill {
+    align-self: flex-start;
+    border-radius: 999px;
+    padding: 0.2rem 0.65rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(14, 116, 144, 0.75);
+    border: 1px solid rgba(224, 242, 254, 0.4);
+}
+
+.job-ad-title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1rem, 2.2vw, 1.45rem);
+    line-height: 1.2;
+    font-weight: 800;
+    text-shadow: 0 2px 16px rgba(15, 23, 42, 0.35);
+}
+
+.job-ad-subtitle {
+    margin: 0;
+    font-size: clamp(0.8rem, 1.6vw, 0.98rem);
+    line-height: 1.35;
+    max-height: 8.1em;
+    overflow: hidden;
+    text-shadow: 0 2px 12px rgba(15, 23, 42, 0.35);
+}
+
+.job-ad-footer {
+    margin-top: 0.8rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+@keyframes card-rise {
+    0% {
+        opacity: 0;
+        transform: translateY(12px) scale(0.995);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}

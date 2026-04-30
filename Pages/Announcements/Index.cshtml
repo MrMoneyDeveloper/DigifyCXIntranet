@@ -1,0 +1,33 @@
+@page
+@model DigifyCXIntranet.Pages.Announcements.IndexModel
+@{
+    ViewData["Title"] = "Announcements";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-3">Business Notices & Announcements</h1>
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">No announcements available.</p>
+    }
+    else
+    {
+        @foreach (var item in Model.Items)
+        {
+            <article class="border rounded p-3 mb-3">
+                <div class="d-flex justify-content-between flex-wrap">
+                    <h2 class="h6 mb-1">
+                        @item.Title
+                        @if (item.IsPinned)
+                        {
+                            <span class="badge text-bg-success">Pinned</span>
+                        }
+                    </h2>
+                    <span class="small text-muted">@item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
+                </div>
+                <p class="text-muted mb-1">@item.Summary</p>
+                <div>@item.Content</div>
+            </article>
+        }
+    }
+</section>

@@ -1,0 +1,27 @@
+@inject DigifyCXIntranet.Services.IAdminAccessService AdminAccess
+
+<div class="mt-4 flex items-center gap-2 lg:mt-0">
+@if (User?.Identity?.IsAuthenticated == true)
+{
+    <span class="rounded-full border border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-700">
+        @User.Identity.Name
+    </span>
+    @if (AdminAccess.IsAdmin(User))
+    {
+        <a asp-page="/Admin/Index" class="rounded-full bg-slate-900 px-3 py-1 text-xs font-semibold text-white transition hover:bg-slate-700">
+            Admin
+        </a>
+    }
+    <form asp-page="/Account/Logout" method="post" class="inline">
+        <button type="submit" class="rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-rose-700">
+            Sign Out
+        </button>
+    </form>
+}
+else
+{
+    <a asp-page="/Account/Login" class="rounded-full bg-cyan-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-cyan-700">
+        Sign In
+    </a>
+}
+</div>

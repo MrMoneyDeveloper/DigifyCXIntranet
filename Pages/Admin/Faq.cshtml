@@ -1,0 +1,74 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.FaqModel
+@{
+    ViewData["Title"] = "Manage FAQs";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card-elevated p-4">
+            <h1 class="h5 mb-3">Create FAQ</h1>
+            <form method="post" asp-page-handler="Create" class="row g-3">
+                <div class="col-12">
+                    <label asp-for="NewItem.Category" class="form-label"></label>
+                    <input asp-for="NewItem.Category" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewItem.Question" class="form-label"></label>
+                    <input asp-for="NewItem.Question" class="form-control" />
+                    <span asp-validation-for="NewItem.Question" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewItem.Answer" class="form-label"></label>
+                    <textarea asp-for="NewItem.Answer" rows="6" class="form-control"></textarea>
+                    <span asp-validation-for="NewItem.Answer" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewItem.DisplayOrder" class="form-label"></label>
+                    <input asp-for="NewItem.DisplayOrder" type="number" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Existing FAQs</h2>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Question</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Category</td>
+                            <td>@item.Question</td>
+                            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                            <td class="text-nowrap">
+                                <a asp-page="/Admin/FaqEdit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <form method="post" asp-page-handler="ToggleActive" class="d-inline">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">@(item.IsActive ? "Deactivate" : "Activate")</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

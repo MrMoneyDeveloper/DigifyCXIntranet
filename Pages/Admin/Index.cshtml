@@ -1,0 +1,26 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.IndexModel
+@{
+    ViewData["Title"] = "Admin Console";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-2">Admin Console</h1>
+    <p class="text-muted mb-4">Maintain controlled employee content, operational notices, and canteen reporting.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4"><div class="dashboard-kpi"><div class="small text-muted">Policies</div><div class="h4 mb-0">@Model.PolicyCount</div></div></div>
+        <div class="col-md-4"><div class="dashboard-kpi"><div class="small text-muted">Announcements</div><div class="h4 mb-0">@Model.AnnouncementCount</div></div></div>
+        <div class="col-md-4"><div class="dashboard-kpi"><div class="small text-muted">Job postings</div><div class="h4 mb-0">@Model.JobCount</div></div></div>
+        <div class="col-md-4"><div class="dashboard-kpi"><div class="small text-muted">FAQs</div><div class="h4 mb-0">@Model.FaqCount</div></div></div>
+        <div class="col-md-4"><div class="dashboard-kpi"><div class="small text-muted">Canteen orders</div><div class="h4 mb-0">@Model.CanteenOrderCount</div></div></div>
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex">
+        <a asp-page="/Admin/Policies" class="btn btn-primary">Manage Policies</a>
+        <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
+        <a asp-page="/Admin/Jobs" class="btn btn-primary">Manage Jobs</a>
+        <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
+        <a asp-page="/Admin/Canteen" class="btn btn-primary">Canteen Reporting</a>
+    </div>
+</section>

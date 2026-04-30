@@ -1,0 +1,84 @@
+@page "{id:int}"
+@model DigifyCXIntranet.Pages.Admin.JobEditModel
+@{
+    ViewData["Title"] = "Edit Job Posting";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h5 mb-3">Edit Job Posting</h1>
+    <form method="post" enctype="multipart/form-data" class="row g-3">
+        <input asp-for="Item.Id" type="hidden" />
+        <input asp-for="Item.AdBackgroundImagePath" type="hidden" />
+
+        <div class="col-md-6">
+            <label asp-for="Item.Title" class="form-label"></label>
+            <input asp-for="Item.Title" class="form-control" />
+            <span asp-validation-for="Item.Title" class="text-danger"></span>
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Item.Department" class="form-label"></label>
+            <input asp-for="Item.Department" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Item.ApplicationRoute" class="form-label"></label>
+            <input asp-for="Item.ApplicationRoute" class="form-control" />
+        </div>
+        <div class="col-md-6">
+            <label asp-for="Item.ClosingDate" class="form-label"></label>
+            <input asp-for="Item.ClosingDate" type="date" class="form-control" />
+        </div>
+
+        <div class="col-12">
+            <label asp-for="Item.Description" class="form-label"></label>
+            <textarea asp-for="Item.Description" rows="6" class="form-control"></textarea>
+            <span asp-validation-for="Item.Description" class="text-danger"></span>
+        </div>
+
+        <div class="col-sm-6">
+            <label asp-for="Item.AdHeadline" class="form-label">Ad Headline</label>
+            <input asp-for="Item.AdHeadline" class="form-control" />
+            <span asp-validation-for="Item.AdHeadline" class="text-danger"></span>
+        </div>
+        <div class="col-sm-6">
+            <label asp-for="Item.AdSubHeadline" class="form-label">Ad Subheadline</label>
+            <textarea asp-for="Item.AdSubHeadline" rows="3" class="form-control"></textarea>
+            <span asp-validation-for="Item.AdSubHeadline" class="text-danger"></span>
+        </div>
+        <div class="col-12">
+            <label asp-for="AdBackgroundUpload" class="form-label">Replace Ad Background Image</label>
+            <input asp-for="AdBackgroundUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+            <span asp-validation-for="AdBackgroundUpload" class="text-danger"></span>
+            <div class="small text-muted mt-1">Current: @Model.Item.AdBackgroundImagePath</div>
+            <div class="mt-2">
+                <img src="@Model.Item.AdBackgroundImagePath" alt="Current background preview" style="max-height:220px;" class="rounded border" />
+            </div>
+        </div>
+        <div class="col-12">
+            <div class="form-check">
+                <input asp-for="Item.UseVisualAd" class="form-check-input" />
+                <label asp-for="Item.UseVisualAd" class="form-check-label"></label>
+            </div>
+        </div>
+
+        <div class="col-sm-3">
+            <div class="form-check">
+                <input asp-for="Item.IsExternalReferral" class="form-check-input" />
+                <label asp-for="Item.IsExternalReferral" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-sm-3">
+            <div class="form-check">
+                <input asp-for="Item.IsActive" class="form-check-input" />
+                <label asp-for="Item.IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-page="/Admin/Jobs" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

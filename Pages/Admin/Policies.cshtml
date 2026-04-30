@@ -1,0 +1,81 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.PoliciesModel
+@{
+    ViewData["Title"] = "Manage Policies";
+}
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <section class="card-elevated p-4">
+            <h1 class="h5 mb-3">Create Policy / Procedure</h1>
+            <form method="post" asp-page-handler="Create" class="row g-3">
+                <div class="col-12">
+                    <label asp-for="NewPolicy.Title" class="form-label"></label>
+                    <input asp-for="NewPolicy.Title" class="form-control" />
+                    <span asp-validation-for="NewPolicy.Title" class="text-danger"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="NewPolicy.ContentType" class="form-label"></label>
+                    <select asp-for="NewPolicy.ContentType" class="form-select" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.PolicyContentType>()"></select>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="NewPolicy.VersionLabel" class="form-label"></label>
+                    <input asp-for="NewPolicy.VersionLabel" class="form-control" />
+                    <span asp-validation-for="NewPolicy.VersionLabel" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewPolicy.EffectiveDate" class="form-label"></label>
+                    <input asp-for="NewPolicy.EffectiveDate" type="date" class="form-control" />
+                </div>
+                <div class="col-12">
+                    <label asp-for="NewPolicy.Content" class="form-label"></label>
+                    <textarea asp-for="NewPolicy.Content" rows="6" class="form-control"></textarea>
+                    <span asp-validation-for="NewPolicy.Content" class="text-danger"></span>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </section>
+    </div>
+    <div class="col-lg-7">
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Existing Documents</h2>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Updated</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Items)
+                    {
+                        <tr>
+                            <td>@item.Title</td>
+                            <td>@item.ContentType</td>
+                            <td>@(item.IsActive ? "Active" : "Inactive")</td>
+                            <td>@item.LastUpdatedUtc.ToString("dd MMM yyyy HH:mm")</td>
+                            <td class="text-nowrap">
+                                <a asp-page="/Admin/PolicyEdit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <form method="post" asp-page-handler="ToggleActive" class="d-inline">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">@(item.IsActive ? "Deactivate" : "Activate")</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

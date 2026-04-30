@@ -1,0 +1,20 @@
+@page
+@model DigifyCXIntranet.Pages.Profile.IndexModel
+@{
+    ViewData["Title"] = "Profile";
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-3">Employee Profile</h1>
+    <div class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Display Name</label>
+            <input class="form-control" value="@Model.DisplayName" readonly />
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Company Login</label>
+            <input class="form-control" value="@Model.IdentityName" readonly />
+        </div>
+    </div>
+    <p class="small text-muted mt-3 mb-0">This screen is a starter profile view. Extend it with employee attributes from HR systems if required.</p>
+</section>

@@ -1,0 +1,110 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.CanteenModel
+@{
+    ViewData["Title"] = "Canteen Reporting";
+}
+
+<section class="card-elevated p-4 mb-4">
+    <h1 class="h5 mb-3">Canteen Reconciliation</h1>
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-sm-3">
+            <label asp-for="Year" class="form-label"></label>
+            <input asp-for="Year" type="number" class="form-control" />
+        </div>
+        <div class="col-sm-3">
+            <label asp-for="Month" class="form-label"></label>
+            <input asp-for="Month" type="number" min="1" max="12" class="form-control" />
+        </div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Load</button>
+        </div>
+    </form>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Employee Monthly Tallies</h2>
+            @if (Model.Tallies.Count == 0)
+            {
+                <p class="text-muted mb-0">No orders found for this period.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Count</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var item in Model.Tallies)
+                        {
+                            <tr>
+                                <td>@item.EmployeeUsername</td>
+                                <td>@item.Count</td>
+                                <td>R @item.TotalAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+
+    <div class="col-lg-8">
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Order Detail</h2>
+            @if (Model.Orders.Count == 0)
+            {
+                <p class="text-muted mb-0">No order detail for this period.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Date</th>
+                                <th>Item</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var order in Model.Orders)
+                        {
+                            <tr>
+                                <td>@order.EmployeeUsername</td>
+                                <td>@order.OrderDate.ToString("dd MMM yyyy")</td>
+                                <td>@order.ItemSummary</td>
+                                <td>@order.Status</td>
+                                <td>R @order.TotalAmount.ToString("N2")</td>
+                                <td>
+                                    <form method="post" asp-page-handler="UpdateStatus" class="d-flex gap-1">
+                                        <input type="hidden" name="id" value="@order.Id" />
+                                        <input type="hidden" name="Year" value="@Model.Year" />
+                                        <input type="hidden" name="Month" value="@Model.Month" />
+                                        <select name="status" class="form-select form-select-sm">
+                                            <option value="Submitted" selected="@(order.Status == "Submitted")">Submitted</option>
+                                            <option value="Approved" selected="@(order.Status == "Approved")">Approved</option>
+                                            <option value="Paid" selected="@(order.Status == "Paid")">Paid</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-sm btn-outline-primary">Save</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>
