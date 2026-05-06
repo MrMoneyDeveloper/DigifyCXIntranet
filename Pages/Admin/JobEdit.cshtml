@@ -4,80 +4,135 @@
     ViewData["Title"] = "Edit Job Posting";
 }
 
-<section class="card-elevated p-4">
-    <h1 class="h5 mb-3">Edit Job Posting</h1>
-    <form method="post" enctype="multipart/form-data" class="row g-3">
-        <input asp-for="Item.Id" type="hidden" />
-        <input asp-for="Item.AdBackgroundImagePath" type="hidden" />
+<!-- Back Button & Header -->
+<div class="mx-auto max-w-4xl mt-4 mb-6 flex items-center gap-4">
+    <a asp-page="/Admin/Jobs" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all" title="Back to Jobs">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+    </a>
+    <div>
+        <h1 class="text-2xl font-extrabold text-white tracking-tight">Edit Job Posting</h1>
+        <p class="text-sm text-slate-00 mt-1">Update job details, requirements, and visual ad configurations.</p>
+    </div>
+</div>
 
-        <div class="col-md-6">
-            <label asp-for="Item.Title" class="form-label"></label>
-            <input asp-for="Item.Title" class="form-control" />
-            <span asp-validation-for="Item.Title" class="text-danger"></span>
-        </div>
-        <div class="col-md-6">
-            <label asp-for="Item.Department" class="form-label"></label>
-            <input asp-for="Item.Department" class="form-control" />
-        </div>
-        <div class="col-md-6">
-            <label asp-for="Item.ApplicationRoute" class="form-label"></label>
-            <input asp-for="Item.ApplicationRoute" class="form-control" />
-        </div>
-        <div class="col-md-6">
-            <label asp-for="Item.ClosingDate" class="form-label"></label>
-            <input asp-for="Item.ClosingDate" type="date" class="form-control" />
-        </div>
+<div class="mx-auto max-w-4xl">
+    <section class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
+        <!-- Remember to keep enctype="multipart/form-data" for the image upload! -->
+        <form method="post" enctype="multipart/form-data" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            
+            <input asp-for="Item.Id" type="hidden" />
+            <input asp-for="Item.AdBackgroundImagePath" type="hidden" />
 
-        <div class="col-12">
-            <label asp-for="Item.Description" class="form-label"></label>
-            <textarea asp-for="Item.Description" rows="6" class="form-control"></textarea>
-            <span asp-validation-for="Item.Description" class="text-danger"></span>
-        </div>
+            <!-- Standard Details -->
+            <div class="md:col-span-6">
+                <label asp-for="Item.Title" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
+                <input asp-for="Item.Title" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" />
+                <span asp-validation-for="Item.Title" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+            </div>
+            
+            <div class="md:col-span-6">
+                <label asp-for="Item.Department" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
+                <input asp-for="Item.Department" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" />
+            </div>
+            
+            <div class="md:col-span-6">
+                <label asp-for="Item.ApplicationRoute" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
+                <input asp-for="Item.ApplicationRoute" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition font-mono" />
+            </div>
+            
+            <div class="md:col-span-6">
+                <label asp-for="Item.ClosingDate" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
+                <input asp-for="Item.ClosingDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+            </div>
 
-        <div class="col-sm-6">
-            <label asp-for="Item.AdHeadline" class="form-label">Ad Headline</label>
-            <input asp-for="Item.AdHeadline" class="form-control" />
-            <span asp-validation-for="Item.AdHeadline" class="text-danger"></span>
-        </div>
-        <div class="col-sm-6">
-            <label asp-for="Item.AdSubHeadline" class="form-label">Ad Subheadline</label>
-            <textarea asp-for="Item.AdSubHeadline" rows="3" class="form-control"></textarea>
-            <span asp-validation-for="Item.AdSubHeadline" class="text-danger"></span>
-        </div>
-        <div class="col-12">
-            <label asp-for="AdBackgroundUpload" class="form-label">Replace Ad Background Image</label>
-            <input asp-for="AdBackgroundUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
-            <span asp-validation-for="AdBackgroundUpload" class="text-danger"></span>
-            <div class="small text-muted mt-1">Current: @Model.Item.AdBackgroundImagePath</div>
-            <div class="mt-2">
-                <img src="@Model.Item.AdBackgroundImagePath" alt="Current background preview" style="max-height:220px;" class="rounded border" />
+            <div class="md:col-span-12">
+                <label asp-for="Item.Description" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
+                <textarea asp-for="Item.Description" rows="6" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition"></textarea>
+                <span asp-validation-for="Item.Description" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
-        </div>
-        <div class="col-12">
-            <div class="form-check">
-                <input asp-for="Item.UseVisualAd" class="form-check-input" />
-                <label asp-for="Item.UseVisualAd" class="form-check-label"></label>
-            </div>
-        </div>
 
-        <div class="col-sm-3">
-            <div class="form-check">
-                <input asp-for="Item.IsExternalReferral" class="form-check-input" />
-                <label asp-for="Item.IsExternalReferral" class="form-check-label"></label>
+            <!-- Divider: Visual Ad Setup -->
+            <div class="md:col-span-12 pt-4 border-t border-slate-700/80">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Visual Ad Setup</h3>
+                    
+                    <!-- Use Visual Ad Toggle -->
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <div class="relative flex items-center">
+                            <input asp-for="Item.UseVisualAd" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none transition-all" />
+                            <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                        </div>
+                        <span class="text-sm font-medium text-slate-400 group-hover:text-white transition-colors">Use A4 Format</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 rounded-xl border border-slate-700/50 bg-slate-900/30 p-5">
+                    <div class="md:col-span-2">
+                        <label asp-for="Item.AdHeadline" class="block text-xs font-semibold text-slate-400 mb-1">Ad Headline</label>
+                        <input asp-for="Item.AdHeadline" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none transition" />
+                        <span asp-validation-for="Item.AdHeadline" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                    </div>
+                    
+                    <div class="md:col-span-2">
+                        <label asp-for="Item.AdSubHeadline" class="block text-xs font-semibold text-slate-400 mb-1">Ad Subheadline</label>
+                        <textarea asp-for="Item.AdSubHeadline" rows="2" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none transition"></textarea>
+                        <span asp-validation-for="Item.AdSubHeadline" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                    </div>
+
+                    <div class="md:col-span-2 pt-2 border-t border-slate-700/50">
+                        <label asp-for="AdBackgroundUpload" class="block text-xs font-semibold text-slate-400 mb-2">Replace Background Image</label>
+                        
+                        <div class="flex flex-col sm:flex-row gap-6 items-start">
+                            <!-- Current Image Preview -->
+                            <div class="flex-shrink-0">
+                                <img src="@Model.Item.AdBackgroundImagePath" alt="Current background preview" class="h-32 w-24 rounded-lg border-2 border-slate-600 object-cover opacity-90 shadow-md" />
+                                <div class="text-[10px] text-slate-500 mt-2 text-center truncate w-24" title="@Model.Item.AdBackgroundImagePath">Current Image</div>
+                            </div>
+                            
+                            <!-- File Input -->
+                            <div class="flex-grow w-full">
+                                <input asp-for="AdBackgroundUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 transition cursor-pointer border border-slate-600 rounded-lg bg-slate-800/50" />
+                                <span asp-validation-for="AdBackgroundUpload" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                                <p class="text-xs text-slate-500 mt-2 leading-relaxed">Upload a new A4 portrait image to replace the current one. Accepted formats: JPG, PNG, WEBP.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="col-sm-3">
-            <div class="form-check">
-                <input asp-for="Item.IsActive" class="form-check-input" />
-                <label asp-for="Item.IsActive" class="form-check-label"></label>
+
+            <!-- Bottom Toggles -->
+            <div class="md:col-span-12 flex flex-col sm:flex-row gap-6 pt-4 border-t border-slate-700/80">
+                <!-- External Referral Custom Checkbox -->
+                <label class="flex items-center gap-3 cursor-pointer group w-fit">
+                    <div class="relative flex items-center">
+                        <input asp-for="Item.IsExternalReferral" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" />
+                        <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Enable External Referral</span>
+                </label>
+
+                <!-- IsActive Custom Checkbox -->
+                <label class="flex items-center gap-3 cursor-pointer group w-fit">
+                    <div class="relative flex items-center">
+                        <input asp-for="Item.IsActive" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" />
+                        <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                    </div>
+                    <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Job is Active</span>
+                </label>
             </div>
-        </div>
-        <div class="col-12 d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a asp-page="/Admin/Jobs" class="btn btn-outline-secondary">Cancel</a>
-        </div>
-    </form>
-</section>
+            
+            <!-- Form Action Buttons -->
+            <div class="md:col-span-12 flex items-center gap-4 pt-2">
+                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all">
+                    Save Changes
+                </button>
+                <a asp-page="/Admin/Jobs" class="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-transparent px-6 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
+                    Cancel
+                </a>
+            </div>
+        </form>
+    </section>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
