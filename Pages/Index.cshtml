@@ -1,92 +1,133 @@
 @page
 @model IndexModel
+
+@* Inject our backend Admin checker tool *@
+@inject DigifyCXIntranet.Services.IAdminAccessService AdminAccess
+
 @{
     ViewData["Title"] = "Home";
+    bool isAdmin = AdminAccess.IsAdmin(User);
 }
 
-<section class="hero-panel mb-4 animate-card ring-1 ring-cyan-100/60">
-    <div class="mb-4 inline-flex rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-cyan-700">Employee Platform</div>
-    <h1 class="h3 mb-2 text-slate-900">Welcome, @Model.DisplayName</h1>
-    <p class="text-muted mb-3">Your internal hub for policies, business notices, jobs, canteen services, and employee self-service actions.</p>
-    <div class="row g-3">
-        <div class="col-md-4">
-            <div class="dashboard-kpi">
-                <div class="small text-muted">Current month canteen spend</div>
-                <div class="h4 mb-0">R @Model.CurrentMonthCanteenTotal.ToString("N2")</div>
+<!-- Main Asymmetrical Grid (2/3 Left, 1/3 Right) -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+    
+    <!-- ================= LEFT COLUMN ================= -->
+    <div class="lg:col-span-2 space-y-6">
+        
+        <!-- 1. Welcome Section & Stats -->
+        <div class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-lg">
+            <div class="mb-6">
+                <span class="inline-block rounded-full bg-cyan-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">
+                    Employee Platform
+                </span>
+                
+                <h1 class="mt-4 text-3xl font-extrabold text-white capitalize">
+                    Welcome, @User.Identity?.Name
+                </h1>
+                
+                <p class="mt-2 text-slate-400">
+                    Your internal hub for policies, business notices, jobs, canteen services, and employee self-service actions.
+                </p>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="dashboard-kpi">
-                <div class="small text-muted">Open internal jobs</div>
-                <div class="h4 mb-0">@Model.JobPostings.Count</div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="dashboard-kpi">
-                <div class="small text-muted">Admin access</div>
-                <div class="h4 mb-0">@(Model.IsAdmin ? "Enabled" : "Employee")</div>
-            </div>
-        </div>
-    </div>
-</section>
 
-<div class="row g-4">
-    <div class="col-lg-5">
-        <section class="card-elevated p-3 h-100 animate-card">
-            <h2 class="h5 section-title">Pinned Announcements</h2>
-            @if (Model.Announcements.Count == 0)
-            {
-                <p class="text-muted mb-0">No announcements available.</p>
-            }
-            else
-            {
-                <ul class="list-group list-group-flush">
-                @foreach (var item in Model.Announcements)
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 gap-4 @(isAdmin ? "md:grid-cols-3" : "md:grid-cols-2")">
+                <div class="rounded-xl bg-slate-900/50 p-5 border border-slate-700/50">
+                    <p class="text-sm font-medium text-slate-400">Current month canteen spend</p>
+                    <p class="mt-1 text-2xl font-bold text-white">R 0,00</p>
+                </div>
+                <div class="rounded-xl bg-slate-900/50 p-5 border border-slate-700/50">
+                    <p class="text-sm font-medium text-slate-400">Open internal jobs</p>
+                    <p class="mt-1 text-2xl font-bold text-white">2</p>
+                </div>
+                
+                @if (isAdmin)
                 {
-                    <li class="list-group-item px-0">
-                        <div class="fw-semibold">@item.Title</div>
-                        <div class="small text-muted">@item.Summary</div>
-                    </li>
-                }
-                </ul>
-            }
-            <a asp-page="/Announcements/Index" class="btn btn-sm btn-outline-primary mt-3">View All</a>
-        </section>
-    </div>
-    <div class="col-lg-4">
-        <section class="card-elevated p-3 h-100 animate-card">
-            <h2 class="h5 section-title">Latest Policies & Procedures</h2>
-            @if (Model.Policies.Count == 0)
-            {
-                <p class="text-muted mb-0">No active documents available.</p>
-            }
-            else
-            {
-                <ul class="list-group list-group-flush">
-                @foreach (var item in Model.Policies)
-                {
-                    <li class="list-group-item px-0">
-                        <div class="fw-semibold">@item.Title</div>
-                        <div class="small text-muted">@item.ContentType - Effective @item.EffectiveDate.ToString("dd MMM yyyy")</div>
-                    </li>
-                }
-                </ul>
-            }
-            <a asp-page="/Policies/Index" class="btn btn-sm btn-outline-primary mt-3">Browse Policies</a>
-        </section>
-    </div>
-    <div class="col-lg-3">
-        <section class="card-elevated p-3 h-100 animate-card">
-            <h2 class="h5 section-title">Quick Actions</h2>
-            <div class="d-grid gap-2">
-                <a asp-page="/Canteen/Index" class="btn btn-primary btn-sm">Submit Canteen Request</a>
-                <a asp-page="/Jobs/Index" class="btn btn-outline-primary btn-sm">View Jobs</a>
-                <a asp-page="/Faq/Index" class="btn btn-outline-primary btn-sm">Read FAQs</a>
-                @if (Model.IsAdmin)
-                {
-                    <a asp-page="/Admin/Index" class="btn btn-outline-primary btn-sm">Open Admin Console</a>
+                    <div class="rounded-xl bg-slate-900/50 p-5 border border-slate-700/50">
+                        <p class="text-sm font-medium text-slate-400">Admin access</p>
+                        <p class="mt-1 text-2xl font-bold text-white">Enabled</p>
+                    </div>
                 }
             </div>
-        </section>
+        </div>
+
+        <!-- 2. Lower Left Grid (Policies & Actions) -->
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+            
+            <!-- Latest Policies Card -->
+            <div class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-lg flex flex-col h-full">
+                <h2 class="text-lg font-bold text-white mb-4">Latest Policies</h2>
+                
+                <div class="space-y-3 flex-grow text-sm">
+                    <div class="bg-[#a3bddf] rounded-md p-3 text-slate-900 shadow-sm transition hover:bg-[#8ba6d1] cursor-pointer">
+                        <p class="font-bold">Leave Request Procedure</p>
+                    </div>
+                    <div class="bg-[#a3bddf] rounded-md p-3 text-slate-900 shadow-sm transition hover:bg-[#8ba6d1] cursor-pointer">
+                        <p class="font-bold">Code of Conduct</p>
+                    </div>
+                </div>
+                
+                <!-- WIRED TO POLICIES -->
+                <a asp-page="/Policies/Index" class="mt-6 block w-full text-center rounded border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                    Browse Policies
+                </a>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-lg flex flex-col h-full">
+                <h2 class="text-lg font-bold text-white mb-4">Quick Actions</h2>
+                <div class="flex flex-col space-y-3 flex-grow">
+                    <!-- WIRED TO CANTEEN -->
+                    <a asp-page="/Canteen/Index" class="block w-full text-center rounded bg-cyan-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-cyan-500">
+                        Submit Canteen Request
+                    </a>
+                    
+                    <!-- WIRED TO JOBS -->
+                    <a asp-page="/Jobs/Index" class="block w-full text-center rounded border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                        View Jobs
+                    </a>
+                    
+                    <!-- WIRED TO FAQ -->
+                    <a asp-page="/FAQ/Index" class="block w-full text-center rounded border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                        Read FAQs
+                    </a>
+                    
+                    @if (isAdmin)
+                    {
+                        <!-- WIRED TO ADMIN CONSOLE -->
+                        <a asp-page="/Admin/Index" class="mt-3 block w-full text-center rounded border border-cyan-500/50 bg-cyan-500/10 px-4 py-2 text-sm font-medium text-cyan-400 transition hover:bg-cyan-500/20">
+                            Open Admin Console
+                        </a>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= RIGHT COLUMN ================= -->
+    <div class="lg:col-span-1 h-full">
+        
+        <!-- Pinned Announcements Card -->
+        <div class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-lg h-full flex flex-col">
+            <h2 class="text-lg font-bold text-white tracking-widest uppercase mb-6 text-center">Announcements</h2>
+            
+            <div class="space-y-4 flex-grow text-sm">
+                <div class="bg-[#a3bddf] rounded-md p-4 text-slate-900 shadow-sm transition hover:-translate-y-1 cursor-pointer">
+                    <p class="font-bold mb-1 text-base">Welcome to DigifyCX</p>
+                    <p class="text-slate-800 text-xs">Internal updates, policies, & jobs.</p>
+                </div>
+                <div class="bg-[#a3bddf] rounded-md p-4 text-slate-900 shadow-sm transition hover:-translate-y-1 cursor-pointer">
+                    <p class="font-bold mb-1 text-base">Monthly Townhall</p>
+                    <p class="text-slate-800 text-xs">Friday 10:00 AM</p>
+                </div>
+            </div>
+            
+            <!-- WIRED TO ANNOUNCEMENTS -->
+            <a asp-page="/Announcements/Index" class="mt-6 block w-full text-center rounded border border-slate-600 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                View All Announcements
+            </a>
+        </div>
+        
     </div>
 </div>
