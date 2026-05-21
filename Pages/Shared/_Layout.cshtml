@@ -1,15 +1,24 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
+    @{
+        var path = Context?.Request?.Path.Value ?? string.Empty;
+        var isAuthPage =
+            path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Account/SignUp", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+            path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
+    }
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - DigifyCX Employee Platform</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
+        window.tailwind = window.tailwind || {};
+        window.tailwind.config = {
             theme: {
                 extend: {
                     colors: {
@@ -37,17 +46,25 @@
             }
         };
     </script>
+    <script src="https://cdn.tailwindcss.com" defer></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DigifyCXIntranet.styles.css" asp-append-version="true" />
+    @if (!isAuthPage)
+    {
+        <link rel="preconnect" href="https://static.zdassets.com" crossorigin>
+        <!-- Start of cxe-internal Zendesk Widget script -->
+        <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=12544d55-5469-4f7b-9117-eada152fadfc" defer></script>
+        <!-- End of cxe-internal Zendesk Widget script -->
+    }
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 antialiased flex flex-col">
     <!-- Fixed background container (Light Version) -->
-    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#97b3d9]">
+    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#97b3d9] app-bg-shell">
     
         <!-- Large, soft branded shapes (Opacity lowered to 5% so they are super subtle on the light background) -->
-        <div class="absolute -left-28 -top-24 h-72 w-72 rounded-full bg-cyan-600/40 blur-3xl animate-bob"></div>
-        <div class="absolute -right-24 top-20 h-80 w-80 rounded-full bg-indigo-600/40 blur-3xl animate-bob" style="animation-delay: 1.2s"></div>
+        <div class="absolute -left-28 -top-24 h-72 w-72 rounded-full bg-cyan-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-left"></div>
+        <div class="absolute -right-24 top-20 h-80 w-80 rounded-full bg-indigo-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-right" style="animation-delay: 1.2s"></div>
     
     </div>
     <!-- DARK HEADER (Updated to match Canva Mockup) -->
@@ -101,9 +118,7 @@
         &copy; 2026 DigifyCX Internal Employee Platform
     </footer>
 
-    <script src="~/lib/jquery/dist/jquery.min.js"></script>
-    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="~/js/site.js" asp-append-version="true"></script>
+    <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

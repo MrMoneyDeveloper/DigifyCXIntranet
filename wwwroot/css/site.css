@@ -10,6 +10,7 @@ html {
 
 body {
     font-family: "Outfit", sans-serif;
+    text-rendering: optimizeLegibility;
 }
 
 .hero-panel,
@@ -19,6 +20,13 @@ body {
     border-radius: 1rem;
     box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
     backdrop-filter: blur(8px);
+}
+
+@supports not (backdrop-filter: blur(8px)) {
+    .hero-panel,
+    .card-elevated {
+        background: rgba(255, 255, 255, 0.96);
+    }
 }
 
 .hero-panel {
@@ -68,6 +76,49 @@ body {
 
 .animate-card {
     animation: card-rise 480ms ease-out both;
+}
+
+.app-bg-shell {
+    background-attachment: fixed;
+}
+
+.app-bg-blob {
+    will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .animate-card,
+    .app-bg-blob {
+        animation: none !important;
+    }
+}
+
+/* Older/low-resolution monitors (for example 1366x768) */
+@media (max-width: 1366px), (max-height: 800px) {
+    html {
+        font-size: 14px;
+    }
+
+    .hero-panel,
+    .card-elevated {
+        border-radius: 0.75rem;
+        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+        backdrop-filter: none;
+        background: rgba(255, 255, 255, 0.96);
+    }
+
+    .hero-panel {
+        padding: 1rem;
+    }
+
+    .app-bg-shell {
+        background-attachment: scroll;
+    }
+
+    .app-bg-blob {
+        opacity: 0.3;
+        filter: blur(40px);
+    }
 }
 
 .job-ad-a4 {
