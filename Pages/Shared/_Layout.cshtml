@@ -1,15 +1,16 @@
+@{
+    var path = Context?.Request?.Path.Value ?? string.Empty;
+    var isAuthPage =
+        path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/Account/SignUp", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) ||
+        path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
+}
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
-    @{
-        var path = Context?.Request?.Path.Value ?? string.Empty;
-        var isAuthPage =
-            path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
-            path.Equals("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
-            path.Equals("/Account/SignUp", StringComparison.OrdinalIgnoreCase) ||
-            path.Equals("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) ||
-            path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
-    }
+    
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - DigifyCX Employee Platform</title>
@@ -46,17 +47,10 @@
             }
         };
     </script>
-    <script src="https://cdn.tailwindcss.com" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DigifyCXIntranet.styles.css" asp-append-version="true" />
-    @if (!isAuthPage)
-    {
-        <link rel="preconnect" href="https://static.zdassets.com" crossorigin>
-        <!-- Start of cxe-internal Zendesk Widget script -->
-        <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=12544d55-5469-4f7b-9117-eada152fadfc" defer></script>
-        <!-- End of cxe-internal Zendesk Widget script -->
-    }
 </head>
 <body class="min-h-screen bg-slate-100 text-slate-900 antialiased flex flex-col">
     <!-- Fixed background container (Light Version) -->
@@ -99,7 +93,6 @@
             
                 <!-- Kept the extra pages, just pushed them to the end -->
                 <li><a class="transition hover:text-cyan-300" asp-page="/Faq/Index">FAQ</a></li>
-                <li><a class="transition hover:text-cyan-300" asp-page="/Chatbot/Index">Chatbot</a></li>
             </ul>
 
             <!-- PROFILE / SIGN OUT (Leaves this exactly as we built it) -->
@@ -120,5 +113,13 @@
 
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
+
+    @if (!isAuthPage)
+    {
+        <link rel="preconnect" href="https://static.zdassets.com" crossorigin>
+        <!-- Start of cxe-internal Zendesk Widget script -->
+        <script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=12544d55-5469-4f7b-9117-eada152fadfc" defer></script>
+        <!-- End of cxe-internal Zendesk Widget script -->
+    }
 </body>
 </html>
