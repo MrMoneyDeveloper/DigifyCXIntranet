@@ -4,103 +4,70 @@
     ViewData["Title"] = "Job Postings";
 }
 
-<div class="mx-auto max-w-6xl space-y-8 mt-4">
-    
-    <!-- Page Header -->
-    <div class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl flex items-center justify-between">
-        <div>
-            <h1 class="text-3xl font-extrabold text-white tracking-tight">Internal Job Postings</h1>
-            <p class="mt-2 text-sm text-slate-400">Discover new career opportunities and internal promotions.</p>
-        </div>
-        
-        <!-- Decorative Briefcase Icon -->
-        <div class="hidden sm:flex h-14 w-14 items-center justify-center rounded-full bg-cyan-500/10 border border-cyan-500/20 shadow-inner flex-shrink-0">
-            <svg class="h-7 w-7 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-            </svg>
-        </div>
+<div class="mx-auto max-w-6xl space-y-6 mt-4">
+    <div class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Internal Job Postings</h1>
+        <p class="mt-2 text-sm text-slate-400">Apply directly or send secure referral invites for external candidates.</p>
     </div>
+
+    @if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage))
+    {
+        <div class="alert alert-success">@Model.FeedbackMessage</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
+    {
+        <div class="alert alert-success">@Model.JobApplyMessage</div>
+    }
 
     @if (Model.Items.Count == 0)
     {
-        <!-- Empty State -->
         <div class="bg-[#1e2336] rounded-2xl p-10 border border-slate-700 shadow-lg text-center">
-            <svg class="mx-auto h-12 w-12 text-slate-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg>
             <h3 class="text-lg font-medium text-white">No active job postings</h3>
-            <p class="mt-1 text-sm text-slate-400">Check back later for new opportunities.</p>
         </div>
     }
     else
     {
-        <!-- Job Grid -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             @foreach (var item in Model.Items)
             {
-                <article class="bg-[#1e2336] rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col h-full transition hover:border-cyan-500/40 hover:shadow-cyan-500/10">
-                
+                <article class="bg-[#1e2336] rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col gap-4">
                     @if (item.UseVisualAd)
                     {
                         var backgroundUrl = string.IsNullOrWhiteSpace(item.AdBackgroundImagePath)
                             ? "/images/job-ad-a4-template.svg"
                             : item.AdBackgroundImagePath;
-
-                        <!-- Visual Ad Poster -->
-                        <div class="job-ad-a4 relative w-full aspect-[3/4] mb-5 rounded-xl overflow-hidden border border-slate-600 shadow-inner bg-slate-800"
-                             style="background-image:linear-gradient(180deg,rgba(15,23,42,0.1),rgba(15,23,42,0.95)),url('@backgroundUrl'); background-size: cover; background-position: center;">
-                        
-                            <!-- Overlay content pinned to the bottom -->
-                            <div class="absolute inset-0 p-6 flex flex-col justify-end">
-                                <span class="w-fit mb-3 rounded border border-cyan-400/30 bg-cyan-400/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-300 backdrop-blur-sm">
-                                    @item.Department
-                                </span>
-                                <h2 class="text-2xl font-extrabold text-white leading-tight mb-2">
-                                    @(string.IsNullOrWhiteSpace(item.AdHeadline) ? item.Title : item.AdHeadline)
-                                </h2>
-                                <p class="text-sm text-slate-300 line-clamp-3 mb-4">
-                                    @(string.IsNullOrWhiteSpace(item.AdSubHeadline) ? item.Description : item.AdSubHeadline)
-                                </p>
-                                <div class="text-xs font-medium text-cyan-400 flex items-center gap-1.5">
-                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                    Closes @item.ClosingDate.ToString("dd MMM yyyy")
-                                </div>
+                        <div class="job-ad-a4" style="background-image:linear-gradient(180deg,rgba(15,23,42,0.1),rgba(15,23,42,0.95)),url('@backgroundUrl');">
+                            <div class="job-ad-layer">
+                                <div class="job-ad-pill">@item.Department</div>
+                                <h2 class="job-ad-title">@(string.IsNullOrWhiteSpace(item.AdHeadline) ? item.Title : item.AdHeadline)</h2>
+                                <p class="job-ad-subtitle">@(string.IsNullOrWhiteSpace(item.AdSubHeadline) ? item.Description : item.AdSubHeadline)</p>
+                                <div class="job-ad-footer">Closes @item.ClosingDate.ToString("dd MMM yyyy")</div>
                             </div>
                         </div>
                     }
-                    else
-                    {
-                        <!-- Standard Text Header (If they don't upload a poster) -->
-                        <div class="mb-5 border-b border-slate-700/80 pb-4">
-                            <span class="inline-block mb-2 rounded border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 text-[10px] font-bold uppercase tracking-widest text-cyan-400">
-                                @item.Department
-                            </span>
-                            <h2 class="text-xl font-bold text-white mb-1">@item.Title</h2>
-                            <div class="text-xs font-medium text-slate-400 flex items-center gap-1.5">
-                                <svg class="w-4 h-4 text-cyan-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Closes @item.ClosingDate.ToString("dd MMM yyyy")
-                            </div>
-                        </div>
-                    }
+                    <p class="text-sm text-slate-300">@item.Description</p>
+                    <div class="text-sm text-cyan-300"><span class="fw-semibold">Apply via:</span> @item.ApplicationRoute</div>
 
-                    <!-- Shared Job Details Block -->
-                    <div class="flex-grow flex flex-col">
-                        <p class="text-sm text-slate-300 mb-6 flex-grow leading-relaxed">
-                            @item.Description
-                        </p>
-                    
-                        <div class="bg-slate-900/60 rounded-xl p-4 border border-slate-700/50 mb-4 shadow-inner">
-                            <span class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">Application Route</span>
-                            <span class="text-sm font-medium text-cyan-400 select-all">@item.ApplicationRoute</span>
-                        </div>
-
+                    <div class="d-flex flex-column gap-2">
+                        <a asp-page="/Jobs/Apply" asp-route-id="@item.Id" class="btn btn-primary">Apply Internally</a>
                         @if (item.IsExternalReferral)
                         {
-                            <div class="flex items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 py-2.5 px-4 text-xs font-bold uppercase tracking-wider text-amber-400">
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                External Referral Workflow
-                            </div>
+                            <form method="post" asp-page-handler="Refer" class="d-flex gap-2">
+                                <input type="hidden" asp-for="Referral.JobPostingId" value="@item.Id" />
+                                <input name="Referral.CandidateEmail" class="form-control form-control-sm" placeholder="friend@email.com" />
+                                <button type="submit" class="btn btn-outline-primary btn-sm">Send Referral</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <div class="text-xs text-slate-400">External referral is disabled for this role.</div>
                         }
                     </div>
-                
+
+                    @if (item.IsExternalReferral)
+                    {
+                        <span class="badge text-bg-warning">External referral enabled</span>
+                    }
                 </article>
             }
         </div>

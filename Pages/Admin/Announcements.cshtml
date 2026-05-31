@@ -45,6 +45,12 @@
                     <textarea asp-for="NewItem.Content" rows="6" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="Full announcement details..."></textarea>
                     <span asp-validation-for="NewItem.Content" class="text-xs font-medium text-rose-400 mt-1 block"></span>
                 </div>
+
+                <!-- Expiration -->
+                <div>
+                    <label asp-for="NewItem.ExpirationDate" class="block text-sm font-semibold text-slate-300 mb-1.5">Expiration Date (Optional)</label>
+                    <input asp-for="NewItem.ExpirationDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+                </div>
                 
                 <!-- IsPinned Custom Checkbox -->
                 <div class="pt-1 pb-2">
@@ -82,6 +88,7 @@
                         <tr>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Title</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Date</th>
+                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Expires</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
                             <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
                         </tr>
@@ -96,6 +103,9 @@
                                 <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap">
                                     @item.PublishDateUtc.ToString("dd MMM yyyy")<br />
                                     <span class="text-slate-500">@item.PublishDateUtc.ToString("HH:mm")</span>
+                                </td>
+                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap">
+                                    @(item.ExpirationDate?.ToString("dd MMM yyyy") ?? "Never")
                                 </td>
                                 <td class="px-6 py-4">
                                     @if (item.IsActive)

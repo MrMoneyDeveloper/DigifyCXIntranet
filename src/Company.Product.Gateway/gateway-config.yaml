@@ -1,0 +1,27 @@
+apiVersion: 1
+name: company-product-gateway
+listeners:
+  - name: https
+    protocol: https
+    port: 443
+routes:
+  - name: orders-v1
+    upstreamPath: /api/v1/orders/{**catch-all}
+    downstreamService: company-product-api
+    downstreamPath: /api/v1/orders/{**catch-all}
+    methods: [GET, POST]
+    auth:
+      requireJwt: true
+    rateLimit:
+      requestsPerMinute: 120
+    requestValidation:
+      openApiDocument: /openapi/v1.json
+policies:
+  cors:
+    allowedOrigins: ["https://intranet.company.local"]
+    allowedMethods: [GET, POST, PUT, DELETE]
+    allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
+  tls:
+    minVersion: TLS1.2
+  logging:
+    includeCorrelationId: true

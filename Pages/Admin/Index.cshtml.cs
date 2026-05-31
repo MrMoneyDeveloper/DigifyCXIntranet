@@ -18,13 +18,17 @@ public class IndexModel : PageModel
     public int JobCount { get; private set; }
     public int FaqCount { get; private set; }
     public int CanteenOrderCount { get; private set; }
+    public int MenuItemCount { get; private set; }
+    public int BatchRunCount { get; private set; }
 
     public async Task OnGetAsync()
     {
-        PolicyCount = await _db.PolicyDocuments.CountAsync();
+        PolicyCount = await _db.ZendeskPolicyArticles.CountAsync();
         AnnouncementCount = await _db.Announcements.CountAsync();
         JobCount = await _db.JobPostings.CountAsync();
         FaqCount = await _db.FaqItems.CountAsync();
         CanteenOrderCount = await _db.CanteenOrders.CountAsync();
+        MenuItemCount = await _db.MenuItems.CountAsync();
+        BatchRunCount = await _db.CanteenBatchRuns.CountAsync();
     }
 }

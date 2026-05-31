@@ -1,23 +1,33 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
+using DigifyCXIntranet.Options;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Account;
 
 public class LoginModel : PageModel
 {
-    private static readonly Dictionary<string, TestUser> Users = new(StringComparer.OrdinalIgnoreCase)
+    private readonly AuthModeOptions _authModeOptions;
+    private readonly IWebHostEnvironment _environment;
+
+    public LoginModel(IOptions<AuthModeOptions> authModeOptions, IWebHostEnvironment environment)
     {
-        ["moham"] = new("moham123", "Mohamed"),
-        ["admin"] = new("admin123", "Platform Admin"),
-        ["employee"] = new("employee123", "Employee User")
-    };
+        _authModeOptions = authModeOptions.Value;
+        _environment = environment;
+    }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
+
+    public IReadOnlyList<DevelopmentUserOption> DemoUsers =>
+        _authModeOptions.DevelopmentUsers
+            .Where(x => !string.IsNullOrWhiteSpace(x.Username))
+            .ToList();
+    public bool ShowDemoCredentials => _environment.IsDevelopment();
 
     public string ReturnUrl { get; private set; } = "/Index";
 
@@ -34,7 +44,9 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        if (!Users.TryGetValue(Input.Username.Trim(), out var user) || user.Password != Input.Password)
+        var user = _authModeOptions.DevelopmentUsers.FirstOrDefault(
+            x => string.Equals(x.Username, Input.Username.Trim(), StringComparison.OrdinalIgnoreCase));
+        if (user is null || user.Password != Input.Password)
         {
             ModelState.AddModelError(string.Empty, "Invalid username or password.");
             return Page();
@@ -42,8 +54,8 @@ public class LoginModel : PageModel
 
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name, Input.Username.Trim()),
-            new(ClaimTypes.GivenName, user.DisplayName)
+            new(ClaimTypes.Name, user.Username.Trim()),
+            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName) ? user.Username : user.DisplayName)
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -68,6 +80,4 @@ public class LoginModel : PageModel
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
     }
-
-    private record TestUser(string Password, string DisplayName);
 }

@@ -2,6 +2,12 @@ using System.ComponentModel.DataAnnotations;
 
 namespace DigifyCXIntranet.Models;
 
+public enum MealSlot
+{
+    Breakfast = 1,
+    Lunch = 2
+}
+
 public class CanteenOrder
 {
     public int Id { get; set; }
@@ -10,21 +16,24 @@ public class CanteenOrder
     [MaxLength(120)]
     public string EmployeeUsername { get; set; } = string.Empty;
 
+    public int MenuItemId { get; set; }
+    public MenuItem? MenuItem { get; set; }
+
     [Required]
     [MaxLength(300)]
     public string ItemSummary { get; set; } = string.Empty;
 
-    public DateOnly OrderDate { get; set; } = DateOnly.FromDateTime(DateTime.Today);
+    public MealSlot MealSlot { get; set; } = MealSlot.Lunch;
 
     [Range(0, 100000)]
     public decimal TotalAmount { get; set; }
+
+    public DateTime OrderTimeUtc { get; set; } = DateTime.UtcNow;
 
     [Required]
     [MaxLength(30)]
     public string Status { get; set; } = "Submitted";
 
-    [Range(0, 120)]
-    public int EmploymentMonthsAtOrder { get; set; }
-
-    public bool IncludedInPayrollReconciliation { get; set; } = true;
+    public int? CanteenBatchRunId { get; set; }
+    public CanteenBatchRun? CanteenBatchRun { get; set; }
 }

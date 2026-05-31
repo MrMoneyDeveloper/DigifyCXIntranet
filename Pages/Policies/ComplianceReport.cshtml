@@ -1,0 +1,59 @@
+@page
+@model DigifyCXIntranet.Pages.Policies.ComplianceReportModel
+@{
+    ViewData["Title"] = "Policy Compliance Report";
+    var fromDate = Model.FromUtc?.ToString("yyyy-MM-dd");
+    var toDate = Model.ToUtc?.ToString("yyyy-MM-dd");
+}
+
+<section class="card-elevated p-4">
+    <h1 class="h4 mb-3">Policy Compliance Report</h1>
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-md-3">
+            <label asp-for="PolicyArticleId" class="form-label">Policy</label>
+            <select asp-for="PolicyArticleId" asp-items="Model.PolicyOptions" class="form-select">
+                <option value="">All policies</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Employee" class="form-label"></label>
+            <input asp-for="Employee" class="form-control" placeholder="employee username" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="FromUtc" class="form-label">From</label>
+            <input asp-for="FromUtc" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ToUtc" class="form-label">To</label>
+            <input asp-for="ToUtc" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3 align-self-end d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Filter</button>
+            <a asp-page-handler="ExportCsv"
+               asp-route-PolicyArticleId="@Model.PolicyArticleId"
+               asp-route-Employee="@Model.Employee"
+               asp-route-FromUtc="@fromDate"
+               asp-route-ToUtc="@toDate"
+               class="btn btn-outline-primary">
+                Export CSV
+            </a>
+        </div>
+    </form>
+
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>Employee</th><th>Policy Article ID</th><th>Version</th><th>Acknowledged UTC</th></tr></thead>
+            <tbody>
+            @foreach (var item in Model.Items)
+            {
+                <tr>
+                    <td>@item.EmployeeDomainName</td>
+                    <td>@item.PolicyArticleId</td>
+                    <td>@item.PolicyVersion</td>
+                    <td>@item.TimestampUtc.ToString("dd MMM yyyy HH:mm")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</section>

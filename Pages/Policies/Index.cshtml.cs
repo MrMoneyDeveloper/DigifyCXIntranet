@@ -18,18 +18,18 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
-    public List<PolicyDocument> Items { get; private set; } = new();
+    public List<ZendeskPolicyArticle> Items { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
-        var query = _db.PolicyDocuments
-            .Where(x => x.IsActive)
-            .OrderByDescending(x => x.EffectiveDate)
+        var query = _db.ZendeskPolicyArticles
+            .Where(x => x.IsPublished)
+            .OrderByDescending(x => x.UpdatedAtUtc)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(Search))
         {
-            query = query.Where(x => x.Title.Contains(Search) || x.Content.Contains(Search));
+            query = query.Where(x => x.Title.Contains(Search) || x.Body.Contains(Search));
         }
 
         Items = await query.ToListAsync();

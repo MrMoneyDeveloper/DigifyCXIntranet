@@ -22,49 +22,13 @@ public class PolicyEditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _db.PolicyDocuments.FirstOrDefaultAsync(x => x.Id == id);
-        if (entity is null)
-        {
-            return NotFound();
-        }
-
-        Item = new EditPolicyInput
-        {
-            Id = entity.Id,
-            Title = entity.Title,
-            ContentType = entity.ContentType,
-            VersionLabel = entity.VersionLabel,
-            EffectiveDate = entity.EffectiveDate,
-            Content = entity.Content,
-            IsActive = entity.IsActive
-        };
-
-        return Page();
+        await Task.CompletedTask;
+        return RedirectToPage("/Admin/Policies");
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
-
-        var entity = await _db.PolicyDocuments.FirstOrDefaultAsync(x => x.Id == Item.Id);
-        if (entity is null)
-        {
-            return NotFound();
-        }
-
-        entity.Title = Item.Title;
-        entity.ContentType = Item.ContentType;
-        entity.VersionLabel = Item.VersionLabel;
-        entity.EffectiveDate = Item.EffectiveDate;
-        entity.Content = Item.Content;
-        entity.IsActive = Item.IsActive;
-        entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
-        entity.LastUpdatedUtc = DateTime.UtcNow;
-
-        await _db.SaveChangesAsync();
+        await Task.CompletedTask;
         return RedirectToPage("/Admin/Policies");
     }
 

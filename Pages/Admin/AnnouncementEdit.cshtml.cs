@@ -34,6 +34,7 @@ public class AnnouncementEditModel : PageModel
             Summary = entity.Summary,
             Content = entity.Content,
             IsPinned = entity.IsPinned,
+            ExpirationDate = entity.ExpirationDate,
             IsActive = entity.IsActive
         };
 
@@ -57,6 +58,7 @@ public class AnnouncementEditModel : PageModel
         entity.Summary = Item.Summary;
         entity.Content = Item.Content;
         entity.IsPinned = Item.IsPinned;
+        entity.ExpirationDate = Item.ExpirationDate;
         entity.IsActive = Item.IsActive;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         await _db.SaveChangesAsync();
@@ -80,6 +82,7 @@ public class AnnouncementEditModel : PageModel
         public string Content { get; set; } = string.Empty;
 
         public bool IsPinned { get; set; }
+        public DateTime? ExpirationDate { get; set; }
         public bool IsActive { get; set; }
     }
 }

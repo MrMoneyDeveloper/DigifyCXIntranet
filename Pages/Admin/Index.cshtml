@@ -4,111 +4,26 @@
     ViewData["Title"] = "Admin Console";
 }
 
-<div class="mx-auto max-w-6xl space-y-8 mt-4">
-    
-    <!-- Admin Header (Gold Theme) -->
-    <div class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl flex items-center gap-5">
-        <div class="h-16 w-16 flex-shrink-0 rounded-2xl bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-inner hidden sm:flex">
-            <!-- Shield Icon for Admin -->
-            <svg class="h-8 w-8 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-        </div>
-        <div>
-            <h1 class="text-3xl font-extrabold text-white tracking-tight">Admin Console</h1>
-            <p class="mt-2 text-sm text-slate-400">Maintain controlled employee content, operational notices, and canteen reporting.</p>
-        </div>
-    </div>
+<section class="card-elevated p-4 mb-4">
+    <h1 class="h4 mb-2">Admin Console</h1>
+    <p class="text-muted mb-0">Control publishing, canteen automation inputs, and operational reporting.</p>
+</section>
 
-    <!-- KPI Metric Grid -->
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-        
-        <div class="bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-slate-800/50"></div>
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">Policies</p>
-            <p class="mt-2 text-3xl font-extrabold text-white relative z-10">@Model.PolicyCount</p>
-        </div>
-        
-        <div class="bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-slate-800/50"></div>
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">Announcements</p>
-            <p class="mt-2 text-3xl font-extrabold text-white relative z-10">@Model.AnnouncementCount</p>
-        </div>
-        
-        <div class="bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-slate-800/50"></div>
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">Job Postings</p>
-            <p class="mt-2 text-3xl font-extrabold text-white relative z-10">@Model.JobCount</p>
-        </div>
-        
-        <div class="bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-slate-800/50"></div>
-            <p class="text-xs font-bold uppercase tracking-wider text-slate-400 relative z-10">FAQs</p>
-            <p class="mt-2 text-3xl font-extrabold text-white relative z-10">@Model.FaqCount</p>
-        </div>
-        
-        <div class="bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg relative overflow-hidden">
-            <div class="absolute -right-4 -top-4 h-16 w-16 rounded-full bg-amber-500/5 border border-amber-500/10"></div>
-            <p class="text-xs font-bold uppercase tracking-wider text-amber-400/80 relative z-10">Canteen Orders</p>
-            <p class="mt-2 text-3xl font-extrabold text-amber-400 relative z-10">@Model.CanteenOrderCount</p>
-        </div>
+<div class="row g-3 mb-4">
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Policies</div><div class="h4 mb-0">@Model.PolicyCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Announcements</div><div class="h4 mb-0">@Model.AnnouncementCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Jobs</div><div class="h4 mb-0">@Model.JobCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">FAQs</div><div class="h4 mb-0">@Model.FaqCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Canteen orders</div><div class="h4 mb-0">@Model.CanteenOrderCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Menu items</div><div class="h4 mb-0">@Model.MenuItemCount</div></div></div>
+    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Batch runs</div><div class="h4 mb-0">@Model.BatchRunCount</div></div></div>
+</div>
 
-    </div>
-
-    <!-- Management Modules Grid -->
-    <h2 class="text-lg font-bold text-white mb-2 pt-4 border-t border-slate-700/80">Platform Management</h2>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        
-        <a asp-page="/Admin/Policies" class="group flex items-center justify-between bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600 group-hover:bg-amber-500/20 group-hover:border-amber-500/30 transition-colors">
-                    <svg class="h-5 w-5 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                </div>
-                <span class="font-semibold text-slate-200 group-hover:text-white transition-colors">Manage Policies</span>
-            </div>
-            <svg class="h-5 w-5 text-slate-600 group-hover:text-amber-400 transition-colors transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </a>
-
-        <a asp-page="/Admin/Announcements" class="group flex items-center justify-between bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600 group-hover:bg-amber-500/20 group-hover:border-amber-500/30 transition-colors">
-                    <svg class="h-5 w-5 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
-                </div>
-                <span class="font-semibold text-slate-200 group-hover:text-white transition-colors">Manage Announcements</span>
-            </div>
-            <svg class="h-5 w-5 text-slate-600 group-hover:text-amber-400 transition-colors transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </a>
-
-        <a asp-page="/Admin/Jobs" class="group flex items-center justify-between bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600 group-hover:bg-amber-500/20 group-hover:border-amber-500/30 transition-colors">
-                    <svg class="h-5 w-5 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                </div>
-                <span class="font-semibold text-slate-200 group-hover:text-white transition-colors">Manage Jobs</span>
-            </div>
-            <svg class="h-5 w-5 text-slate-600 group-hover:text-amber-400 transition-colors transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </a>
-
-        <a asp-page="/Admin/Faq" class="group flex items-center justify-between bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600 group-hover:bg-amber-500/20 group-hover:border-amber-500/30 transition-colors">
-                    <svg class="h-5 w-5 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <span class="font-semibold text-slate-200 group-hover:text-white transition-colors">Manage FAQs</span>
-            </div>
-            <svg class="h-5 w-5 text-slate-600 group-hover:text-amber-400 transition-colors transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </a>
-
-        <a asp-page="/Admin/Canteen" class="group flex items-center justify-between bg-[#1e2336] rounded-xl p-5 border border-slate-700 shadow-lg hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <div class="flex items-center gap-4">
-                <div class="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center border border-slate-600 group-hover:bg-amber-500/20 group-hover:border-amber-500/30 transition-colors">
-                    <svg class="h-5 w-5 text-slate-400 group-hover:text-amber-400 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
-                </div>
-                <span class="font-semibold text-slate-200 group-hover:text-white transition-colors">Canteen Reporting</span>
-            </div>
-            <svg class="h-5 w-5 text-slate-600 group-hover:text-amber-400 transition-colors transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
-        </a>
-
-    </div>
+<div class="d-grid gap-2 d-md-flex flex-wrap">
+    <a asp-page="/Admin/Menu" class="btn btn-primary">Manage Canteen Menu</a>
+    <a asp-page="/Admin/Canteen" class="btn btn-primary">Canteen Reporting</a>
+    <a asp-page="/Admin/Policies" class="btn btn-primary">Manage Policies</a>
+    <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
+    <a asp-page="/Admin/Jobs" class="btn btn-primary">Manage Jobs</a>
+    <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
 </div>

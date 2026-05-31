@@ -42,7 +42,9 @@ public class AnnouncementsModel : PageModel
             Content = NewItem.Content,
             IsPinned = NewItem.IsPinned,
             IsActive = true,
+            CreatedDateUtc = DateTime.UtcNow,
             PublishDateUtc = DateTime.UtcNow,
+            ExpirationDate = NewItem.ExpirationDate,
             LastUpdatedBy = UserNameHelper.GetShortName(User)
         });
 
@@ -85,5 +87,6 @@ public class AnnouncementsModel : PageModel
         public string Content { get; set; } = string.Empty;
 
         public bool IsPinned { get; set; }
+        public DateTime? ExpirationDate { get; set; }
     }
 }

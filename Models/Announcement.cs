@@ -17,7 +17,11 @@ public class Announcement
     [MaxLength(8000)]
     public string Content { get; set; } = string.Empty;
 
+    public DateTime CreatedDateUtc { get; set; } = DateTime.UtcNow;
+
     public DateTime PublishDateUtc { get; set; } = DateTime.UtcNow;
+
+    public DateTime? ExpirationDate { get; set; }
 
     public bool IsPinned { get; set; }
 

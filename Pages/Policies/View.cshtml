@@ -4,59 +4,47 @@
     ViewData["Title"] = "Policy View";
 }
 
-<!-- Main Page Container -->
-<div class="mx-auto max-w-5xl bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
-    
-    <!-- Back Navigation Link -->
-    <a asp-page="/Policies/Index" class="inline-flex items-center mb-6 text-sm font-medium text-cyan-400 hover:text-cyan-300 transition-colors group">
-        <svg class="w-4 h-4 mr-1 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-        Back to Directory
-    </a>
-
-    @if (Model.Item is null)
-    {
-        <!-- Error State -->
-        <div class="flex flex-col items-center justify-center rounded-xl bg-amber-500/10 py-12 border border-amber-500/20">
-            <svg class="w-10 h-10 text-amber-500 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-            <p class="text-amber-400 font-medium">Document not found or access restricted.</p>
+@if (Model.Item is null)
+{
+    <div class="alert alert-warning">Policy article not found.</div>
+}
+else
+{
+    <article class="card-elevated p-4">
+        <div class="d-flex justify-content-between flex-wrap mb-3">
+            <div>
+                <h1 class="h4 mb-1">@Model.Item.Title</h1>
+                <div class="text-muted">Version @Model.Item.VersionLabel</div>
+            </div>
+            <div class="small text-muted">@Model.Item.UpdatedAtUtc.ToString("dd MMM yyyy HH:mm")</div>
         </div>
-    }
-    else
-    {
-        <article>
-            <!-- Document Header -->
-            <div class="flex flex-wrap items-start justify-between gap-4 mb-6 border-b border-slate-700/80 pb-6">
-                <div>
-                    <h1 class="text-3xl font-extrabold text-white tracking-tight mb-2">@Model.Item.Title</h1>
-                    <div class="flex items-center gap-2 text-sm">
-                        <!-- Type Pill -->
-                        <span class="rounded-full bg-cyan-500/10 px-2.5 py-0.5 font-semibold text-cyan-400 border border-cyan-500/20">
-                            @Model.Item.ContentType
-                        </span>
-                        <span class="text-slate-600">•</span>
-                        <!-- Version Number (Monospace) -->
-                        <span class="font-mono text-slate-400">Version @Model.Item.VersionLabel</span>
-                    </div>
-                </div>
-                
-                <!-- Effective Date Pill -->
-                <div class="inline-block text-xs font-medium text-slate-400 bg-slate-800 px-3 py-1.5 rounded-full border border-slate-700/80 shadow-inner whitespace-nowrap">
-                    Effective @Model.Item.EffectiveDate.ToString("dd MMM yyyy")
-                </div>
-            </div>
 
-            <!-- Document Content Area -->
-            <div class="rounded-xl bg-slate-800/40 p-6 md:p-8 border border-slate-700/50 text-slate-300 leading-relaxed shadow-inner font-medium">
-                @Model.Item.Content
-            </div>
+        @if (!string.IsNullOrWhiteSpace(Model.AcknowledgeMessage))
+        {
+            <div class="alert alert-success">@Model.AcknowledgeMessage</div>
+        }
 
-            <!-- Security / Compliance Footer -->
-            <div class="mt-6 flex items-start gap-2 border-l-2 border-slate-600 pl-3">
-                <svg class="w-4 h-4 text-slate-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z"></path></svg>
-                <p class="text-xs font-medium text-slate-500">
-                    Read-only view. Download and export are intentionally not provided for controlled access.
-                </p>
-            </div>
-        </article>
-    }
-</div>
+        <div class="border rounded p-3 bg-light-subtle mb-3">
+            @Model.Item.Body
+        </div>
+        <a href="@Model.Item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-primary mb-3">Open in Zendesk</a>
+
+        @if (Model.AlreadyAcknowledged)
+        {
+            <div class="alert alert-info mb-0">You have already acknowledged this policy version.</div>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Acknowledge">
+                <input type="hidden" name="id" value="@Model.Item.Id" />
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="ack" required />
+                    <label class="form-check-label" for="ack">
+                        I explicitly acknowledge that I have read and agree to this policy version (@Model.Item.VersionLabel).
+                    </label>
+                </div>
+                <button type="submit" class="btn btn-primary">Acknowledge Policy</button>
+            </form>
+        }
+    </article>
+}

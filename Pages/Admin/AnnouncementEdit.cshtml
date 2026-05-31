@@ -39,6 +39,11 @@
                 <textarea asp-for="Item.Content" rows="10" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition"></textarea>
                 <span asp-validation-for="Item.Content" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
+
+            <div class="md:col-span-6">
+                <label asp-for="Item.ExpirationDate" class="block text-sm font-semibold text-slate-300 mb-1.5">Expiration Date (Optional)</label>
+                <input asp-for="Item.ExpirationDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+            </div>
             
             <!-- IsPinned Custom Checkbox (Half Width) -->
             <div class="md:col-span-6 flex items-center">

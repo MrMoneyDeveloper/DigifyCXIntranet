@@ -4,196 +4,142 @@
     ViewData["Title"] = "Canteen Reporting";
 }
 
-    <style>
-        /* Sleek custom scrollbars for the data tables */
-        .custom-scrollbar::-webkit-scrollbar {
-            height: 6px; /* Makes the horizontal bar super thin */
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: rgba(30, 41, 59, 0.5); /* Matches slate-800 */
-            border-radius: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: rgba(71, 85, 105, 0.8); /* Matches slate-600 */
-            border-radius: 8px;
-        }
-
-            .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-                background: rgba(217, 119, 6, 0.8); /* Matches amber-600 on hover! */
-            }
-    </style>
-
-<div class="mx-auto max-w-7xl space-y-6 mt-4">
-
-    <!-- Back Button & Header -->
-    <div class="flex items-center gap-4 mb-2">
-        <a asp-page="/Admin/Index" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all" title="Back to Dashboard">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-        </a>
-        <div>
-            <h1 class="text-2xl font-extrabold text-white tracking-tight">Canteen Reconciliation</h1>
-            <p class="text-sm text-slate-700 mt-1">Review monthly orders, track employee tallies, and update payment statuses.</p>
+<section class="card-elevated p-4 mb-4">
+    <h1 class="h5 mb-3">Canteen Reconciliation & Job History</h1>
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-sm-3">
+            <label asp-for="Year" class="form-label"></label>
+            <input asp-for="Year" type="number" class="form-control" />
         </div>
+        <div class="col-sm-3">
+            <label asp-for="Month" class="form-label"></label>
+            <input asp-for="Month" type="number" min="1" max="12" class="form-control" />
+        </div>
+        <div class="col-sm-3">
+            <button type="submit" class="btn btn-primary">Load</button>
+        </div>
+    </form>
+</section>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="card-elevated p-4 mb-4">
+            <h2 class="h6 mb-3">Employee Monthly Tallies</h2>
+            @if (Model.Tallies.Count == 0)
+            {
+                <p class="text-muted mb-0">No orders found for this period.</p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead><tr><th>Employee</th><th>Count</th><th>Total</th></tr></thead>
+                    <tbody>
+                    @foreach (var item in Model.Tallies)
+                    {
+                        <tr><td>@item.EmployeeUsername</td><td>@item.Count</td><td>R @item.TotalAmount.ToString("N2")</td></tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Payroll Runs</h2>
+            @if (Model.PayrollRuns.Count == 0)
+            {
+                <p class="text-muted mb-0">No payroll runs yet.</p>
+            }
+            else
+            {
+                <table class="table table-sm">
+                    <thead><tr><th>When</th><th>Employees</th><th>Status</th><th>Artifact</th></tr></thead>
+                    <tbody>
+                    @foreach (var run in Model.PayrollRuns)
+                    {
+                        <tr>
+                            <td>@run.TriggeredUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                            <td>@run.EmployeesCount</td>
+                            <td>@(run.SentSuccessfully ? "Sent" : "Failed")</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(run.ArtifactPath))
+                                {
+                                    <a asp-page-handler="DownloadPayrollArtifact" asp-route-id="@run.Id" class="btn btn-sm btn-outline-primary">Download</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">SMTP/no artifact</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
     </div>
 
-    <!-- Filter Control Panel -->
-    <section class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-xl">
-        <form method="get" class="flex flex-col sm:flex-row items-end gap-5">
-            <div class="w-full sm:w-48">
-                <label asp-for="Year" class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2"></label>
-                <input asp-for="Year" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
-            </div>
-            <div class="w-full sm:w-48">
-                <label asp-for="Month" class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2"></label>
-                <input asp-for="Month" type="number" min="1" max="12" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
-            </div>
-            <div class="w-full sm:w-auto">
-                <button type="submit" class="w-full sm:w-auto inline-flex items-center justify-center rounded-xl bg-amber-600 px-8 py-2.5 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus:outline-none transition-all duration-200">
-                    Load Data
-                </button>
-            </div>
-        </form>
-    </section>
-
-    <!-- Data Tables (Stacked Vertically) -->
-    <div class="flex flex-col gap-8">
-        
-        <!-- ================= TOP SECTION: TALLIES ================= -->
-        <div class="w-full">
-            <section class="bg-[#1e2336] rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-full">
-                <div class="p-5 border-b border-slate-700 bg-slate-800/30 flex items-center gap-3">
-                    <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                    <h2 class="text-base font-bold text-white">Employee Tallies</h2>
-                </div>
-
-                @if (Model.Tallies.Count == 0)
-                {
-                    <div class="p-8 text-center text-slate-400 text-sm">
-                        No orders found for this period.
-                    </div>
-                }
-                else
-                {
-                    <div class="overflow-x-auto flex-grow custom-scrollbar">
-                        <table class="w-full text-left text-sm text-slate-300">
-                            <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
-                                <tr>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Employee</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-center">Orders</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Total</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-700/50">
-                                @foreach (var item in Model.Tallies)
+    <div class="col-lg-8">
+        <section class="card-elevated p-4 mb-4">
+            <h2 class="h6 mb-3">Canteen Batch Runs</h2>
+            @if (Model.BatchRuns.Count == 0)
+            {
+                <p class="text-muted mb-0">No batch runs yet.</p>
+            }
+            else
+            {
+                <table class="table align-middle">
+                    <thead><tr><th>When</th><th>Meal</th><th>Orders</th><th>Status</th><th>Attachment</th><th>Artifact</th></tr></thead>
+                    <tbody>
+                    @foreach (var run in Model.BatchRuns)
+                    {
+                        <tr>
+                            <td>@run.TriggeredUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                            <td>@run.MealSlot</td>
+                            <td>@run.OrdersCount</td>
+                            <td>@(run.SentSuccessfully ? "Sent" : "Failed")</td>
+                            <td>@run.AttachmentFileName</td>
+                            <td>
+                                @if (!string.IsNullOrWhiteSpace(run.ArtifactPath))
                                 {
-                                    <tr class="hover:bg-slate-800/40 transition-colors">
-                                        <td class="px-6 py-4 font-medium text-white">@item.EmployeeUsername</td>
-                                        <td class="px-6 py-4 text-center">
-                                            <span class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-xs font-bold text-slate-300">
-                                                @item.Count
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 text-right font-mono text-emerald-400 font-medium">
-                                            R @item.TotalAmount.ToString("N2")
-                                        </td>
-                                    </tr>
+                                    <a asp-page-handler="DownloadBatchArtifact" asp-route-id="@run.Id" class="btn btn-sm btn-outline-primary">Download</a>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </section>
-        </div>
-
-        <!-- ================= BOTTOM SECTION: ORDER DETAIL ================= -->
-        <div class="w-full">
-            <section class="bg-[#1e2336] rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-full">
-                <div class="p-5 border-b border-slate-700 bg-slate-800/30 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-                        <h2 class="text-base font-bold text-white">Order Detail</h2>
-                    </div>
-                    <span class="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">@Model.Orders.Count Records</span>
-                </div>
-
-                @if (Model.Orders.Count == 0)
-                {
-                    <div class="p-8 text-center text-slate-400 text-sm">
-                        No order detail for this period.
-                    </div>
-                }
-                else
-                {
-                    <div class="overflow-x-auto flex-grow custom-scrollbar">
-                        <table class="w-full text-left text-sm text-slate-300">
-                            <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
-                                <tr>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Employee / Date</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Item</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Total</th>
-                                    <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-700/50">
-                                @foreach (var order in Model.Orders)
+                                else
                                 {
-                                    <tr class="hover:bg-slate-800/40 transition-colors">
-                                        <td class="px-6 py-4">
-                                            <div class="font-medium text-white">@order.EmployeeUsername</div>
-                                            <div class="text-[10px] text-slate-400 uppercase tracking-wider mt-0.5">@order.OrderDate.ToString("dd MMM yyyy")</div>
-                                        </td>
-                                        <td class="px-6 py-4 text-slate-300">
-                                            @order.ItemSummary
-                                        </td>
-                                        <td class="px-6 py-4">
-                                            <!-- Dynamic Status Badges -->
-                                            @if (order.Status == "Submitted")
-                                            {
-                                                <span class="inline-flex rounded-full bg-amber-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-400 border border-amber-500/20">@order.Status</span>
-                                            }
-                                            else if (order.Status == "Approved")
-                                            {
-                                                <span class="inline-flex rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">@order.Status</span>
-                                            }
-                                            else if (order.Status == "Paid")
-                                            {
-                                                <span class="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 border border-emerald-500/20">@order.Status</span>
-                                            }
-                                            else
-                                            {
-                                                <span class="inline-flex rounded-full bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border border-slate-500/20">@order.Status</span>
-                                            }
-                                        </td>
-                                        <td class="px-6 py-4 text-right font-mono text-white font-medium">
-                                            R @order.TotalAmount.ToString("N2")
-                                        </td>
-                                        <td class="px-6 py-4 text-right">
-                                            <form method="post" asp-page-handler="UpdateStatus" class="flex items-center justify-end gap-2 m-0">
-                                                <input type="hidden" name="id" value="@order.Id" />
-                                                <input type="hidden" name="Year" value="@Model.Year" />
-                                                <input type="hidden" name="Month" value="@Model.Month" />
-                                            
-                                                <select name="status" class="rounded-lg bg-slate-900 border border-slate-600 text-xs text-white px-3 py-2 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition cursor-pointer">
-                                                    <option value="Submitted" selected="@(order.Status == "Submitted")">Submitted</option>
-                                                    <option value="Approved" selected="@(order.Status == "Approved")">Approved</option>
-                                                    <option value="Paid" selected="@(order.Status == "Paid")">Paid</option>
-                                                </select>
-                                            
-                                                <button type="submit" title="Save Status" class="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20 hover:border-amber-500/50">
-                                                    Save
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
+                                    <span class="text-muted">SMTP/no artifact</span>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </section>
-        </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Order Detail</h2>
+            @if (Model.Orders.Count == 0)
+            {
+                <p class="text-muted mb-0">No orders in this period.</p>
+            }
+            else
+            {
+                <table class="table align-middle">
+                    <thead><tr><th>Employee</th><th>Time</th><th>Item</th><th>Meal</th><th>Status</th><th>Total</th></tr></thead>
+                    <tbody>
+                    @foreach (var order in Model.Orders)
+                    {
+                        <tr>
+                            <td>@order.EmployeeUsername</td>
+                            <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                            <td>@order.ItemSummary</td>
+                            <td>@order.MealSlot</td>
+                            <td>@order.Status</td>
+                            <td>R @order.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
     </div>
 </div>

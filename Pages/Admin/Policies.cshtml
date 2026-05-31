@@ -1,148 +1,57 @@
 @page
 @model DigifyCXIntranet.Pages.Admin.PoliciesModel
 @{
-    ViewData["Title"] = "Manage Policies";
+    ViewData["Title"] = "Policy Sync";
 }
 
-<!-- Back Button & Header -->
-<div class="mx-auto max-w-7xl mt-4 mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-4">
-        <a asp-page="/Admin/Index" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-        </a>
-        <h1 class="text-2xl font-extrabold text-white tracking-tight">Manage Policies</h1>
-    </div>
+<div class="card-elevated p-4 mb-4">
+    <h1 class="h4 mb-2">Policy Sync (Zendesk Master)</h1>
+    <p class="text-muted mb-0">Policies are read from the Zendesk Help Center cache. Local policy editing is disabled.</p>
 </div>
 
-<div class="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
-    
-    <!-- ================= LEFT COLUMN: FORM ================= -->
-    <div class="lg:col-span-5">
-        <section class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl sticky top-6">
-            <div class="flex items-center gap-3 mb-6 border-b border-slate-700/80 pb-4">
-                <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
-                <h2 class="text-lg font-bold text-white">Create Policy / Procedure</h2>
-            </div>
-            
-            <form method="post" asp-page-handler="Create" class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                
-                <!-- Title (Full Width) -->
-                <div class="sm:col-span-2">
-                    <label asp-for="NewPolicy.Title" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewPolicy.Title" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="e.g., Remote Work Guidelines" />
-                    <span asp-validation-for="NewPolicy.Title" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                </div>
-                
-                <!-- Content Type (Half Width) -->
-                <div>
-                    <label asp-for="NewPolicy.ContentType" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <select asp-for="NewPolicy.ContentType" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition appearance-none" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.PolicyContentType>()"></select>
-                </div>
-                
-                <!-- Version Label (Half Width) -->
-                <div>
-                    <label asp-for="NewPolicy.VersionLabel" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewPolicy.VersionLabel" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="v1.0" />
-                    <span asp-validation-for="NewPolicy.VersionLabel" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                </div>
-                
-                <!-- Effective Date (Full Width) -->
-                <div class="sm:col-span-2">
-                    <label asp-for="NewPolicy.EffectiveDate" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewPolicy.EffectiveDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
-                </div>
-                
-                <!-- Content (Full Width) -->
-                <div class="sm:col-span-2">
-                    <label asp-for="NewPolicy.Content" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <textarea asp-for="NewPolicy.Content" rows="5" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="Enter policy text here..."></textarea>
-                    <span asp-validation-for="NewPolicy.Content" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                </div>
-                
-                <!-- Submit Button -->
-                <div class="sm:col-span-2 pt-2">
-                    <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 transition-all duration-200">
-                        Save Policy
-                    </button>
-                </div>
-            </form>
-        </section>
-    </div>
-
-    <!-- ================= RIGHT COLUMN: DATA TABLE ================= -->
-    <div class="lg:col-span-7">
-        <section class="bg-[#1e2336] rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-full">
-            
-            <div class="p-6 lg:px-8 border-b border-slate-700 bg-slate-800/30 flex items-center justify-between">
-                <h2 class="text-lg font-bold text-white">Existing Documents</h2>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">@Model.Items.Count Total</span>
-            </div>
-
-            <div class="overflow-x-auto flex-grow">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
-                        <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Title</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Type / Status</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Updated</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-700/50">
-                        @foreach (var item in Model.Items)
-                        {
-                            <tr class="hover:bg-slate-800/40 transition-colors">
-                                <td class="px-6 py-4 font-medium text-white">
-                                    @item.Title
-                                </td>
-                                <td class="px-6 py-4">
-                                    <div class="flex flex-col gap-2 items-start">
-                                        <span class="inline-flex rounded bg-cyan-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-cyan-400 border border-cyan-500/20">
-                                            @item.ContentType
-                                        </span>
-                                        @if (item.IsActive)
-                                        {
-                                            <span class="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Active
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="inline-flex rounded-full bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                                                <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Inactive
-                                            </span>
-                                        }
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 text-xs text-slate-400 whitespace-nowrap">
-                                    @item.LastUpdatedUtc.ToString("dd MMM yyyy")<br />
-                                    <span class="text-slate-500">@item.LastUpdatedUtc.ToString("HH:mm")</span>
-                                </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a asp-page="/Admin/PolicyEdit" asp-route-id="@item.Id" title="Edit Policy"
-                                               class="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20 hover:border-amber-500/50">
-                                            Edit
-                                        </a>
-                                        <form method="post" asp-page-handler="ToggleActive" class="m-0 p-0">
-                                            <input type="hidden" name="id" value="@item.Id" />
-                                            <button type="submit" title="@(item.IsActive ? "Deactivate" : "Activate")"
-                                                    class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white">
-                                                @(item.IsActive ? "Deactivate" : "Activate")
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
-            </div>
-            
-        </section>
-    </div>
-</div>
-
-@section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+@if (!string.IsNullOrWhiteSpace(Model.SyncMessage))
+{
+    <div class="alert alert-success">@Model.SyncMessage</div>
 }
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <form method="post" asp-page-handler="SyncNow" class="m-0">
+        <button type="submit" class="btn btn-primary">Sync From Zendesk Now</button>
+    </form>
+    <a asp-page="/Policies/ComplianceReport" class="btn btn-outline-primary">Open Compliance Report</a>
+</div>
+
+<div class="card-elevated p-3">
+    @if (Model.Items.Count == 0)
+    {
+        <p class="text-muted mb-0">No Zendesk articles are cached yet.</p>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Version</th>
+                        <th>Updated UTC</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Items)
+                {
+                    <tr>
+                        <td>@item.Title</td>
+                        <td>@item.VersionLabel</td>
+                        <td>@item.UpdatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
+                        <td>@(item.IsPublished ? "Published" : "Draft")</td>
+                        <td><a href="@item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-secondary">Open Zendesk</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

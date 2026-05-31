@@ -22,7 +22,7 @@ public class IndexModel : PageModel
     public decimal CurrentMonthCanteenTotal { get; private set; }
     public List<Announcement> Announcements { get; private set; } = new();
     public List<JobPosting> JobPostings { get; private set; } = new();
-    public List<PolicyDocument> Policies { get; private set; } = new();
+    public List<ZendeskPolicyArticle> Policies { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -30,9 +30,9 @@ public class IndexModel : PageModel
         IsAdmin = _adminAccessService.IsAdmin(User);
 
         Announcements = await _db.Announcements
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && (x.ExpirationDate == null || x.ExpirationDate >= DateTime.UtcNow.Date))
             .OrderByDescending(x => x.IsPinned)
-            .ThenByDescending(x => x.PublishDateUtc)
+            .ThenByDescending(x => x.CreatedDateUtc)
             .Take(5)
             .ToListAsync();
 
@@ -42,16 +42,16 @@ public class IndexModel : PageModel
             .Take(5)
             .ToListAsync();
 
-        Policies = await _db.PolicyDocuments
-            .Where(x => x.IsActive)
-            .OrderByDescending(x => x.EffectiveDate)
+        Policies = await _db.ZendeskPolicyArticles
+            .Where(x => x.IsPublished)
+            .OrderByDescending(x => x.UpdatedAtUtc)
             .Take(5)
             .ToListAsync();
 
         var username = UserNameHelper.GetShortName(User);
-        var today = DateOnly.FromDateTime(DateTime.Today);
+        var today = DateTime.UtcNow;
         CurrentMonthCanteenTotal = await _db.CanteenOrders
-            .Where(x => x.EmployeeUsername == username && x.OrderDate.Year == today.Year && x.OrderDate.Month == today.Month)
+            .Where(x => x.EmployeeUsername == username && x.OrderTimeUtc.Year == today.Year && x.OrderTimeUtc.Month == today.Month)
             .SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
     }
 }

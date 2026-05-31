@@ -5,41 +5,16 @@ namespace DigifyCXIntranet.Data;
 
 public static class SeedData
 {
-    public static async Task InitializeAsync(ApplicationDbContext context, bool resetForTesting = false)
+    public static async Task InitializeAsync(ApplicationDbContext context)
     {
-        if (resetForTesting)
+        if (!await context.MenuItems.AnyAsync())
         {
-            context.CanteenOrders.RemoveRange(context.CanteenOrders);
-            context.FaqItems.RemoveRange(context.FaqItems);
-            context.JobPostings.RemoveRange(context.JobPostings);
-            context.Announcements.RemoveRange(context.Announcements);
-            context.PolicyDocuments.RemoveRange(context.PolicyDocuments);
+            context.MenuItems.AddRange(
+                new MenuItem { Name = "Breakfast Wrap", Price = 42.00m, Emoji = "🌯", MealSlot = MealSlot.Breakfast, DisplayOrder = 1 },
+                new MenuItem { Name = "Egg & Toast Combo", Price = 36.00m, Emoji = "🍳", MealSlot = MealSlot.Breakfast, DisplayOrder = 2 },
+                new MenuItem { Name = "Burger Meal", Price = 58.50m, Emoji = "🍔", MealSlot = MealSlot.Lunch, DisplayOrder = 1 },
+                new MenuItem { Name = "Chicken Salad Bowl", Price = 48.00m, Emoji = "🥗", MealSlot = MealSlot.Lunch, DisplayOrder = 2 });
             await context.SaveChangesAsync();
-        }
-
-        if (!await context.PolicyDocuments.AnyAsync())
-        {
-            context.PolicyDocuments.AddRange(
-                new PolicyDocument
-                {
-                    Title = "Code of Conduct",
-                    ContentType = PolicyContentType.Policy,
-                    VersionLabel = "v1.3",
-                    EffectiveDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-20)),
-                    Content = "All employees must maintain respectful conduct, data confidentiality, and compliance with approved procedures.",
-                    LastUpdatedBy = "System",
-                    LastUpdatedUtc = DateTime.UtcNow.AddDays(-20)
-                },
-                new PolicyDocument
-                {
-                    Title = "Leave Request Procedure",
-                    ContentType = PolicyContentType.Procedure,
-                    VersionLabel = "v1.1",
-                    EffectiveDate = DateOnly.FromDateTime(DateTime.Today.AddDays(-8)),
-                    Content = "Submit leave requests through your line manager at least 48 hours in advance, except emergencies.",
-                    LastUpdatedBy = "System",
-                    LastUpdatedUtc = DateTime.UtcNow.AddDays(-8)
-                });
         }
 
         if (!await context.Announcements.AnyAsync())
@@ -52,6 +27,7 @@ public static class SeedData
                     Content = "Use the navigation menu to access all employee services and operational updates.",
                     IsPinned = true,
                     IsActive = true,
+                    CreatedDateUtc = DateTime.UtcNow.AddHours(-2),
                     PublishDateUtc = DateTime.UtcNow.AddHours(-2),
                     LastUpdatedBy = "System"
                 },
@@ -62,7 +38,9 @@ public static class SeedData
                     Content = "Townhall will be held in the main boardroom and streamed to all departments.",
                     IsPinned = false,
                     IsActive = true,
+                    CreatedDateUtc = DateTime.UtcNow.AddDays(-1),
                     PublishDateUtc = DateTime.UtcNow.AddDays(-1),
+                    ExpirationDate = DateTime.UtcNow.Date.AddDays(21),
                     LastUpdatedBy = "System"
                 });
         }
@@ -75,9 +53,9 @@ public static class SeedData
                     Title = "Customer Experience Coach",
                     Department = "Operations",
                     Description = "Support team leads with coaching and quality reviews.",
-                    ApplicationRoute = "hr@digifycx.example",
+                    ApplicationRoute = "Apply on this portal",
                     ClosingDate = DateOnly.FromDateTime(DateTime.Today.AddDays(14)),
-                    IsExternalReferral = false,
+                    IsExternalReferral = true,
                     UseVisualAd = true,
                     AdHeadline = "Join as Customer Experience Coach",
                     AdSubHeadline = "Drive coaching quality, uplift advisor performance, and mentor future team leaders.",
@@ -90,7 +68,7 @@ public static class SeedData
                     Title = "Data Analyst (Referral)",
                     Department = "Business Intelligence",
                     Description = "Analyze performance metrics and generate reporting insights.",
-                    ApplicationRoute = "zendesk://hr-referrals",
+                    ApplicationRoute = "Apply on this portal",
                     ClosingDate = DateOnly.FromDateTime(DateTime.Today.AddDays(21)),
                     IsExternalReferral = true,
                     UseVisualAd = true,
@@ -109,59 +87,67 @@ public static class SeedData
                 {
                     Category = "Canteen",
                     Question = "How do I submit a canteen request?",
-                    Answer = "Open the Canteen page and submit the request form with date and total amount.",
+                    Answer = "Open the Canteen page and select a menu card.",
                     DisplayOrder = 1,
                     IsActive = true
                 },
                 new FaqItem
                 {
                     Category = "Policies",
-                    Question = "Can I download policies?",
-                    Answer = "Policies are presented as read-only content in the platform for controlled distribution.",
+                    Question = "How do policy acknowledgements work?",
+                    Answer = "A new acknowledgement is required whenever a policy version changes.",
                     DisplayOrder = 2,
-                    IsActive = true
-                },
-                new FaqItem
-                {
-                    Category = "Jobs",
-                    Question = "How are referrals handled?",
-                    Answer = "External referrals route outside the intranet to approved HR workflows.",
-                    DisplayOrder = 3,
                     IsActive = true
                 });
         }
 
+        if (!await context.ZendeskPolicyArticles.AnyAsync())
+        {
+            context.ZendeskPolicyArticles.Add(new ZendeskPolicyArticle
+            {
+                ZendeskArticleId = 100001,
+                Title = "Sample Policy (Awaiting Zendesk Sync)",
+                HtmlUrl = "https://example.zendesk.com/hc/en-us/articles/100001",
+                VersionLabel = "v1.0",
+                Body = "This is a fallback sample policy record. Configure ZendeskSync.BaseUrl for live sync.",
+                IsPublished = true,
+                UpdatedAtUtc = DateTime.UtcNow.AddDays(-1),
+                SyncedAtUtc = DateTime.UtcNow
+            });
+        }
+
         if (!await context.CanteenOrders.AnyAsync())
         {
-            var monthStart = new DateOnly(DateTime.Today.Year, DateTime.Today.Month, 1);
-            context.CanteenOrders.AddRange(
-                new CanteenOrder
+            var menu = await context.MenuItems.OrderBy(x => x.Id).ToListAsync();
+            var first = menu.FirstOrDefault();
+            var second = menu.Skip(1).FirstOrDefault();
+            if (first is not null)
+            {
+                context.CanteenOrders.Add(new CanteenOrder
                 {
                     EmployeeUsername = "moham",
-                    ItemSummary = "Chicken wrap + juice",
-                    OrderDate = monthStart.AddDays(3),
-                    TotalAmount = 58.50m,
-                    Status = "Paid",
-                    EmploymentMonthsAtOrder = 9
-                },
-                new CanteenOrder
-                {
-                    EmployeeUsername = "moham",
-                    ItemSummary = "Breakfast combo",
-                    OrderDate = monthStart.AddDays(8),
-                    TotalAmount = 42.00m,
-                    Status = "Approved",
-                    EmploymentMonthsAtOrder = 9
-                },
-                new CanteenOrder
-                {
-                    EmployeeUsername = "test.user",
-                    ItemSummary = "Salad bowl",
-                    OrderDate = monthStart.AddDays(6),
-                    TotalAmount = 36.00m,
-                    Status = "Submitted",
-                    EmploymentMonthsAtOrder = 5
+                    MenuItemId = first.Id,
+                    ItemSummary = first.Name,
+                    MealSlot = first.MealSlot,
+                    TotalAmount = first.Price,
+                    OrderTimeUtc = DateTime.UtcNow.AddHours(-3),
+                    Status = "Submitted"
                 });
+            }
+
+            if (second is not null)
+            {
+                context.CanteenOrders.Add(new CanteenOrder
+                {
+                    EmployeeUsername = "admin",
+                    MenuItemId = second.Id,
+                    ItemSummary = second.Name,
+                    MealSlot = second.MealSlot,
+                    TotalAmount = second.Price,
+                    OrderTimeUtc = DateTime.UtcNow.AddHours(-1),
+                    Status = "Submitted"
+                });
+            }
         }
 
         await context.SaveChangesAsync();

@@ -18,10 +18,11 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        var today = DateTime.UtcNow.Date;
         Items = await _db.Announcements
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && (x.ExpirationDate == null || x.ExpirationDate >= today))
             .OrderByDescending(x => x.IsPinned)
-            .ThenByDescending(x => x.PublishDateUtc)
+            .ThenByDescending(x => x.CreatedDateUtc)
             .ToListAsync();
     }
 }

@@ -1,35 +1,50 @@
 @inject DigifyCXIntranet.Services.IAdminAccessService AdminAccess
 
 <ul class="flex items-center gap-3">
-    
-    @if (AdminAccess.IsAdmin(User))
+
+    @if (User?.Identity?.IsAuthenticated != true)
     {
-        <!-- The "Admin" Profile Link (Gold/Amber Theme) -->
+        <li>
+            <a asp-page="/Account/Login"
+               class="inline-flex items-center justify-center rounded-full bg-cyan-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-cyan-500">
+                Sign In
+            </a>
+        </li>
+    }
+    else if (AdminAccess.IsAdmin(User))
+    {
         <li>
             <a asp-page="/Profile/Index" title="Manage Admin Profile"
                    class="inline-flex items-center justify-center rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400 transition hover:border-amber-400 hover:bg-amber-500/20">
                 Admin
             </a>
         </li>
+        
+        <li>
+            <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
+                <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
+                    Sign Out
+                </button>
+            </form>
+        </li>
     }
     else
     {
-        <!-- The Standard "Employee" Profile Link (Slate/Cyan Theme) -->
         <li>
             <a asp-page="/Profile/Index" title="Manage Profile"
-                   class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-800 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-400 hover:text-cyan-400">
+               class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-800 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-400 hover:text-cyan-400">
                 Employee
             </a>
         </li>
+        @if (string.Equals(User.Identity?.AuthenticationType, "Cookies", StringComparison.OrdinalIgnoreCase))
+        {
+            <li>
+                <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
+                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
+                        Sign Out
+                    </button>
+                </form>
+            </li>
+        }
     }
-    
-    <!-- The Secure Sign Out Form -->
-    <li>
-        <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
-            <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
-                Sign Out
-            </button>
-        </form>
-    </li>
-
 </ul>

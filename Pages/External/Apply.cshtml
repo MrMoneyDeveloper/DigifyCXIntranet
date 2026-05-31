@@ -1,0 +1,53 @@
+@page
+@model DigifyCXIntranet.Pages.External.ApplyModel
+@{
+    ViewData["Title"] = "External Application";
+}
+
+<section class="mx-auto max-w-2xl card-elevated p-4">
+    @if (!Model.TokenValid || Model.Job is null)
+    {
+        <h1 class="h4">Referral Link Invalid or Expired</h1>
+        <p class="text-muted mb-0">Please contact the employee who referred you for a new invitation link.</p>
+    }
+    else
+    {
+        <h1 class="h4 mb-1">Apply for @Model.Job.Title</h1>
+        <p class="text-muted mb-4">@Model.Job.Department</p>
+
+        @if (TempData["ExternalApplyDone"] is string doneMsg)
+        {
+            <div class="alert alert-success">@doneMsg</div>
+        }
+
+        <form method="post" enctype="multipart/form-data" class="row g-3">
+            <input asp-for="Input.Token" type="hidden" />
+            <div class="col-md-6">
+                <label asp-for="Input.CandidateName" class="form-label"></label>
+                <input asp-for="Input.CandidateName" class="form-control" />
+                <span asp-validation-for="Input.CandidateName" class="text-danger"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Input.CandidateEmail" class="form-label"></label>
+                <input asp-for="Input.CandidateEmail" class="form-control" />
+                <span asp-validation-for="Input.CandidateEmail" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Input.Notes" class="form-label"></label>
+                <textarea asp-for="Input.Notes" rows="4" class="form-control"></textarea>
+            </div>
+            <div class="col-12">
+                <label asp-for="ResumeFile" class="form-label">Resume (PDF/DOCX, max 5MB)</label>
+                <input asp-for="ResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
+                <span asp-validation-for="ResumeFile" class="text-danger"></span>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Submit Application</button>
+            </div>
+        </form>
+    }
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

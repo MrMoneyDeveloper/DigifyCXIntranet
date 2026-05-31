@@ -4,65 +4,103 @@
     ViewData["Title"] = "Announcements";
 }
 
-<!-- Main Page Container -->
-<div class="mx-auto max-w-5xl bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
-    
-    <!-- Header -->
-    <div class="mb-8 border-b border-slate-700/80 pb-5">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Business Notices & Announcements</h1>
-        <p class="mt-2 text-sm text-slate-400">Stay up to date with the latest company news, policies, and operational updates.</p>
-    </div>
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="mx-auto max-w-5xl bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
+            <div class="mb-8 border-b border-slate-700/80 pb-5">
+                <h1 class="text-3xl font-extrabold text-white tracking-tight">Business Notices & Announcements</h1>
+                <p class="mt-2 text-sm text-slate-400">Active announcements are shown below. Expired notices are hidden automatically.</p>
+            </div>
 
-    <!-- Empty State Handling -->
-    @if (Model.Items.Count == 0)
-    {
-        <div class="flex flex-col items-center justify-center rounded-xl bg-slate-800/30 py-12 border border-slate-700/50 border-dashed">
-            <p class="text-slate-400 font-medium">No announcements available at this time.</p>
-        </div>
-    }
-    else
-    {
-        <!-- Announcements List -->
-        <div class="space-y-5">
-            @foreach (var item in Model.Items)
+            @if (Model.Items.Count == 0)
             {
-                <article class="rounded-xl bg-slate-800/50 p-6 border border-slate-700/50 transition-all duration-200 hover:bg-slate-800 hover:border-slate-600 hover:shadow-md">
-                    
-                    <!-- Item Header: Title, Badge, and Date -->
-                    <div class="flex flex-wrap items-start justify-between gap-4 mb-3">
-                        <h2 class="text-lg font-bold text-white flex flex-wrap items-center gap-3">
-                            @item.Title
-                            
-                            <!-- Pinned Badge -->
-                            @if (item.IsPinned)
-                            {
-                                <span class="inline-flex items-center justify-center rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">
-                                    Pinned
-                                </span>
-                            }
-                        </h2>
-                        
-                        <!-- Date Pill -->
-                        <span class="inline-block text-xs font-medium text-slate-400 bg-[#1e2336] px-3 py-1.5 rounded-full border border-slate-700/80 shadow-inner whitespace-nowrap">
-                            @item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
-                        </span>
-                    </div>
-
-                    <!-- Item Content -->
-                    <div class="space-y-2">
-                        <!-- Summary (Slightly highlighted text) -->
-                        <p class="text-sm font-medium text-cyan-100/80">
-                            @item.Summary
-                        </p>
-                        
-                        <!-- Full Content -->
-                        <div class="text-sm text-slate-400 leading-relaxed">
-                            @item.Content
-                        </div>
-                    </div>
-                    
-                </article>
+                <div class="rounded-xl bg-slate-800/30 py-12 border border-slate-700/50 border-dashed text-center">
+                    <p class="text-slate-400 font-medium">No announcements available at this time.</p>
+                </div>
+            }
+            else
+            {
+                <div class="space-y-5">
+                    @foreach (var item in Model.Items)
+                    {
+                        <article class="rounded-xl bg-slate-800/50 p-6 border border-slate-700/50">
+                            <div class="flex flex-wrap items-start justify-between gap-4 mb-3">
+                                <h2 class="text-lg font-bold text-white">
+                                    @item.Title
+                                    @if (item.IsPinned)
+                                    {
+                                        <span class="inline-flex rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">Pinned</span>
+                                    }
+                                </h2>
+                                <span class="text-xs text-slate-400">@item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
+                            </div>
+                            <p class="text-sm font-medium text-cyan-100/80">@item.Summary</p>
+                            <div class="text-sm text-slate-400 leading-relaxed mt-2">@item.Content</div>
+                        </article>
+                    }
+                </div>
             }
         </div>
-    }
+    </div>
+
+    <div class="col-lg-4">
+        <aside class="bg-[#1e2336] rounded-2xl p-5 border border-slate-700 shadow-xl h-100">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2 class="h6 text-white mb-0">Live Tech Feed</h2>
+                <small id="technews-updated" class="text-slate-400"></small>
+            </div>
+            <div id="technews-loading" class="text-slate-400 small">Loading...</div>
+            <div id="technews-error" class="text-warning small d-none">Unable to load feed right now.</div>
+            <div id="technews-list" class="d-flex flex-column gap-3"></div>
+        </aside>
+    </div>
 </div>
+
+@section Scripts {
+<script>
+    (async function () {
+        const loading = document.getElementById("technews-loading");
+        const error = document.getElementById("technews-error");
+        const list = document.getElementById("technews-list");
+        const updated = document.getElementById("technews-updated");
+
+        try {
+            const response = await fetch('/api/technews', { method: 'GET' });
+            if (!response.ok) throw new Error('Feed failed');
+            const data = await response.json();
+            loading.classList.add('d-none');
+
+            if (data.lastUpdatedUtc) {
+                const dt = new Date(data.lastUpdatedUtc);
+                updated.textContent = `Updated ${dt.toLocaleString()}`;
+            }
+
+            (data.items || []).forEach(item => {
+                const link = item.url && item.url.length > 0
+                    ? item.url
+                    : `https://news.ycombinator.com/item?id=${item.id}`;
+                const card = document.createElement('a');
+                card.href = link;
+                card.target = "_blank";
+                card.rel = "noreferrer noopener";
+                card.className = "text-decoration-none border border-slate-700 rounded p-3";
+
+                const title = document.createElement('div');
+                title.className = "text-white fw-semibold small";
+                title.textContent = item.title || "Untitled";
+
+                const by = document.createElement('div');
+                by.className = "text-slate-400 small mt-1";
+                by.textContent = `by ${item.by || "unknown"}`;
+
+                card.appendChild(title);
+                card.appendChild(by);
+                list.appendChild(card);
+            });
+        } catch {
+            loading.classList.add('d-none');
+            error.classList.remove('d-none');
+        }
+    })();
+</script>
+}
