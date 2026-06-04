@@ -29,6 +29,13 @@ public class ApplicationDbContext : IdentityDbContext
     {
         base.OnModelCreating(builder);
 
+        // Fix the multiple cascade paths error for External Applications using 'builder'
+        builder.Entity<ExternalApplication>()
+            .HasOne(e => e.ReferralInvite)
+            .WithMany()
+            .HasForeignKey(e => e.ReferralInviteId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder.Entity<CanteenOrder>()
             .Property(x => x.TotalAmount)
             .HasPrecision(18, 2);

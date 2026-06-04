@@ -24,8 +24,9 @@ else
             <div class="alert alert-success">@Model.AcknowledgeMessage</div>
         }
 
-        <div class="border rounded p-3 bg-light-subtle mb-3">
-            @Model.Item.Body
+        <div class="border rounded p-3 bg-light-subtle mb-3 zendesk-policy-content">
+            @* Fix: Using Html.Raw to interpret Zendesk HTML formatting tags properly *@
+            @Html.Raw(Model.Item.Body)
         </div>
         <a href="@Model.Item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-primary mb-3">Open in Zendesk</a>
 
@@ -47,4 +48,21 @@ else
             </form>
         }
     </article>
+
+    <style>
+        /* target paragraphs and list items inside the policy container */
+        .zendesk-policy-content p,
+        .zendesk-policy-content li {
+            margin-bottom: 1.25rem; /* Adds smooth spacing below elements */
+            line-height: 1.6; /* Gives lines inside paragraphs extra breathing room */
+        }
+
+        /* add space specifically around bold section headers/numbered points */
+        .zendesk-policy-content h1,
+        .zendesk-policy-content h2,
+        .zendesk-policy-content h3 {
+            margin-top: 1.75rem;
+            margin-bottom: 0.75rem;
+        }
+    </style>
 }

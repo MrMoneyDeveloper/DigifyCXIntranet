@@ -837,7 +837,7 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.HasOne("DigifyCXIntranet.Models.ReferralInvite", "ReferralInvite")
                         .WithMany()
                         .HasForeignKey("ReferralInviteId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("JobPosting");
