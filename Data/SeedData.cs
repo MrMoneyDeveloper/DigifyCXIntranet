@@ -101,7 +101,7 @@ public static class SeedData
                 });
         }
 
-        if (!await context.ZendeskPolicyArticles.AnyAsync())
+        /*if (!await context.ZendeskPolicyArticles.AnyAsync())
         {
             context.ZendeskPolicyArticles.Add(new ZendeskPolicyArticle
             {
@@ -114,7 +114,7 @@ public static class SeedData
                 UpdatedAtUtc = DateTime.UtcNow.AddDays(-1),
                 SyncedAtUtc = DateTime.UtcNow
             });
-        }
+        }*/
 
         if (!await context.CanteenOrders.AnyAsync())
         {

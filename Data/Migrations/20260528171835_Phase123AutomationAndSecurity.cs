@@ -282,7 +282,7 @@ WHERE NOT EXISTS (
                         column: x => x.ReferralInviteId,
                         principalTable: "ReferralInvites",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
