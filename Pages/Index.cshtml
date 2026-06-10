@@ -30,70 +30,49 @@
     </div>
 </section>
 
-<div class="portal-grid-3">
-    <section class="soft-card animate-card">
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-            <h2 class="section-title mb-0">What's New</h2>
-            <a asp-page="/Announcements/Index" class="btn btn-sm btn-outline-primary">View All</a>
-        </div>
-
-        @if (Model.Announcements.Count == 0)
-        {
-            <p class="text-muted mb-0">No announcements available.</p>
-        }
-        else
-        {
-            foreach (var item in Model.Announcements)
+<div class="row g-4">
+    <div class="col-lg-6">
+        <section class="card-elevated p-3 h-100 animate-card">
+            <h2 class="h5 section-title">Pinned Announcements</h2>
+            @if (Model.Announcements.Count == 0)
             {
-                <article class="list-card">
-                    <div class="d-flex align-items-center justify-content-between gap-2">
-                        <div class="list-card-title">@item.Title</div>
-                        @if (item.IsPinned)
-                        {
-                            <span class="meta-pill">Pinned</span>
-                        }
-                    </div>
-                    <div class="list-card-meta">@item.Summary</div>
-                </article>
+                <p class="text-muted mb-0">No announcements available.</p>
             }
-        }
-    </section>
-
-    <section class="soft-card animate-card">
-        <div class="d-flex justify-content-between align-items-center gap-3 mb-3">
-            <h2 class="section-title mb-0">Latest Policies</h2>
-            <a asp-page="/Policies/Index" class="btn btn-sm btn-outline-primary">Browse</a>
-        </div>
-
-        @if (Model.Policies.Count == 0)
-        {
-            <p class="text-muted mb-0">No active documents available.</p>
-        }
-        else
-        {
-            foreach (var item in Model.Policies)
+            else
             {
-                <a asp-page="/Policies/View" asp-route-id="@item.Id" class="list-card">
-                    <div class="list-card-title">@item.Title</div>
-                    <div class="list-card-meta">
-                        @(string.IsNullOrWhiteSpace(item.SectionName) ? "Policy Library" : item.SectionName)
-                        · Updated @item.UpdatedAtUtc.ToString("dd MMM yyyy")
-                    </div>
-                </a>
+                <ul class="list-group list-group-flush">
+                @foreach (var item in Model.Announcements)
+                {
+                    <li class="list-group-item px-0">
+                        <div class="fw-semibold">@item.Title</div>
+                        <div class="small text-muted">@item.Summary</div>
+                    </li>
+                }
+                </ul>
             }
-        }
-    </section>
-
-    <aside class="soft-card animate-card">
-        <h2 class="section-title">Quick Actions</h2>
-        <div class="action-stack">
-            <a asp-page="/Canteen/Index" class="btn btn-primary">Order From Canteen</a>
-            <a asp-page="/Jobs/Index" class="btn btn-outline-primary">View Open Roles</a>
-            <a asp-page="/Faq/Index" class="btn btn-outline-primary">Read FAQs</a>
-            @if (Model.IsAdmin)
+            <a asp-page="/Announcements/Index" class="btn btn-sm btn-outline-primary mt-3">View All</a>
+        </section>
+    </div>
+    <div class="col-lg-6">
+        <section class="card-elevated p-3 h-100 animate-card">
+            <h2 class="h5 section-title">Latest Policies &amp; Procedures</h2>
+            @if (Model.Policies.Count == 0)
             {
-                <a asp-page="/Admin/Index" class="btn btn-outline-primary">Admin Console</a>
+                <p class="text-muted mb-0">No active documents available.</p>
             }
-        </div>
-    </aside>
+            else
+            {
+                <ul class="list-group list-group-flush">
+                @foreach (var item in Model.Policies)
+                {
+                    <li class="list-group-item px-0">
+                        <div class="fw-semibold">@item.Title</div>
+                        <div class="small text-muted">@item.VersionLabel - Updated @item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
+                    </li>
+                }
+                </ul>
+            }
+            <a asp-page="/Policies/Index" class="btn btn-sm btn-outline-primary mt-3">Browse Policies</a>
+        </section>
+    </div>
 </div>
