@@ -20,8 +20,16 @@ public class ExternalApplication
     [MaxLength(200)]
     public string CandidateEmail { get; set; } = string.Empty;
 
+    [MaxLength(60)]
+    public string CandidatePhone { get; set; } = string.Empty;
+
     [MaxLength(2000)]
     public string Notes { get; set; } = string.Empty;
+
+    public long? ZendeskTicketId { get; set; }
+
+    [MaxLength(500)]
+    public string ZendeskTicketUrl { get; set; } = string.Empty;
 
     public DateTime SubmittedUtc { get; set; } = DateTime.UtcNow;
 

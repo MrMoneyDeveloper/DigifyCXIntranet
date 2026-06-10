@@ -182,6 +182,16 @@
                                                 @(item.IsActive ? "Deactivate" : "Activate")
                                             </button>
                                         </form>
+                                        @if (!item.IsActive)
+                                        {
+                                            <form method="post" asp-page-handler="Delete" class="m-0 p-0">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" title="Delete"
+                                                        class="inline-flex items-center justify-center rounded-lg border border-rose-600 bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-300 transition hover:bg-rose-900/60 hover:text-white">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        }
                                     </div>
                                 </td>
                             </tr>

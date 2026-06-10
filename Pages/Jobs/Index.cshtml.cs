@@ -1,33 +1,37 @@
 using System.ComponentModel.DataAnnotations;
+using System.Security.Claims;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Jobs;
 
 public class IndexModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
-    private readonly IEmailSender _emailSender;
-    private readonly RoutingInboxesOptions _inboxes;
+    private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
+
+    private readonly HrDbContext _db;
+    private readonly IZendeskTicketService _zendeskTicketService;
+    private readonly IFinanceAuditService _auditService;
 
     public IndexModel(
-        ApplicationDbContext db,
-        IEmailSender emailSender,
-        IOptions<RoutingInboxesOptions> inboxOptions)
+        HrDbContext db,
+        IZendeskTicketService zendeskTicketService,
+        IFinanceAuditService auditService)
     {
         _db = db;
-        _emailSender = emailSender;
-        _inboxes = inboxOptions.Value;
+        _zendeskTicketService = zendeskTicketService;
+        _auditService = auditService;
     }
 
     [BindProperty]
     public ReferralInput Referral { get; set; } = new();
+
+    [BindProperty]
+    public IFormFile? ReferralResumeFile { get; set; }
 
     [TempData]
     public string FeedbackMessage { get; set; } = string.Empty;
@@ -50,7 +54,7 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        var job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Referral.JobPostingId && x.IsActive);
+        var job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Referral.JobPostingId && x.IsActive && !x.IsDeleted);
         if (job is null)
         {
             ModelState.AddModelError(string.Empty, "Selected job posting was not found.");
@@ -65,37 +69,86 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        var token = $"ref_{Guid.NewGuid():N}";
+        if (ReferralResumeFile is { Length: > 0 })
+        {
+            if (ReferralResumeFile.Length > 5 * 1024 * 1024)
+            {
+                ModelState.AddModelError(nameof(ReferralResumeFile), "Resume file must be 5MB or less.");
+                await LoadAsync();
+                return Page();
+            }
+
+            var ext = Path.GetExtension(ReferralResumeFile.FileName).ToLowerInvariant();
+            if (!AllowedResumeExtensions.Contains(ext))
+            {
+                ModelState.AddModelError(nameof(ReferralResumeFile), "Only PDF and DOCX files are allowed.");
+                await LoadAsync();
+                return Page();
+            }
+        }
+
+        var referrerName = UserNameHelper.GetShortName(User);
+        var referrerEmail = User.FindFirstValue(ClaimTypes.Email) ?? $"{referrerName}@company.local";
+        var ticket = await _zendeskTicketService.CreateReferralTicketAsync(
+            job,
+            referrerName,
+            referrerEmail,
+            Referral.CandidateName,
+            Referral.CandidateEmail,
+            Referral.CandidatePhone,
+            Referral.Notes,
+            ReferralResumeFile);
+
+        if (!ticket.Succeeded)
+        {
+            await _auditService.WriteAsync(referrerName, "ZendeskTicketFailed", "ReferralApplication", $"job={job.Id};candidate={Referral.CandidateEmail};message={ticket.Message}");
+            ModelState.AddModelError(string.Empty, ticket.Message);
+            await LoadAsync();
+            return Page();
+        }
+
         var invite = new ReferralInvite
         {
             JobPostingId = job.Id,
-            ReferrerEmployeeUsername = UserNameHelper.GetShortName(User),
+            ReferrerEmployeeUsername = referrerName,
+            ReferrerEmployeeEmail = referrerEmail,
+            CandidateName = Referral.CandidateName.Trim(),
             CandidateEmail = Referral.CandidateEmail.Trim(),
-            Token = token,
+            CandidatePhone = Referral.CandidatePhone.Trim(),
+            Notes = Referral.Notes.Trim(),
+            Token = $"ref_{Guid.NewGuid():N}",
+            ZendeskTicketId = ticket.TicketId,
             CreatedUtc = DateTime.UtcNow,
-            ExpiresUtc = DateTime.UtcNow.AddDays(14)
+            ExpiresUtc = DateTime.UtcNow.AddDays(14),
+            IsConsumed = true
         };
         _db.ReferralInvites.Add(invite);
-        await _db.SaveChangesAsync();
 
-        var baseUrl = $"{Request.Scheme}://{Request.Host}";
-        var link = $"{baseUrl}/External/Apply?token={token}";
-
-        await _emailSender.SendAsync(new EmailMessage
+        _db.ExternalApplications.Add(new ExternalApplication
         {
-            To = Referral.CandidateEmail.Trim(),
-            Subject = $"Job referral from DigifyCX: {job.Title}",
-            BodyText = $"You were referred for '{job.Title}'. Apply securely here: {link}\nThis link expires in 14 days."
+            JobPostingId = job.Id,
+            ReferralInvite = invite,
+            CandidateName = Referral.CandidateName.Trim(),
+            CandidateEmail = Referral.CandidateEmail.Trim(),
+            CandidatePhone = Referral.CandidatePhone.Trim(),
+            Notes = Referral.Notes.Trim(),
+            ZendeskTicketId = ticket.TicketId,
+            ZendeskTicketUrl = ticket.TicketUrl,
+            SubmittedUtc = DateTime.UtcNow,
+            Status = "Submitted"
         });
 
-        FeedbackMessage = "Referral invitation sent.";
+        await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(referrerName, "ZendeskTicketCreated", "ReferralApplication", $"job={job.Id};candidate={Referral.CandidateEmail};ticket={ticket.TicketId}");
+
+        FeedbackMessage = "Referral submitted to HR in Zendesk.";
         return RedirectToPage();
     }
 
     private async Task LoadAsync()
     {
         Items = await _db.JobPostings
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && !x.IsDeleted)
             .OrderBy(x => x.ClosingDate)
             .ToListAsync();
     }
@@ -104,9 +157,19 @@ public class IndexModel : PageModel
     {
         public int JobPostingId { get; set; }
 
+        [Required, MaxLength(150)]
+        public string CandidateName { get; set; } = string.Empty;
+
         [Required]
         [EmailAddress]
         [MaxLength(200)]
         public string CandidateEmail { get; set; } = string.Empty;
+
+        [Phone]
+        [MaxLength(60)]
+        public string CandidatePhone { get; set; } = string.Empty;
+
+        [MaxLength(2000)]
+        public string Notes { get; set; } = string.Empty;
     }
 }

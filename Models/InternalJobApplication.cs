@@ -19,5 +19,10 @@ public class InternalJobApplication
     [MaxLength(2000)]
     public string Notes { get; set; } = string.Empty;
 
+    public long? ZendeskTicketId { get; set; }
+
+    [MaxLength(500)]
+    public string ZendeskTicketUrl { get; set; } = string.Empty;
+
     public DateTime SubmittedUtc { get; set; } = DateTime.UtcNow;
 }

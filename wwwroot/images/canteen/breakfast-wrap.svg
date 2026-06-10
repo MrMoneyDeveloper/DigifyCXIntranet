@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Breakfast wrap">
+  <rect width="640" height="420" fill="#f6efe1"/>
+  <rect x="68" y="70" width="504" height="280" rx="28" fill="#d8ecf2"/>
+  <path d="M180 284c56-104 142-152 270-144 32 2 56 30 52 62-8 67-62 110-164 129-70 13-125-3-158-47z" fill="#d9a85f"/>
+  <path d="M205 274c54-84 127-123 219-117 27 2 47 24 44 51-7 50-54 83-140 98-50 9-91-2-123-32z" fill="#f3d28e"/>
+  <circle cx="318" cy="213" r="34" fill="#fff7dc"/>
+  <circle cx="318" cy="213" r="15" fill="#f5b331"/>
+  <path d="M238 246c56-24 119-33 190-27" fill="none" stroke="#4f7f52" stroke-width="22" stroke-linecap="round"/>
+</svg>

@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using DigifyCXIntranet.Options;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
@@ -55,7 +56,8 @@ public class LoginModel : PageModel
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name, user.Username.Trim()),
-            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName) ? user.Username : user.DisplayName)
+            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName) ? user.Username : user.DisplayName),
+            new(ClaimTypes.Role, string.IsNullOrWhiteSpace(user.Role) ? AppRoles.Agent : user.Role.Trim())
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);

@@ -8,9 +8,9 @@ namespace DigifyCXIntranet.Pages.Admin;
 
 public class CanteenModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly CanteenDbContext _db;
 
-    public CanteenModel(ApplicationDbContext db)
+    public CanteenModel(CanteenDbContext db)
     {
         _db = db;
     }
@@ -24,7 +24,6 @@ public class CanteenModel : PageModel
     public List<CanteenOrder> Orders { get; private set; } = new();
     public List<EmployeeTally> Tallies { get; private set; } = new();
     public List<CanteenBatchRun> BatchRuns { get; private set; } = new();
-    public List<PayrollRun> PayrollRuns { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -53,33 +52,11 @@ public class CanteenModel : PageModel
             .Take(20)
             .ToListAsync();
 
-        PayrollRuns = await _db.PayrollRuns
-            .OrderByDescending(x => x.TriggeredUtc)
-            .Take(12)
-            .ToListAsync();
     }
 
     public async Task<IActionResult> OnGetDownloadBatchArtifactAsync(int id)
     {
         var run = await _db.CanteenBatchRuns.FirstOrDefaultAsync(x => x.Id == id);
-        if (run is null ||
-            string.IsNullOrWhiteSpace(run.ArtifactPath) ||
-            !run.ArtifactPath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) ||
-            !System.IO.File.Exists(run.ArtifactPath))
-        {
-            return NotFound();
-        }
-
-        var bytes = await System.IO.File.ReadAllBytesAsync(run.ArtifactPath);
-        var fileName = string.IsNullOrWhiteSpace(run.AttachmentFileName)
-            ? Path.GetFileName(run.ArtifactPath)
-            : run.AttachmentFileName;
-        return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
-    }
-
-    public async Task<IActionResult> OnGetDownloadPayrollArtifactAsync(int id)
-    {
-        var run = await _db.PayrollRuns.FirstOrDefaultAsync(x => x.Id == id);
         if (run is null ||
             string.IsNullOrWhiteSpace(run.ArtifactPath) ||
             !run.ArtifactPath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) ||

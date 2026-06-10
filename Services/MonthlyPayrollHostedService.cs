@@ -88,9 +88,10 @@ public class MonthlyPayrollHostedService : BackgroundService
         try
         {
             using var scope = _scopeFactory.CreateScope();
-            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var db = scope.ServiceProvider.GetRequiredService<CanteenDbContext>();
             var exportService = scope.ServiceProvider.GetRequiredService<IFileExportService>();
             var emailSender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
+            var auditService = scope.ServiceProvider.GetRequiredService<IFinanceAuditService>();
 
             var localNow = _clock.NowInZone(_payrollOptions.TimeZoneId);
             var runDay = Math.Clamp(_payrollOptions.RunDayOfMonth, 1, 28);
@@ -152,6 +153,7 @@ public class MonthlyPayrollHostedService : BackgroundService
             run.SentSuccessfully = true;
             run.ArtifactPath = sendResult.ArtifactPath;
             await db.SaveChangesAsync(cancellationToken);
+            await auditService.WriteAsync("system", "Export", "PayrollRun", $"runKey={runKey};periodStart={periodStart:O};periodEnd={periodEnd:O};employees={rows.Count};file={fileName}", cancellationToken);
         }
         catch (Exception ex)
         {
@@ -162,7 +164,7 @@ public class MonthlyPayrollHostedService : BackgroundService
                 try
                 {
                     using var scope = _scopeFactory.CreateScope();
-                    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var db = scope.ServiceProvider.GetRequiredService<CanteenDbContext>();
                     db.PayrollRuns.Update(run);
                     await db.SaveChangesAsync(cancellationToken);
                 }

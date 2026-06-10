@@ -8,9 +8,9 @@ namespace DigifyCXIntranet.Pages.Policies;
 
 public class IndexModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly PolicyDbContext _db;
 
-    public IndexModel(ApplicationDbContext db)
+    public IndexModel(PolicyDbContext db)
     {
         _db = db;
     }
@@ -18,7 +18,7 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
 
-    public List<ZendeskPolicyArticle> Items { get; private set; } = new();
+    public List<PolicyGroup> Groups { get; private set; } = new();
 
     public async Task OnGetAsync()
     {
@@ -32,6 +32,21 @@ public class IndexModel : PageModel
             query = query.Where(x => x.Title.Contains(Search) || x.Body.Contains(Search));
         }
 
-        Items = await query.ToListAsync();
+        var items = await query
+            .OrderBy(x => x.CategoryName)
+            .ThenBy(x => x.SectionName)
+            .ThenBy(x => x.Title)
+            .ToListAsync();
+
+        Groups = items
+            .GroupBy(x => new
+            {
+                Category = string.IsNullOrWhiteSpace(x.CategoryName) ? "Uncategorised" : x.CategoryName,
+                Section = string.IsNullOrWhiteSpace(x.SectionName) ? "General" : x.SectionName
+            })
+            .Select(x => new PolicyGroup(x.Key.Category, x.Key.Section, x.ToList()))
+            .ToList();
     }
+
+    public record PolicyGroup(string Category, string Section, List<ZendeskPolicyArticle> Items);
 }

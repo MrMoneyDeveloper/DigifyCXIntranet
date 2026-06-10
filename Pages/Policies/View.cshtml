@@ -10,13 +10,14 @@
 }
 else
 {
-    <article class="card-elevated p-4">
-        <div class="d-flex justify-content-between flex-wrap mb-3">
+    <article class="portal-panel">
+        <div class="d-flex justify-content-between flex-wrap gap-3 mb-3">
             <div>
-                <h1 class="h4 mb-1">@Model.Item.Title</h1>
-                <div class="text-muted">Version @Model.Item.VersionLabel</div>
+                <div class="page-kicker mb-3">Policy Article</div>
+                <h1 class="h3 mb-1">@Model.Item.Title</h1>
+                <div class="text-muted">@(string.IsNullOrWhiteSpace(Model.Item.SectionName) ? "Policy Library" : Model.Item.SectionName)</div>
             </div>
-            <div class="small text-muted">@Model.Item.UpdatedAtUtc.ToString("dd MMM yyyy HH:mm")</div>
+            <div class="small text-muted">Updated @Model.Item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(Model.AcknowledgeMessage))
@@ -24,11 +25,11 @@ else
             <div class="alert alert-success">@Model.AcknowledgeMessage</div>
         }
 
-        <div class="border rounded p-3 bg-light-subtle mb-3 zendesk-policy-content">
+        <div class="soft-card mb-3 zendesk-policy-content">
             @* Fix: Using Html.Raw to interpret Zendesk HTML formatting tags properly *@
             @Html.Raw(Model.Item.Body)
         </div>
-        <a href="@Model.Item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-primary mb-3">Open in Zendesk</a>
+        <a href="@Model.Item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-primary mb-3">Open Source Article</a>
 
         @if (Model.AlreadyAcknowledged)
         {
@@ -41,7 +42,7 @@ else
                 <div class="form-check mb-2">
                     <input class="form-check-input" type="checkbox" id="ack" required />
                     <label class="form-check-label" for="ack">
-                        I explicitly acknowledge that I have read and agree to this policy version (@Model.Item.VersionLabel).
+                        I acknowledge that I have read this policy.
                     </label>
                 </div>
                 <button type="submit" class="btn btn-primary">Acknowledge Policy</button>

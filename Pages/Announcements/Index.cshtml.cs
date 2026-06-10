@@ -20,7 +20,7 @@ public class IndexModel : PageModel
     {
         var today = DateTime.UtcNow.Date;
         Items = await _db.Announcements
-            .Where(x => x.IsActive && (x.ExpirationDate == null || x.ExpirationDate >= today))
+            .Where(x => x.IsActive && !x.IsDeleted && (x.ExpirationDate == null || x.ExpirationDate >= today))
             .OrderByDescending(x => x.IsPinned)
             .ThenByDescending(x => x.CreatedDateUtc)
             .ToListAsync();

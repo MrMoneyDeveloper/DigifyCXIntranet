@@ -9,11 +9,13 @@ namespace DigifyCXIntranet.Pages.Canteen;
 
 public class IndexModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly CanteenDbContext _db;
+    private readonly IFinanceAuditService _auditService;
 
-    public IndexModel(ApplicationDbContext db)
+    public IndexModel(CanteenDbContext db, IFinanceAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -31,7 +33,7 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostSubmitAsync()
     {
         var menuItem = await _db.MenuItems
-            .Where(x => x.IsActive && x.Id == SelectedMenuItemId)
+            .Where(x => x.IsActive && !x.IsDeleted && x.Id == SelectedMenuItemId)
             .FirstOrDefaultAsync();
 
         if (menuItem is null)
@@ -42,7 +44,7 @@ public class IndexModel : PageModel
         }
 
         var username = UserNameHelper.GetShortName(User);
-        _db.CanteenOrders.Add(new CanteenOrder
+        var order = new CanteenOrder
         {
             EmployeeUsername = username,
             MenuItemId = menuItem.Id,
@@ -51,8 +53,11 @@ public class IndexModel : PageModel
             TotalAmount = menuItem.Price,
             OrderTimeUtc = DateTime.UtcNow,
             Status = "Submitted"
-        });
+        };
+
+        _db.CanteenOrders.Add(order);
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(username, "Create", "CanteenOrder", $"id={order.Id};item={menuItem.Id};amount={order.TotalAmount};meal={order.MealSlot}");
 
         return RedirectToPage();
     }
@@ -62,7 +67,7 @@ public class IndexModel : PageModel
         var username = UserNameHelper.GetShortName(User);
 
         MenuItems = await _db.MenuItems
-            .Where(x => x.IsActive)
+            .Where(x => x.IsActive && !x.IsDeleted)
             .OrderBy(x => x.MealSlot)
             .ThenBy(x => x.DisplayOrder)
             .ToListAsync();

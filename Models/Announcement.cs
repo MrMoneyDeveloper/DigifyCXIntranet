@@ -27,6 +27,8 @@ public class Announcement
 
     public bool IsActive { get; set; } = true;
 
+    public bool IsDeleted { get; set; }
+
     [MaxLength(120)]
     public string LastUpdatedBy { get; set; } = string.Empty;
 }

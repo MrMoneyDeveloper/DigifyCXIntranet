@@ -20,10 +20,23 @@
 </div>
 
 <div class="d-grid gap-2 d-md-flex flex-wrap">
-    <a asp-page="/Admin/Menu" class="btn btn-primary">Manage Canteen Menu</a>
-    <a asp-page="/Admin/Canteen" class="btn btn-primary">Canteen Reporting</a>
-    <a asp-page="/Admin/Policies" class="btn btn-primary">Manage Policies</a>
-    <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
-    <a asp-page="/Admin/Jobs" class="btn btn-primary">Manage Jobs</a>
-    <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
+    @if (Model.CanManageCanteen)
+    {
+        <a asp-page="/Admin/Menu" class="btn btn-primary">Manage Canteen Menu</a>
+        <a asp-page="/Admin/Canteen" class="btn btn-primary">Canteen Operations</a>
+    }
+    @if (Model.CanViewFinance)
+    {
+        <a asp-page="/Finance/CanteenLedger" class="btn btn-primary">Finance Ledger</a>
+    }
+    @if (Model.CanManageHr)
+    {
+        <a asp-page="/Admin/Policies" class="btn btn-primary">Manage Policies</a>
+        <a asp-page="/Admin/Jobs" class="btn btn-primary">Manage Jobs</a>
+    }
+    @if (Model.CanManageSystem)
+    {
+        <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
+        <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
+    }
 </div>

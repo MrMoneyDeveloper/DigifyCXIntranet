@@ -1,4 +1,7 @@
 @inject DigifyCXIntranet.Services.IAdminAccessService AdminAccess
+@{
+    var role = AdminAccess.GetPrimaryRole(User);
+}
 
 <ul class="flex items-center gap-3">
 
@@ -16,7 +19,7 @@
         <li>
             <a asp-page="/Profile/Index" title="Manage Admin Profile"
                    class="inline-flex items-center justify-center rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400 transition hover:border-amber-400 hover:bg-amber-500/20">
-                Admin
+                @role
             </a>
         </li>
         
@@ -33,7 +36,7 @@
         <li>
             <a asp-page="/Profile/Index" title="Manage Profile"
                class="inline-flex items-center justify-center rounded-full border border-slate-600 bg-slate-800 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 transition hover:border-cyan-400 hover:text-cyan-400">
-                Employee
+                @role
             </a>
         </li>
         @if (string.Equals(User.Identity?.AuthenticationType, "Cookies", StringComparison.OrdinalIgnoreCase))

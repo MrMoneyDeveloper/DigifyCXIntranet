@@ -21,7 +21,7 @@ public class AnnouncementEditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();
@@ -48,7 +48,7 @@ public class AnnouncementEditModel : PageModel
             return Page();
         }
 
-        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == Item.Id);
+        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == Item.Id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();

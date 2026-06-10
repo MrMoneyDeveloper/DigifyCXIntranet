@@ -44,6 +44,9 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsPinned")
                         .HasColumnType("bit");
 
@@ -188,6 +191,11 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<string>("CandidatePhone")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<int>("JobPostingId")
                         .HasColumnType("int");
 
@@ -206,6 +214,14 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.Property<DateTime>("SubmittedUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<long?>("ZendeskTicketId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ZendeskTicketUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -250,6 +266,44 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.ToTable("FaqItems");
                 });
 
+            modelBuilder.Entity("DigifyCXIntranet.Models.FinanceAuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Actor")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("Detail")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<string>("Entity")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime>("TimestampUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TimestampUtc");
+
+                    b.ToTable("FinanceAuditLogs");
+                });
+
             modelBuilder.Entity("DigifyCXIntranet.Models.InternalJobApplication", b =>
                 {
                     b.Property<int>("Id")
@@ -278,6 +332,14 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.Property<DateTime>("SubmittedUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<long?>("ZendeskTicketId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ZendeskTicketUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.HasKey("Id");
 
@@ -317,6 +379,9 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.Property<DateOnly>("ClosingDate")
                         .HasColumnType("date");
 
+                    b.Property<DateTime>("CreatedDateUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Department")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -328,6 +393,9 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<bool>("IsExternalReferral")
@@ -342,6 +410,9 @@ namespace DigifyCXIntranet.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
+
+                    b.Property<DateTime>("UpdatedDateUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<bool>("UseVisualAd")
                         .HasColumnType("bit");
@@ -372,7 +443,15 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
+                    b.Property<string>("ImagePath")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
                     b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsDeleted")
                         .HasColumnType("bit");
 
                     b.Property<int>("MealSlot")
@@ -534,6 +613,16 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
+                    b.Property<string>("CandidateName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("CandidatePhone")
+                        .IsRequired()
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<DateTime>("CreatedUtc")
                         .HasColumnType("datetime2");
 
@@ -546,6 +635,16 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.Property<int>("JobPostingId")
                         .HasColumnType("int");
 
+                    b.Property<string>("Notes")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("ReferrerEmployeeEmail")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("ReferrerEmployeeUsername")
                         .IsRequired()
                         .HasMaxLength(120)
@@ -555,6 +654,9 @@ namespace DigifyCXIntranet.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
+
+                    b.Property<long?>("ZendeskTicketId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -579,6 +681,14 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasMaxLength(12000)
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<long?>("CategoryId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("CategoryName")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
+
                     b.Property<string>("HtmlUrl")
                         .IsRequired()
                         .HasMaxLength(400)
@@ -589,6 +699,14 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.Property<DateTime>("SyncedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<long?>("SectionId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SectionName")
+                        .IsRequired()
+                        .HasMaxLength(220)
+                        .HasColumnType("nvarchar(220)");
 
                     b.Property<string>("Title")
                         .IsRequired()
@@ -609,6 +727,43 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("ZendeskPolicyArticles");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.ZendeskSyncLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("CompletedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ItemsProcessed")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Operation")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<DateTime>("StartedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StartedUtc");
+
+                    b.ToTable("ZendeskSyncLogs");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

@@ -1,22 +1,12 @@
 using System.ComponentModel.DataAnnotations;
-using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 
 namespace DigifyCXIntranet.Pages.Admin;
 
 public class PolicyEditModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
-
-    public PolicyEditModel(ApplicationDbContext db)
-    {
-        _db = db;
-    }
-
     [BindProperty]
     public EditPolicyInput Item { get; set; } = new();
 

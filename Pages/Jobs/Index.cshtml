@@ -4,39 +4,40 @@
     ViewData["Title"] = "Job Postings";
 }
 
-<div class="mx-auto max-w-6xl space-y-6 mt-4">
-    <div class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Internal Job Postings</h1>
-        <p class="mt-2 text-sm text-slate-400">Apply directly or send secure referral invites for external candidates.</p>
-    </div>
+<section class="hero-panel mb-4">
+    <div class="page-kicker mb-3">Internal Openings</div>
+    <h1 class="page-title">Roles that power <span>high performance</span></h1>
+    <p class="page-copy mt-3 mb-0">Apply for yourself or refer someone strong. Referral details are sent to HR through Zendesk.</p>
+</section>
 
-    @if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage))
-    {
-        <div class="alert alert-success">@Model.FeedbackMessage</div>
-    }
-    @if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
-    {
-        <div class="alert alert-success">@Model.JobApplyMessage</div>
-    }
+@if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage))
+{
+    <div class="alert alert-success">@Model.FeedbackMessage</div>
+}
+@if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
+{
+    <div class="alert alert-success">@Model.JobApplyMessage</div>
+}
 
-    @if (Model.Items.Count == 0)
-    {
-        <div class="bg-[#1e2336] rounded-2xl p-10 border border-slate-700 shadow-lg text-center">
-            <h3 class="text-lg font-medium text-white">No active job postings</h3>
-        </div>
-    }
-    else
-    {
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            @foreach (var item in Model.Items)
-            {
-                <article class="bg-[#1e2336] rounded-2xl p-5 border border-slate-700 shadow-xl flex flex-col gap-4">
+@if (Model.Items.Count == 0)
+{
+    <section class="soft-card text-center py-5">
+        <h2 class="h5 mb-0">No active job postings</h2>
+    </section>
+}
+else
+{
+    <div class="row g-4">
+        @foreach (var item in Model.Items)
+        {
+            <div class="col-xl-6">
+                <article class="soft-card h-100">
                     @if (item.UseVisualAd)
                     {
                         var backgroundUrl = string.IsNullOrWhiteSpace(item.AdBackgroundImagePath)
                             ? "/images/job-ad-a4-template.svg"
                             : item.AdBackgroundImagePath;
-                        <div class="job-ad-a4" style="background-image:linear-gradient(180deg,rgba(15,23,42,0.1),rgba(15,23,42,0.95)),url('@backgroundUrl');">
+                        <div class="job-ad-a4 mb-3" style="background-image:linear-gradient(180deg,rgba(15,27,45,0.12),rgba(15,27,45,0.82)),url('@backgroundUrl');">
                             <div class="job-ad-layer">
                                 <div class="job-ad-pill">@item.Department</div>
                                 <h2 class="job-ad-title">@(string.IsNullOrWhiteSpace(item.AdHeadline) ? item.Title : item.AdHeadline)</h2>
@@ -45,31 +46,58 @@
                             </div>
                         </div>
                     }
-                    <p class="text-sm text-slate-300">@item.Description</p>
-                    <div class="text-sm text-cyan-300"><span class="fw-semibold">Apply via:</span> @item.ApplicationRoute</div>
 
-                    <div class="d-flex flex-column gap-2">
+                    <div class="d-flex flex-column gap-3">
+                        <div>
+                            <h2 class="h4 mb-2">@item.Title</h2>
+                            <p class="page-copy mb-0">@item.Description</p>
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="meta-pill">@item.Department</span>
+                            @if (item.IsExternalReferral)
+                            {
+                                <span class="meta-pill">Referral enabled</span>
+                            }
+                        </div>
+
                         <a asp-page="/Jobs/Apply" asp-route-id="@item.Id" class="btn btn-primary">Apply Internally</a>
+
                         @if (item.IsExternalReferral)
                         {
-                            <form method="post" asp-page-handler="Refer" class="d-flex gap-2">
-                                <input type="hidden" asp-for="Referral.JobPostingId" value="@item.Id" />
-                                <input name="Referral.CandidateEmail" class="form-control form-control-sm" placeholder="friend@email.com" />
-                                <button type="submit" class="btn btn-outline-primary btn-sm">Send Referral</button>
-                            </form>
-                        }
-                        else
-                        {
-                            <div class="text-xs text-slate-400">External referral is disabled for this role.</div>
+                            <details class="details-card">
+                                <summary>
+                                    <span class="fw-bold">Refer someone</span>
+                                    <span class="d-block list-card-meta">Candidate details and optional CV</span>
+                                </summary>
+                                <div class="details-body">
+                                    <form method="post" asp-page-handler="Refer" enctype="multipart/form-data" class="row g-3">
+                                        <input type="hidden" asp-for="Referral.JobPostingId" value="@item.Id" />
+                                        <div class="col-md-6">
+                                            <input name="Referral.CandidateName" class="form-control" placeholder="Candidate name" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="Referral.CandidateEmail" class="form-control" placeholder="candidate@email.com" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="Referral.CandidatePhone" class="form-control" placeholder="Phone" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input name="ReferralResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
+                                        </div>
+                                        <div class="col-12">
+                                            <textarea name="Referral.Notes" rows="3" class="form-control" placeholder="Referral notes"></textarea>
+                                        </div>
+                                        <div class="col-12">
+                                            <button type="submit" class="btn btn-outline-primary">Submit Referral</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </details>
                         }
                     </div>
-
-                    @if (item.IsExternalReferral)
-                    {
-                        <span class="badge text-bg-warning">External referral enabled</span>
-                    }
                 </article>
-            }
-        </div>
-    }
-</div>
+            </div>
+        }
+    </div>
+}

@@ -12,9 +12,23 @@ public class ReferralInvite
     [MaxLength(120)]
     public string ReferrerEmployeeUsername { get; set; } = string.Empty;
 
+    [MaxLength(120)]
+    public string ReferrerEmployeeEmail { get; set; } = string.Empty;
+
+    [MaxLength(150)]
+    public string CandidateName { get; set; } = string.Empty;
+
     [Required]
     [MaxLength(200)]
     public string CandidateEmail { get; set; } = string.Empty;
+
+    [MaxLength(60)]
+    public string CandidatePhone { get; set; } = string.Empty;
+
+    [MaxLength(2000)]
+    public string Notes { get; set; } = string.Empty;
+
+    public long? ZendeskTicketId { get; set; }
 
     [Required]
     [MaxLength(120)]

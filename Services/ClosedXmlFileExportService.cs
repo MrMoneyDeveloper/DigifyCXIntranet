@@ -68,4 +68,55 @@ public class ClosedXmlFileExportService : IFileExportService
         workbook.SaveAs(ms);
         return ms.ToArray();
     }
+
+    public byte[] BuildCanteenLedgerWorkbook(
+        IEnumerable<CanteenLedgerSummaryRow> summaryRows,
+        IEnumerable<CanteenOrder> detailRows,
+        DateTimeOffset generatedAt)
+    {
+        using var workbook = new XLWorkbook();
+
+        var summary = workbook.Worksheets.Add("Summary");
+        summary.Cell(1, 1).Value = "Employee";
+        summary.Cell(1, 2).Value = "Orders";
+        summary.Cell(1, 3).Value = "Total Spend";
+        summary.Cell(1, 5).Value = "Generated (UTC)";
+        summary.Cell(1, 6).Value = generatedAt.UtcDateTime;
+
+        var rowNumber = 2;
+        foreach (var row in summaryRows)
+        {
+            summary.Cell(rowNumber, 1).Value = row.EmployeeUsername;
+            summary.Cell(rowNumber, 2).Value = row.OrderCount;
+            summary.Cell(rowNumber, 3).Value = row.TotalAmount;
+            rowNumber++;
+        }
+
+        var detail = workbook.Worksheets.Add("Order Detail");
+        detail.Cell(1, 1).Value = "Employee";
+        detail.Cell(1, 2).Value = "Order Time (UTC)";
+        detail.Cell(1, 3).Value = "Menu Item";
+        detail.Cell(1, 4).Value = "Meal Slot";
+        detail.Cell(1, 5).Value = "Status";
+        detail.Cell(1, 6).Value = "Total";
+
+        rowNumber = 2;
+        foreach (var order in detailRows)
+        {
+            detail.Cell(rowNumber, 1).Value = order.EmployeeUsername;
+            detail.Cell(rowNumber, 2).Value = order.OrderTimeUtc;
+            detail.Cell(rowNumber, 3).Value = order.ItemSummary;
+            detail.Cell(rowNumber, 4).Value = order.MealSlot.ToString();
+            detail.Cell(rowNumber, 5).Value = order.Status;
+            detail.Cell(rowNumber, 6).Value = order.TotalAmount;
+            rowNumber++;
+        }
+
+        summary.Columns().AdjustToContents();
+        detail.Columns().AdjustToContents();
+
+        using var ms = new MemoryStream();
+        workbook.SaveAs(ms);
+        return ms.ToArray();
+    }
 }

@@ -1,0 +1,52 @@
+using DigifyCXIntranet.Models;
+using Microsoft.EntityFrameworkCore;
+
+namespace DigifyCXIntranet.Data;
+
+public static class DomainModelBuilderExtensions
+{
+    public static void ConfigureCanteenDomain(this ModelBuilder builder)
+    {
+        builder.Entity<CanteenOrder>()
+            .Property(x => x.TotalAmount)
+            .HasPrecision(18, 2);
+
+        builder.Entity<MenuItem>()
+            .Property(x => x.Price)
+            .HasPrecision(18, 2);
+
+        builder.Entity<CanteenBatchRun>()
+            .HasIndex(x => x.RunKey)
+            .IsUnique();
+
+        builder.Entity<PayrollRun>()
+            .HasIndex(x => x.RunKey)
+            .IsUnique();
+
+        builder.Entity<FinanceAuditLog>()
+            .HasIndex(x => x.TimestampUtc);
+    }
+
+    public static void ConfigureHrDomain(this ModelBuilder builder)
+    {
+        builder.Entity<ExternalApplication>()
+            .HasOne(e => e.ReferralInvite)
+            .WithMany()
+            .HasForeignKey(e => e.ReferralInviteId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<ReferralInvite>()
+            .HasIndex(x => x.Token)
+            .IsUnique();
+    }
+
+    public static void ConfigurePolicyDomain(this ModelBuilder builder)
+    {
+        builder.Entity<PolicyAcknowledgement>()
+            .HasIndex(x => new { x.EmployeeDomainName, x.PolicyArticleId, x.PolicyVersion })
+            .IsUnique();
+
+        builder.Entity<ZendeskSyncLog>()
+            .HasIndex(x => x.StartedUtc);
+    }
+}

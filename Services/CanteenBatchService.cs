@@ -8,17 +8,19 @@ namespace DigifyCXIntranet.Services;
 
 public class CanteenBatchService : ICanteenBatchService
 {
-    private readonly ApplicationDbContext _db;
+    private readonly CanteenDbContext _db;
     private readonly IFileExportService _fileExportService;
     private readonly IEmailSender _emailSender;
+    private readonly IFinanceAuditService _auditService;
     private readonly RoutingInboxesOptions _routing;
     private readonly IClock _clock;
     private readonly CanteenBatchingOptions _batchOptions;
 
     public CanteenBatchService(
-        ApplicationDbContext db,
+        CanteenDbContext db,
         IFileExportService fileExportService,
         IEmailSender emailSender,
+        IFinanceAuditService auditService,
         IOptions<RoutingInboxesOptions> routingOptions,
         IOptions<CanteenBatchingOptions> batchOptions,
         IClock clock)
@@ -26,6 +28,7 @@ public class CanteenBatchService : ICanteenBatchService
         _db = db;
         _fileExportService = fileExportService;
         _emailSender = emailSender;
+        _auditService = auditService;
         _clock = clock;
         _routing = routingOptions.Value;
         _batchOptions = batchOptions.Value;
@@ -110,5 +113,6 @@ public class CanteenBatchService : ICanteenBatchService
         }
 
         await _db.SaveChangesAsync(cancellationToken);
+        await _auditService.WriteAsync("system", "Export", "CanteenBatch", $"runKey={runKey};meal={mealSlot};orders={orders.Count};sent={run.SentSuccessfully};file={run.AttachmentFileName}", cancellationToken);
     }
 }

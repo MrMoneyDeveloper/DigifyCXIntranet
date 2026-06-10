@@ -1,0 +1,123 @@
+@page
+@model DigifyCXIntranet.Pages.Finance.CanteenLedgerModel
+@{
+    ViewData["Title"] = "Canteen Ledger";
+    var fromDate = Model.FromUtc?.ToString("yyyy-MM-dd");
+    var toDate = Model.ToUtc?.ToString("yyyy-MM-dd");
+}
+
+<section class="card-elevated p-4 mb-4">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="h4 mb-1">Canteen Ledger</h1>
+            <p class="text-muted mb-0">Search employee canteen purchases and export account records.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-page="/Finance/Audit" class="btn btn-outline-secondary">Audit Trail</a>
+            <a asp-page-handler="Export"
+               asp-route-Employee="@Model.Employee"
+               asp-route-FromUtc="@fromDate"
+               asp-route-ToUtc="@toDate"
+               class="btn btn-outline-primary">
+                Export XLSX
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label asp-for="Employee" class="form-label"></label>
+            <input asp-for="Employee" class="form-control" placeholder="employee username or blank for all" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="FromUtc" class="form-label">From</label>
+            <input asp-for="FromUtc" type="date" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="ToUtc" class="form-label">To</label>
+            <input asp-for="ToUtc" type="date" class="form-control" />
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">Search</button>
+        </div>
+    </form>
+</section>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="dashboard-kpi">
+            <div class="small text-muted">Employees</div>
+            <div class="h4 mb-0">@Model.SummaryRows.Count</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-kpi">
+            <div class="small text-muted">Orders</div>
+            <div class="h4 mb-0">@Model.OrderCount</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="dashboard-kpi">
+            <div class="small text-muted">Total</div>
+            <div class="h4 mb-0">R @Model.TotalAmount.ToString("N2")</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-4">
+        <section class="card-elevated p-4 h-100">
+            <h2 class="h6 mb-3">Employee Totals</h2>
+            @if (Model.SummaryRows.Count == 0)
+            {
+                <p class="text-muted mb-0">No records found.</p>
+            }
+            else
+            {
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Employee</th><th>Orders</th><th>Total</th></tr></thead>
+                    <tbody>
+                    @foreach (var row in Model.SummaryRows)
+                    {
+                        <tr>
+                            <td>@row.EmployeeUsername</td>
+                            <td>@row.OrderCount</td>
+                            <td>R @row.TotalAmount.ToString("N2")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            }
+        </section>
+    </div>
+    <div class="col-lg-8">
+        <section class="card-elevated p-4">
+            <h2 class="h6 mb-3">Order Detail</h2>
+            @if (Model.DetailRows.Count == 0)
+            {
+                <p class="text-muted mb-0">No records found.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead><tr><th>Employee</th><th>Time</th><th>Item</th><th>Meal</th><th>Status</th><th>Total</th></tr></thead>
+                        <tbody>
+                        @foreach (var order in Model.DetailRows)
+                        {
+                            <tr>
+                                <td>@order.EmployeeUsername</td>
+                                <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                <td>@order.ItemSummary</td>
+                                <td>@order.MealSlot</td>
+                                <td>@order.Status</td>
+                                <td>R @order.TotalAmount.ToString("N2")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </div>
+</div>

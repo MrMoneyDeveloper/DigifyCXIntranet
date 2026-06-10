@@ -1,13 +1,11 @@
 using System.ComponentModel.DataAnnotations;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Jobs;
 
@@ -15,18 +13,18 @@ public class ApplyModel : PageModel
 {
     private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
 
-    private readonly ApplicationDbContext _db;
-    private readonly IEmailSender _emailSender;
-    private readonly RoutingInboxesOptions _inboxes;
+    private readonly HrDbContext _db;
+    private readonly IZendeskTicketService _zendeskTicketService;
+    private readonly IFinanceAuditService _auditService;
 
     public ApplyModel(
-        ApplicationDbContext db,
-        IEmailSender emailSender,
-        IOptions<RoutingInboxesOptions> inboxOptions)
+        HrDbContext db,
+        IZendeskTicketService zendeskTicketService,
+        IFinanceAuditService auditService)
     {
         _db = db;
-        _emailSender = emailSender;
-        _inboxes = inboxOptions.Value;
+        _zendeskTicketService = zendeskTicketService;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -36,7 +34,7 @@ public class ApplyModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && x.IsActive);
+        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
         if (Job is null)
         {
             return NotFound();
@@ -50,7 +48,7 @@ public class ApplyModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive);
+        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive && !x.IsDeleted);
         if (Job is null)
         {
             return NotFound();
@@ -80,25 +78,21 @@ public class ApplyModel : PageModel
             return Page();
         }
 
-        await using var ms = new MemoryStream();
-        await ResumeFile.CopyToAsync(ms);
-        var bytes = ms.ToArray();
+        var result = await _zendeskTicketService.CreateInternalApplicationTicketAsync(
+            Job,
+            Input.EmployeeName,
+            Input.EmployeeEmail,
+            Input.EmployeeId,
+            Input.ManagerEmail,
+            Input.Notes,
+            ResumeFile);
 
-        await _emailSender.SendAsync(new EmailMessage
+        if (!result.Succeeded)
         {
-            To = _inboxes.HrHiringInbox,
-            Subject = $"Internal Application: {Job.Title}",
-            BodyText = $"Employee: {Input.EmployeeName}\nEmail: {Input.EmployeeEmail}\nJob: {Job.Title}\nNotes: {Input.Notes}",
-            Attachments = new List<EmailAttachment>
-            {
-                new()
-                {
-                    FileName = ResumeFile.FileName,
-                    ContentType = ResumeFile.ContentType,
-                    Bytes = bytes
-                }
-            }
-        });
+            await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "ZendeskTicketFailed", "InternalJobApplication", $"job={Job.Id};employee={Input.EmployeeEmail};message={result.Message}");
+            ModelState.AddModelError(string.Empty, result.Message);
+            return Page();
+        }
 
         _db.InternalJobApplications.Add(new InternalJobApplication
         {
@@ -106,11 +100,14 @@ public class ApplyModel : PageModel
             EmployeeUsername = Input.EmployeeName,
             EmployeeEmail = Input.EmployeeEmail,
             Notes = Input.Notes,
+            ZendeskTicketId = result.TicketId,
+            ZendeskTicketUrl = result.TicketUrl,
             SubmittedUtc = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "ZendeskTicketCreated", "InternalJobApplication", $"job={Job.Id};employee={Input.EmployeeEmail};ticket={result.TicketId}");
 
-        TempData["JobApplyMessage"] = "Application submitted to HR.";
+        TempData["JobApplyMessage"] = "Application submitted to HR in Zendesk.";
         return RedirectToPage("/Jobs/Index");
     }
 
@@ -126,6 +123,12 @@ public class ApplyModel : PageModel
 
         [Required, EmailAddress, MaxLength(200)]
         public string EmployeeEmail { get; set; } = string.Empty;
+
+        [MaxLength(80)]
+        public string EmployeeId { get; set; } = string.Empty;
+
+        [EmailAddress, MaxLength(200)]
+        public string ManagerEmail { get; set; } = string.Empty;
 
         [MaxLength(2000)]
         public string Notes { get; set; } = string.Empty;

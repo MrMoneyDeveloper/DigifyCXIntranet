@@ -4,54 +4,96 @@
     ViewData["Title"] = "Policy Sync";
 }
 
-<div class="card-elevated p-4 mb-4">
-    <h1 class="h4 mb-2">Policy Sync (Zendesk Master)</h1>
-    <p class="text-muted mb-0">Policies are read from the Zendesk Help Center cache. Local policy editing is disabled.</p>
-</div>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-4">
+        <div>
+            <div class="page-kicker mb-3">Zendesk Master</div>
+            <h1 class="page-title">Policy sync <span>status</span></h1>
+            <p class="page-copy mt-3 mb-0">Policies remain managed in Zendesk. This page shows sync health and cached article groups without exposing credentials.</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <form method="post" asp-page-handler="SyncNow" class="m-0">
+                <button type="submit" class="btn btn-primary">Sync Now</button>
+            </form>
+            <a asp-page="/Policies/ComplianceReport" class="btn btn-outline-primary">Compliance</a>
+        </div>
+    </div>
+</section>
 
 @if (!string.IsNullOrWhiteSpace(Model.SyncMessage))
 {
     <div class="alert alert-success">@Model.SyncMessage</div>
 }
 
-<div class="d-flex flex-wrap gap-2 mb-3">
-    <form method="post" asp-page-handler="SyncNow" class="m-0">
-        <button type="submit" class="btn btn-primary">Sync From Zendesk Now</button>
-    </form>
-    <a asp-page="/Policies/ComplianceReport" class="btn btn-outline-primary">Open Compliance Report</a>
+<div class="metric-grid mb-4">
+    <div class="metric-card">
+        <div class="metric-label">Zendesk subdomain</div>
+        <div class="metric-value" style="font-size:1.35rem">@Model.ConfiguredSubdomain</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">HR ticket form</div>
+        <div class="metric-value" style="font-size:1.35rem">Configured</div>
+    </div>
+    <div class="metric-card">
+        <div class="metric-label">API access</div>
+        <div class="metric-value" style="font-size:1.35rem">@(Model.TokenConfigured ? "Ready" : "Missing")</div>
+    </div>
 </div>
 
-<div class="card-elevated p-3">
-    @if (Model.Items.Count == 0)
-    {
-        <p class="text-muted mb-0">No Zendesk articles are cached yet.</p>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Title</th>
-                        <th>Version</th>
-                        <th>Updated UTC</th>
-                        <th>Status</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>@item.Title</td>
-                        <td>@item.VersionLabel</td>
-                        <td>@item.UpdatedAtUtc.ToString("dd MMM yyyy HH:mm")</td>
-                        <td>@(item.IsPublished ? "Published" : "Draft")</td>
-                        <td><a href="@item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-secondary">Open Zendesk</a></td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    }
+<div class="portal-grid">
+    <section class="soft-card">
+        <h2 class="section-title">Recent Sync Results</h2>
+        @if (Model.RecentSyncLogs.Count == 0)
+        {
+            <p class="text-muted mb-0">No sync attempts recorded yet.</p>
+        }
+        else
+        {
+            foreach (var log in Model.RecentSyncLogs)
+            {
+                <article class="list-card">
+                    <div class="d-flex justify-content-between gap-3">
+                        <div>
+                            <div class="list-card-title">@(log.Succeeded ? "Sync completed" : "Sync failed")</div>
+                            <div class="list-card-meta">@log.StartedUtc.ToString("dd MMM yyyy HH:mm") · @log.ItemsProcessed article(s)</div>
+                        </div>
+                        <span class="meta-pill">@(log.Succeeded ? "Healthy" : "Check")</span>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(log.Message))
+                    {
+                        <div class="list-card-meta">@log.Message</div>
+                    }
+                </article>
+            }
+        }
+    </section>
+
+    <section class="soft-card">
+        <h2 class="section-title">Cached Articles</h2>
+        @if (Model.Items.Count == 0)
+        {
+            <p class="text-muted mb-0">No Zendesk articles are cached yet.</p>
+        }
+        else
+        {
+            foreach (var group in Model.Items.GroupBy(x => string.IsNullOrWhiteSpace(x.SectionName) ? "General" : x.SectionName))
+            {
+                <details class="details-card">
+                    <summary>
+                        <span class="fw-bold">@group.Key</span>
+                        <span class="d-block list-card-meta">@group.Count() article(s)</span>
+                    </summary>
+                    <div class="details-body">
+                        @foreach (var item in group)
+                        {
+                            <a href="@item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="list-card">
+                                <div class="list-card-title">@item.Title</div>
+                                <div class="list-card-meta">@(item.IsPublished ? "Published" : "Draft") · Updated @item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
+                            </a>
+                        }
+                    </div>
+                </details>
+            }
+        }
+    </section>
 </div>

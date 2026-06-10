@@ -4,106 +4,124 @@
     ViewData["Title"] = "Canteen";
 }
 
-<div class="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
-    <div class="lg:col-span-5">
-        <section class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl h-full">
-            <div class="mb-6 border-b border-slate-700/80 pb-4">
-                <h1 class="text-2xl font-extrabold text-white tracking-tight">Canteen Menu</h1>
-                <p class="mt-1 text-xs text-slate-400">Select a menu card to place your order.</p>
+<section class="hero-panel mb-4">
+    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-4">
+        <div>
+            <div class="page-kicker mb-3">Canteen</div>
+            <h1 class="page-title">Choose your <span>next meal</span></h1>
+            <p class="page-copy mt-3 mb-0">Browse available breakfast and lunch items, then expand your account section when you need order history or monthly totals.</p>
+        </div>
+    </div>
+</section>
+
+@if (!ViewData.ModelState.IsValid)
+{
+    <div asp-validation-summary="All" class="alert alert-danger"></div>
+}
+
+<div class="portal-grid">
+    <section class="soft-card">
+        <form method="post" asp-page-handler="Submit">
+            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+                <h2 class="section-title mb-0">Menu</h2>
+                <button type="submit" class="btn btn-primary">Place Order</button>
             </div>
 
-            @if (!ViewData.ModelState.IsValid)
+            @if (Model.MenuItems.Count == 0)
             {
-                <div asp-validation-summary="All" class="mb-4 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-3 text-sm text-rose-400"></div>
-            }
-
-            <form method="post" asp-page-handler="Submit">
-                <div class="space-y-3 max-h-[520px] overflow-auto pr-1">
-                @foreach (var item in Model.MenuItems)
-                {
-                    <label class="flex cursor-pointer items-center gap-4 rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 hover:border-cyan-500/50 transition">
-                        <input type="radio" name="SelectedMenuItemId" value="@item.Id" class="h-4 w-4 text-cyan-500" />
-                        <span class="text-3xl">@item.Emoji</span>
-                        <span class="flex-1">
-                            <span class="block text-sm font-semibold text-white">@item.Name</span>
-                            <span class="text-xs text-slate-400">@item.MealSlot</span>
-                        </span>
-                        <span class="text-sm font-mono text-cyan-300">R @item.Price.ToString("N2")</span>
-                    </label>
-                }
-                </div>
-                <button type="submit" class="mt-5 w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white hover:bg-cyan-500 transition-all duration-200">
-                    Place Order
-                </button>
-            </form>
-        </section>
-    </div>
-
-    <div class="lg:col-span-7 flex flex-col gap-6">
-        <section class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-xl">
-            <h2 class="text-lg font-bold text-white mb-4">My Monthly Tallies</h2>
-            @if (Model.MonthlyTallies.Count == 0)
-            {
-                <p class="text-slate-400 text-sm">No canteen activity recorded yet.</p>
+                <p class="text-muted mb-0">No menu items are active right now.</p>
             }
             else
             {
-                <div class="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/40 shadow-inner">
-                    <table class="w-full text-left text-sm text-slate-300">
-                        <thead class="bg-slate-800/80 text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-slate-700/60">
-                            <tr>
-                                <th class="px-5 py-3">Month</th>
-                                <th class="px-5 py-3 text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-700/50">
+                <div class="menu-grid">
+                    @foreach (var group in Model.MenuItems.GroupBy(x => x.MealSlot))
+                    {
+                        foreach (var item in group)
+                        {
+                            <label class="menu-card">
+                                <input type="radio" name="SelectedMenuItemId" value="@item.Id" />
+                                @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                                {
+                                    <img src="@item.ImagePath" alt="@item.Name" />
+                                }
+                                else
+                                {
+                                    <div class="d-flex align-items-center justify-content-center rounded-4 bg-light" style="aspect-ratio:16/10;font-size:3rem;">@item.Emoji</div>
+                                }
+                                <span class="d-flex align-items-start justify-content-between gap-3">
+                                    <span>
+                                        <span class="d-block fw-bold">@item.Name</span>
+                                        <span class="list-card-meta">@item.MealSlot</span>
+                                    </span>
+                                    <span class="fw-bold text-nowrap">R @item.Price.ToString("N2")</span>
+                                </span>
+                            </label>
+                        }
+                    }
+                </div>
+            }
+        </form>
+    </section>
+
+    <aside class="soft-card">
+        <h2 class="section-title">My Canteen Account</h2>
+
+        <details class="details-card" open>
+            <summary>
+                <span class="fw-bold">Monthly totals</span>
+                <span class="d-block list-card-meta">Quick view of recent canteen spend</span>
+            </summary>
+            <div class="details-body">
+                @if (Model.MonthlyTallies.Count == 0)
+                {
+                    <p class="text-muted mb-0">No canteen activity recorded yet.</p>
+                }
+                else
+                {
+                    <div class="d-grid gap-2">
                         @foreach (var item in Model.MonthlyTallies)
                         {
-                            <tr>
-                                <td class="px-5 py-3 text-white">@(new DateTime(item.Year, item.Month, 1).ToString("MMMM yyyy"))</td>
-                                <td class="px-5 py-3 text-right text-cyan-300 font-mono">R @item.TotalAmount.ToString("N2")</td>
-                            </tr>
+                            <div class="list-card">
+                                <div class="d-flex justify-content-between gap-3">
+                                    <span class="fw-bold">@(new DateTime(item.Year, item.Month, 1).ToString("MMMM yyyy"))</span>
+                                    <span class="fw-bold">R @item.TotalAmount.ToString("N2")</span>
+                                </div>
+                            </div>
                         }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </section>
+                    </div>
+                }
+            </div>
+        </details>
 
-        <section class="bg-[#1e2336] rounded-2xl p-6 border border-slate-700 shadow-xl flex-grow">
-            <h2 class="text-lg font-bold text-white mb-4">My Recent Orders</h2>
-            @if (Model.MyOrders.Count == 0)
-            {
-                <p class="text-slate-400 text-sm">No orders submitted yet.</p>
-            }
-            else
-            {
-                <div class="overflow-hidden rounded-xl border border-slate-700/60 bg-slate-800/40 shadow-inner overflow-x-auto">
-                    <table class="w-full text-left text-sm text-slate-300 min-w-[560px]">
-                        <thead class="bg-slate-800/80 text-xs uppercase tracking-wider text-slate-400 font-semibold border-b border-slate-700/60">
-                            <tr>
-                                <th class="px-5 py-3">Time</th>
-                                <th class="px-5 py-3">Item</th>
-                                <th class="px-5 py-3">Meal</th>
-                                <th class="px-5 py-3 text-center">Status</th>
-                                <th class="px-5 py-3 text-right">Total</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-700/50">
-                        @foreach (var order in Model.MyOrders)
-                        {
-                            <tr>
-                                <td class="px-5 py-3 text-slate-400 text-xs">@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                                <td class="px-5 py-3 text-white">@order.ItemSummary</td>
-                                <td class="px-5 py-3 text-slate-300">@order.MealSlot</td>
-                                <td class="px-5 py-3 text-center">@order.Status</td>
-                                <td class="px-5 py-3 text-right text-cyan-300 font-mono">R @order.TotalAmount.ToString("N2")</td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            }
-        </section>
-    </div>
+        <details class="details-card">
+            <summary>
+                <span class="fw-bold">Recent orders</span>
+                <span class="d-block list-card-meta">Expand for item-level detail</span>
+            </summary>
+            <div class="details-body">
+                @if (Model.MyOrders.Count == 0)
+                {
+                    <p class="text-muted mb-0">No orders submitted yet.</p>
+                }
+                else
+                {
+                    foreach (var order in Model.MyOrders)
+                    {
+                        <article class="list-card">
+                            <div class="d-flex justify-content-between gap-3">
+                                <div>
+                                    <div class="fw-bold">@order.ItemSummary</div>
+                                    <div class="list-card-meta">@order.MealSlot · @order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold">R @order.TotalAmount.ToString("N2")</div>
+                                    <div class="list-card-meta">@order.Status</div>
+                                </div>
+                            </div>
+                        </article>
+                    }
+                }
+            </div>
+        </details>
+    </aside>
 </div>

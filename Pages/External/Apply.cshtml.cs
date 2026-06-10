@@ -1,12 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.External;
 
@@ -14,18 +12,18 @@ public class ApplyModel : PageModel
 {
     private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
 
-    private readonly ApplicationDbContext _db;
-    private readonly IEmailSender _emailSender;
-    private readonly RoutingInboxesOptions _inboxes;
+    private readonly HrDbContext _db;
+    private readonly IZendeskTicketService _zendeskTicketService;
+    private readonly IFinanceAuditService _auditService;
 
     public ApplyModel(
-        ApplicationDbContext db,
-        IEmailSender emailSender,
-        IOptions<RoutingInboxesOptions> inboxOptions)
+        HrDbContext db,
+        IZendeskTicketService zendeskTicketService,
+        IFinanceAuditService auditService)
     {
         _db = db;
-        _emailSender = emailSender;
-        _inboxes = inboxOptions.Value;
+        _zendeskTicketService = zendeskTicketService;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -72,24 +70,22 @@ public class ApplyModel : PageModel
         var invite = await _db.ReferralInvites
             .FirstAsync(x => x.Token == Input.Token);
 
-        await using var ms = new MemoryStream();
-        await ResumeFile.CopyToAsync(ms);
+        var ticket = await _zendeskTicketService.CreateReferralTicketAsync(
+            Job,
+            invite.ReferrerEmployeeUsername,
+            invite.ReferrerEmployeeEmail,
+            Input.CandidateName,
+            Input.CandidateEmail,
+            Input.CandidatePhone,
+            Input.Notes,
+            ResumeFile);
 
-        await _emailSender.SendAsync(new EmailMessage
+        if (!ticket.Succeeded)
         {
-            To = _inboxes.HrReferralInbox,
-            Subject = $"External Referral Application: {Job.Title}",
-            BodyText = $"Candidate: {Input.CandidateName}\nEmail: {Input.CandidateEmail}\nReferred by: {invite.ReferrerEmployeeUsername}\nNotes: {Input.Notes}",
-            Attachments = new List<EmailAttachment>
-            {
-                new()
-                {
-                    FileName = ResumeFile.FileName,
-                    ContentType = ResumeFile.ContentType,
-                    Bytes = ms.ToArray()
-                }
-            }
-        });
+            await _auditService.WriteAsync("external", "ZendeskTicketFailed", "ExternalApplication", $"job={Job.Id};candidate={Input.CandidateEmail};message={ticket.Message}");
+            ModelState.AddModelError(string.Empty, ticket.Message);
+            return Page();
+        }
 
         _db.ExternalApplications.Add(new ExternalApplication
         {
@@ -97,13 +93,18 @@ public class ApplyModel : PageModel
             ReferralInviteId = invite.Id,
             CandidateName = Input.CandidateName,
             CandidateEmail = Input.CandidateEmail,
+            CandidatePhone = Input.CandidatePhone,
             Notes = Input.Notes,
+            ZendeskTicketId = ticket.TicketId,
+            ZendeskTicketUrl = ticket.TicketUrl,
             SubmittedUtc = DateTime.UtcNow,
             Status = "Submitted"
         });
         invite.IsConsumed = true;
+        invite.ZendeskTicketId = ticket.TicketId;
 
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync("external", "ZendeskTicketCreated", "ExternalApplication", $"job={Job.Id};candidate={Input.CandidateEmail};ticket={ticket.TicketId}");
         TempData["ExternalApplyDone"] = "Application submitted successfully.";
         return RedirectToPage("/External/Apply", new { token = Input.Token });
     }
@@ -122,7 +123,7 @@ public class ApplyModel : PageModel
         }
 
         Job = invite.JobPosting;
-        TokenValid = Job is not null;
+        TokenValid = Job is not null && Job.IsActive && !Job.IsDeleted;
     }
 
     public class InputModel
@@ -134,6 +135,9 @@ public class ApplyModel : PageModel
 
         [Required, EmailAddress, MaxLength(200)]
         public string CandidateEmail { get; set; } = string.Empty;
+
+        [Phone, MaxLength(60)]
+        public string CandidatePhone { get; set; } = string.Empty;
 
         [MaxLength(2000)]
         public string Notes { get; set; } = string.Empty;

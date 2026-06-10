@@ -32,6 +32,11 @@
                 <input asp-for="Input.CandidateEmail" class="form-control" />
                 <span asp-validation-for="Input.CandidateEmail" class="text-danger"></span>
             </div>
+            <div class="col-md-6">
+                <label asp-for="Input.CandidatePhone" class="form-label">Phone</label>
+                <input asp-for="Input.CandidatePhone" class="form-control" />
+                <span asp-validation-for="Input.CandidatePhone" class="text-danger"></span>
+            </div>
             <div class="col-12">
                 <label asp-for="Input.Notes" class="form-label"></label>
                 <textarea asp-for="Input.Notes" rows="4" class="form-control"></textarea>

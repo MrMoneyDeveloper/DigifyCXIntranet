@@ -2,6 +2,7 @@ using DigifyCXIntranet.BackgroundJobs;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
@@ -12,8 +13,20 @@ var builder = WebApplication.CreateBuilder(args);
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connectionString));
+
+void ConfigureSqlServer(DbContextOptionsBuilder options)
+{
+    options.UseSqlServer(connectionString, sql =>
+    {
+        sql.EnableRetryOnFailure(maxRetryCount: 3);
+        sql.CommandTimeout(30);
+    });
+}
+
+builder.Services.AddDbContext<ApplicationDbContext>(ConfigureSqlServer);
+builder.Services.AddDbContext<CanteenDbContext>(ConfigureSqlServer);
+builder.Services.AddDbContext<HrDbContext>(ConfigureSqlServer);
+builder.Services.AddDbContext<PolicyDbContext>(ConfigureSqlServer);
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.Configure<AdminAccessOptions>(
@@ -30,26 +43,34 @@ builder.Services.Configure<PayrollOptions>(
     builder.Configuration.GetSection(PayrollOptions.SectionName));
 builder.Services.Configure<TechNewsOptions>(
     builder.Configuration.GetSection(TechNewsOptions.SectionName));
+builder.Services.Configure<HomePageOptions>(
+    builder.Configuration.GetSection(HomePageOptions.SectionName));
 builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
 
 builder.Services.AddSingleton<IAdminAccessService, ConfigurationAdminAccessService>();
-builder.Services.AddSingleton<IAuthorizationHandler, AdminOnlyHandler>();
-builder.Services.AddSingleton<IClock, SystemClock>();
+builder.Services.AddTransient<IClaimsTransformation, ConfigurationRoleClaimsTransformation>();
+builder.Services.AddSingleton<IClock, DigifyCXIntranet.Services.SystemClock>();
 builder.Services.AddScoped<ICanteenBatchService, CanteenBatchService>();
 builder.Services.AddScoped<IFileExportService, ClosedXmlFileExportService>();
 builder.Services.AddScoped<IZendeskPolicySyncService, ZendeskPolicySyncService>();
+builder.Services.AddScoped<IZendeskTicketService, ZendeskTicketService>();
+builder.Services.AddScoped<IFinanceAuditService, FinanceAuditService>();
 builder.Services.AddScoped<IEmailSender, SmtpOrOutboxEmailSender>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
 builder.Services.AddHttpClient(nameof(HackerNewsCacheService));
 builder.Services.AddHttpClient(nameof(ZendeskPolicySyncService));
+builder.Services.AddHttpClient(nameof(ZendeskTicketService));
 
 builder.Services.AddHostedService<TechNewsRefreshHostedService>();
 builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
 builder.Services.AddHostedService<MonthlyPayrollHostedService>();
+
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("sqlserver");
 
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
@@ -78,12 +99,34 @@ builder.Services.AddAuthorization(options =>
         .Build();
 
     options.AddPolicy("AdminOnly", policy =>
-        policy.Requirements.Add(new AdminOnlyRequirement()));
+        policy.RequireRole(AppRoles.AdminRoles));
+    options.AddPolicy(AppPolicies.AdminConsole, policy =>
+        policy.RequireRole(AppRoles.AdminRoles));
+    options.AddPolicy(AppPolicies.FinanceLedger, policy =>
+        policy.RequireRole(AppRoles.FinanceAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.HrOperations, policy =>
+        policy.RequireRole(AppRoles.HrAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.CanteenOperations, policy =>
+        policy.RequireRole(AppRoles.CanteenAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.SystemOperations, policy =>
+        policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
 });
 
 builder.Services.AddRazorPages(options =>
 {
-    options.Conventions.AuthorizeFolder("/Admin", "AdminOnly");
+    options.Conventions.AuthorizeFolder("/Admin", AppPolicies.AdminConsole);
+    options.Conventions.AuthorizePage("/Admin/Menu", AppPolicies.CanteenOperations);
+    options.Conventions.AuthorizePage("/Admin/MenuEdit", AppPolicies.CanteenOperations);
+    options.Conventions.AuthorizePage("/Admin/Canteen", AppPolicies.CanteenOperations);
+    options.Conventions.AuthorizePage("/Admin/Jobs", AppPolicies.HrOperations);
+    options.Conventions.AuthorizePage("/Admin/JobEdit", AppPolicies.HrOperations);
+    options.Conventions.AuthorizePage("/Admin/Policies", AppPolicies.HrOperations);
+    options.Conventions.AuthorizePage("/Admin/PolicyEdit", AppPolicies.HrOperations);
+    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Faq", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     if (!useWindowsAuth)
     {
@@ -140,6 +183,8 @@ app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapHealthChecks("/health/database");
+
 app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 {
     static string SafeText(string value, int maxLength)
@@ -185,8 +230,13 @@ app.MapRazorPages();
 
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("DatabaseStartup");
+    await SqlServerStartupValidator.EnsureServerIsReachableAsync(connectionString, logger);
+
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await db.Database.MigrateAsync();
+    await DatabaseSchemaRepair.EnsurePostMigrationSchemaAsync(db);
     await SeedData.InitializeAsync(db);
 }
 

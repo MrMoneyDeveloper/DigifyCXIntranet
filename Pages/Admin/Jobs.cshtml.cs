@@ -10,10 +10,10 @@ namespace DigifyCXIntranet.Pages.Admin;
 
 public class JobsModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly HrDbContext _db;
     private readonly IWebHostEnvironment _environment;
 
-    public JobsModel(ApplicationDbContext db, IWebHostEnvironment environment)
+    public JobsModel(HrDbContext db, IWebHostEnvironment environment)
     {
         _db = db;
         _environment = environment;
@@ -68,7 +68,9 @@ public class JobsModel : PageModel
             AdSubHeadline = string.IsNullOrWhiteSpace(NewItem.AdSubHeadline) ? NewItem.Description : NewItem.AdSubHeadline.Trim(),
             AdBackgroundImagePath = backgroundPath,
             IsActive = true,
-            LastUpdatedBy = UserNameHelper.GetShortName(User)
+            LastUpdatedBy = UserNameHelper.GetShortName(User),
+            CreatedDateUtc = DateTime.UtcNow,
+            UpdatedDateUtc = DateTime.UtcNow
         });
 
         await _db.SaveChangesAsync();
@@ -77,7 +79,7 @@ public class JobsModel : PageModel
 
     public async Task<IActionResult> OnPostToggleActiveAsync(int id)
     {
-        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();
@@ -85,6 +87,29 @@ public class JobsModel : PageModel
 
         entity.IsActive = !entity.IsActive;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
+        entity.UpdatedDateUtc = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        if (entity is null)
+        {
+            return NotFound();
+        }
+
+        if (entity.IsActive)
+        {
+            ModelState.AddModelError(string.Empty, "Deactivate the job posting before deleting it.");
+            await LoadAsync();
+            return Page();
+        }
+
+        entity.IsDeleted = true;
+        entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
+        entity.UpdatedDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
         return RedirectToPage();
     }
@@ -92,6 +117,7 @@ public class JobsModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.JobPostings
+            .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.ClosingDate)
             .ToListAsync();
     }

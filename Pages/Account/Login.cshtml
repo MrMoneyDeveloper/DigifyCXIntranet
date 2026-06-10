@@ -38,7 +38,7 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs text-slate-300">
                     <thead class="text-slate-400">
-                        <tr><th class="pb-1">Username</th><th class="pb-1">Password</th></tr>
+                        <tr><th class="pb-1">Username</th><th class="pb-1">Password</th><th class="pb-1">Role</th></tr>
                     </thead>
                     <tbody>
                     @foreach (var user in Model.DemoUsers)
@@ -46,6 +46,7 @@
                         <tr>
                             <td class="font-mono py-0.5">@user.Username</td>
                             <td class="font-mono py-0.5">@user.Password</td>
+                            <td class="font-mono py-0.5">@user.Role</td>
                         </tr>
                     }
                     </tbody>

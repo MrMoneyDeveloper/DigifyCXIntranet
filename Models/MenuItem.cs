@@ -19,9 +19,14 @@ public class MenuItem
     [MaxLength(80)]
     public string IconClass { get; set; } = string.Empty;
 
+    [MaxLength(250)]
+    public string ImagePath { get; set; } = string.Empty;
+
     public MealSlot MealSlot { get; set; } = MealSlot.Lunch;
 
     public bool IsActive { get; set; } = true;
+
+    public bool IsDeleted { get; set; }
 
     public int DisplayOrder { get; set; }
 }

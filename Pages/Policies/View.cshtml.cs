@@ -9,9 +9,9 @@ namespace DigifyCXIntranet.Pages.Policies;
 
 public class ViewModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly PolicyDbContext _db;
 
-    public ViewModel(ApplicationDbContext db)
+    public ViewModel(PolicyDbContext db)
     {
         _db = db;
     }

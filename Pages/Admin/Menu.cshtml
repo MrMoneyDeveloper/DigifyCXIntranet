@@ -8,7 +8,7 @@
     <div class="col-lg-5">
         <section class="card-elevated p-4">
             <h1 class="h5 mb-3">Add Menu Item</h1>
-            <form method="post" asp-page-handler="Create" class="row g-3">
+            <form method="post" asp-page-handler="Create" enctype="multipart/form-data" class="row g-3">
                 <div class="col-12">
                     <label asp-for="NewItem.Name" class="form-label"></label>
                     <input asp-for="NewItem.Name" class="form-control" />
@@ -35,6 +35,11 @@
                     <input asp-for="NewItem.IconClass" class="form-control" />
                 </div>
                 <div class="col-12">
+                    <label asp-for="FoodImageUpload" class="form-label">Food Image</label>
+                    <input asp-for="FoodImageUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+                    <span asp-validation-for="FoodImageUpload" class="text-danger"></span>
+                </div>
+                <div class="col-12">
                     <button type="submit" class="btn btn-primary">Save Menu Item</button>
                 </div>
             </form>
@@ -44,21 +49,38 @@
         <section class="card-elevated p-4">
             <h2 class="h6 mb-3">Menu Items</h2>
             <table class="table align-middle">
-                <thead><tr><th>Emoji</th><th>Name</th><th>Meal</th><th>Price</th><th>Status</th><th></th></tr></thead>
+                <thead><tr><th>Image</th><th>Name</th><th>Meal</th><th>Price</th><th>Status</th><th></th></tr></thead>
                 <tbody>
                 @foreach (var item in Model.Items)
                 {
                     <tr>
-                        <td class="text-2xl">@item.Emoji</td>
+                        <td>
+                            @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                            {
+                                <img src="@item.ImagePath" alt="@item.Name" class="rounded object-cover" style="width:56px;height:42px;" />
+                            }
+                            else
+                            {
+                                <span class="text-2xl">@item.Emoji</span>
+                            }
+                        </td>
                         <td>@item.Name</td>
                         <td>@item.MealSlot</td>
                         <td>R @item.Price.ToString("N2")</td>
                         <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                        <td>
-                            <form method="post" asp-page-handler="ToggleActive">
+                        <td class="d-flex gap-2">
+                            <a asp-page="/Admin/MenuEdit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                            <form method="post" asp-page-handler="ToggleActive" class="m-0">
                                 <input type="hidden" name="id" value="@item.Id" />
                                 <button type="submit" class="btn btn-sm btn-outline-secondary">@(item.IsActive ? "Deactivate" : "Activate")</button>
                             </form>
+                            @if (!item.IsActive)
+                            {
+                                <form method="post" asp-page-handler="Delete" class="m-0">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            }
                         </td>
                     </tr>
                 }

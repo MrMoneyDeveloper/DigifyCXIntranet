@@ -42,40 +42,6 @@
                 </table>
             }
         </section>
-
-        <section class="card-elevated p-4">
-            <h2 class="h6 mb-3">Payroll Runs</h2>
-            @if (Model.PayrollRuns.Count == 0)
-            {
-                <p class="text-muted mb-0">No payroll runs yet.</p>
-            }
-            else
-            {
-                <table class="table table-sm">
-                    <thead><tr><th>When</th><th>Employees</th><th>Status</th><th>Artifact</th></tr></thead>
-                    <tbody>
-                    @foreach (var run in Model.PayrollRuns)
-                    {
-                        <tr>
-                            <td>@run.TriggeredUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                            <td>@run.EmployeesCount</td>
-                            <td>@(run.SentSuccessfully ? "Sent" : "Failed")</td>
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(run.ArtifactPath))
-                                {
-                                    <a asp-page-handler="DownloadPayrollArtifact" asp-route-id="@run.Id" class="btn btn-sm btn-outline-primary">Download</a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">SMTP/no artifact</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
     </div>
 
     <div class="col-lg-8">

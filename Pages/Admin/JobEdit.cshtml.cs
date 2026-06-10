@@ -9,10 +9,10 @@ namespace DigifyCXIntranet.Pages.Admin;
 
 public class JobEditModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly HrDbContext _db;
     private readonly IWebHostEnvironment _environment;
 
-    public JobEditModel(ApplicationDbContext db, IWebHostEnvironment environment)
+    public JobEditModel(HrDbContext db, IWebHostEnvironment environment)
     {
         _db = db;
         _environment = environment;
@@ -26,7 +26,7 @@ public class JobEditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();
@@ -58,7 +58,7 @@ public class JobEditModel : PageModel
             return Page();
         }
 
-        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Item.Id);
+        var entity = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Item.Id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();
@@ -92,6 +92,7 @@ public class JobEditModel : PageModel
             : backgroundPath;
         entity.IsActive = Item.IsActive;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
+        entity.UpdatedDateUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
         return RedirectToPage("/Admin/Jobs");

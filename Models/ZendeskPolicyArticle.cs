@@ -22,6 +22,16 @@ public class ZendeskPolicyArticle
     [MaxLength(12000)]
     public string Body { get; set; } = string.Empty;
 
+    public long? CategoryId { get; set; }
+
+    [MaxLength(220)]
+    public string CategoryName { get; set; } = string.Empty;
+
+    public long? SectionId { get; set; }
+
+    [MaxLength(220)]
+    public string SectionName { get; set; } = string.Empty;
+
     public bool IsPublished { get; set; } = true;
     public DateTime UpdatedAtUtc { get; set; } = DateTime.UtcNow;
     public DateTime SyncedAtUtc { get; set; } = DateTime.UtcNow;

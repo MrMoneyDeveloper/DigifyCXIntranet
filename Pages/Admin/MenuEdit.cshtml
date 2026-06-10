@@ -1,0 +1,79 @@
+@page "{id:int}"
+@model DigifyCXIntranet.Pages.Admin.MenuEditModel
+@{
+    ViewData["Title"] = "Edit Menu Item";
+}
+
+<section class="card-elevated p-4">
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+        <div>
+            <h1 class="h5 mb-1">Edit Menu Item</h1>
+            <p class="text-muted mb-0">Update canteen item details, display order, and food image.</p>
+        </div>
+        <a asp-page="/Admin/Menu" class="btn btn-outline-secondary">Back to Menu</a>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" class="row g-3">
+        <input asp-for="Item.Id" type="hidden" />
+        <input asp-for="Item.ImagePath" type="hidden" />
+
+        <div class="col-md-6">
+            <label asp-for="Item.Name" class="form-label"></label>
+            <input asp-for="Item.Name" class="form-control" />
+            <span asp-validation-for="Item.Name" class="text-danger"></span>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Item.Price" class="form-label"></label>
+            <input asp-for="Item.Price" type="number" step="0.01" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Item.MealSlot" class="form-label"></label>
+            <select asp-for="Item.MealSlot" class="form-select" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.MealSlot>()"></select>
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Item.Emoji" class="form-label"></label>
+            <input asp-for="Item.Emoji" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Item.DisplayOrder" class="form-label"></label>
+            <input asp-for="Item.DisplayOrder" type="number" class="form-control" />
+        </div>
+        <div class="col-md-3">
+            <label asp-for="Item.IconClass" class="form-label"></label>
+            <input asp-for="Item.IconClass" class="form-control" />
+        </div>
+        <div class="col-md-3 d-flex align-items-end">
+            <div class="form-check">
+                <input asp-for="Item.IsActive" class="form-check-input" />
+                <label asp-for="Item.IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Current Image</label>
+            <div>
+                @if (!string.IsNullOrWhiteSpace(Model.Item.ImagePath))
+                {
+                    <img src="@Model.Item.ImagePath" alt="@Model.Item.Name" class="rounded border object-fit-cover" style="width:180px;height:120px;" />
+                }
+                else
+                {
+                    <div class="rounded border p-4 text-muted">No image uploaded.</div>
+                }
+            </div>
+        </div>
+        <div class="col-md-8">
+            <label asp-for="FoodImageUpload" class="form-label">Replace Food Image</label>
+            <input asp-for="FoodImageUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+            <span asp-validation-for="FoodImageUpload" class="text-danger"></span>
+            <div class="form-text">Accepted formats: JPG, PNG, WEBP. Maximum 3MB.</div>
+        </div>
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Save Changes</button>
+            <a asp-page="/Admin/Menu" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Chicken salad bowl">
+  <rect width="640" height="420" fill="#f7f1ea"/>
+  <path d="M134 176h372c28 0 50 25 45 53-15 83-90 136-231 136S104 312 89 229c-5-28 17-53 45-53z" fill="#d9edf2"/>
+  <path d="M150 172c48-50 113-75 195-75 83 0 144 25 184 75H150z" fill="#8bcf72"/>
+  <circle cx="246" cy="190" r="34" fill="#e34e4a"/>
+  <circle cx="410" cy="188" r="32" fill="#f4c84d"/>
+  <path d="M266 248c65-58 126-66 185-24" fill="none" stroke="#e4a15d" stroke-width="38" stroke-linecap="round"/>
+</svg>

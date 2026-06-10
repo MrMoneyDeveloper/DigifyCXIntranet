@@ -52,69 +52,49 @@
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DigifyCXIntranet.styles.css" asp-append-version="true" />
 </head>
-<body class="min-h-screen bg-slate-100 text-slate-900 antialiased flex flex-col">
-    <!-- Fixed background container (Light Version) -->
-    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#97b3d9] app-bg-shell">
-    
-        <!-- Large, soft branded shapes (Opacity lowered to 5% so they are super subtle on the light background) -->
-        <div class="absolute -left-28 -top-24 h-72 w-72 rounded-full bg-cyan-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-left"></div>
-        <div class="absolute -right-24 top-20 h-80 w-80 rounded-full bg-indigo-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-right" style="animation-delay: 1.2s"></div>
-    
+<body class="min-h-screen antialiased flex flex-col">
+    <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden app-bg-shell">
+        <div class="app-bg-blob"></div>
     </div>
-    <!-- DARK HEADER (Updated to match Canva Mockup) -->
-    <header class="sticky top-0 z-40 border-b border-slate-800 bg-[#1e2336] shadow-md">
-        <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
-        
-            <!-- LOGO SECTION -->
-            <a class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-white transition hover:text-cyan-400" asp-area="" asp-page="/Index">
-    
-                <!-- Your custom PNG Logo -->
-                <img src="~/images/DigifyLogo-icon.png" alt="DigifyCX Logo" class="h-8 w-auto object-contain" />
-    
-                DigifyCX
+    <header class="sticky top-0 z-40 app-header">
+        <nav class="app-nav mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 lg:px-6">
+            <a class="brand-mark" asp-area="" asp-page="/Index">
+                <img src="~/images/DigifyLogo-icon.png" alt="DigifyCX" class="brand-symbol" />
+                <span class="brand-word">
+                    <span class="brand-name">DigifyCX</span>
+                    <span class="brand-subtitle">App1CX Portal</span>
+                </span>
             </a>
 
-            <!-- CENTER NAVIGATION LINKS -->
-            <ul class="flex flex-wrap items-center gap-6 text-sm font-medium text-cyan-100/70">
-                <li><a class="transition hover:text-cyan-300" asp-page="/Index">Home</a></li>
-                <li><a class="transition hover:text-cyan-300" asp-page="/Canteen/Index">Canteen</a></li>
-            
-                <!-- THE "WHAT'S NEW?" BUTTON -->
+            <ul class="flex flex-wrap items-center justify-center gap-3 lg:gap-5 m-0 p-0 list-none">
+                <li><a class="nav-link-soft" asp-page="/Index">Home</a></li>
+                <li><a class="nav-link-soft" asp-page="/Canteen/Index">Canteen</a></li>
                 <li>
-                    <a class="relative flex items-center justify-center rounded-full bg-gradient-to-r from-[#9eafe5] to-[#beb2e8] px-6 py-2 font-extrabold text-white shadow-[0_4px_0_#8092c7] transition-all hover:translate-y-[2px] hover:shadow-[0_2px_0_#8092c7] active:translate-y-[4px] active:shadow-none" asp-page="/Announcements/Index">
-                        What's New?
-                        <!-- Inner glow effect -->
-                        <span class="absolute inset-0 rounded-full border-2 border-white/20"></span>
-                    </a>
+                    <a class="nav-link-soft nav-pill-highlight" asp-page="/Announcements/Index">What's New?</a>
                 </li>
-            
-                <li><a class="transition hover:text-cyan-300" asp-page="/Jobs/Index">Job Postings</a></li>
-                <li><a class="transition hover:text-cyan-300" asp-page="/Policies/Index">Policies</a></li>
-            
-                <!-- Kept the extra pages, just pushed them to the end -->
-                <li><a class="transition hover:text-cyan-300" asp-page="/Faq/Index">FAQ</a></li>
+                <li><a class="nav-link-soft" asp-page="/Jobs/Index">Jobs</a></li>
+                <li><a class="nav-link-soft" asp-page="/Policies/Index">Policies</a></li>
+                <li><a class="nav-link-soft" asp-page="/Faq/Index">FAQ</a></li>
             </ul>
 
-            <!-- PROFILE / SIGN OUT (Leaves this exactly as we built it) -->
             <div class="flex-shrink-0">
                 <partial name="_LoginPartial" />
             </div>
-        
         </nav>
     </header>
 
-    <main role="main" class="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 animate-reveal flex-grow">
+    <main role="main" class="app-main mx-auto w-full max-w-7xl px-4 lg:px-6 animate-reveal flex-grow">
         @RenderBody()
     </main>
 
-    <footer class="mt-auto w-full bg-[#1e2336] border-t border-slate-800 px-4 py-5 text-sm text-slate-400 text-center shadow-inner">
-        &copy; 2026 DigifyCX Internal Employee Platform
+    <footer class="mt-auto w-full px-4 py-5 text-sm text-slate-500 text-center">
+        &copy; 2026 App1CX / Digify BPO Employee Portal
     </footer>
 
     <script src="~/js/site.js" asp-append-version="true" defer></script>
     @await RenderSectionAsync("Scripts", required: false)
 
-    @if (!isAuthPage)
+    @if (!isAuthPage && User?.Identity?.IsAuthenticated == true)
     {
         <link rel="preconnect" href="https://static.zdassets.com" crossorigin>
         <!-- Start of cxe-internal Zendesk Widget script -->

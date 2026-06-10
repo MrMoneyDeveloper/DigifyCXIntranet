@@ -4,56 +4,51 @@
     ViewData["Title"] = "Announcements";
 }
 
-<div class="row g-4">
-    <div class="col-lg-8">
-        <div class="mx-auto max-w-5xl bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
-            <div class="mb-8 border-b border-slate-700/80 pb-5">
-                <h1 class="text-3xl font-extrabold text-white tracking-tight">Business Notices & Announcements</h1>
-                <p class="mt-2 text-sm text-slate-400">Active announcements are shown below. Expired notices are hidden automatically.</p>
-            </div>
+<div class="portal-grid">
+    <section class="portal-panel">
+        <div class="page-kicker mb-3">What's New</div>
+        <h1 class="page-title">Business notices & <span>announcements</span></h1>
+        <p class="page-copy mt-3 mb-4">Current notices from the business. Pinned updates stay near the top for quick scanning.</p>
 
-            @if (Model.Items.Count == 0)
+        @if (Model.Items.Count == 0)
+        {
+            <div class="list-card">
+                <div class="list-card-title">No announcements available right now.</div>
+                <div class="list-card-meta">Check back later for business updates.</div>
+            </div>
+        }
+        else
+        {
+            foreach (var item in Model.Items)
             {
-                <div class="rounded-xl bg-slate-800/30 py-12 border border-slate-700/50 border-dashed text-center">
-                    <p class="text-slate-400 font-medium">No announcements available at this time.</p>
-                </div>
+                <details class="details-card" @(item.IsPinned ? "open" : "")>
+                    <summary>
+                        <span class="fw-bold">@item.Title</span>
+                        @if (item.IsPinned)
+                        {
+                            <span class="meta-pill ms-2">Pinned</span>
+                        }
+                        <span class="d-block list-card-meta">@item.Summary · @item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy")</span>
+                    </summary>
+                    <div class="details-body">
+                        <p class="mb-0">@item.Content</p>
+                    </div>
+                </details>
             }
-            else
-            {
-                <div class="space-y-5">
-                    @foreach (var item in Model.Items)
-                    {
-                        <article class="rounded-xl bg-slate-800/50 p-6 border border-slate-700/50">
-                            <div class="flex flex-wrap items-start justify-between gap-4 mb-3">
-                                <h2 class="text-lg font-bold text-white">
-                                    @item.Title
-                                    @if (item.IsPinned)
-                                    {
-                                        <span class="inline-flex rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400 border border-cyan-500/20">Pinned</span>
-                                    }
-                                </h2>
-                                <span class="text-xs text-slate-400">@item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</span>
-                            </div>
-                            <p class="text-sm font-medium text-cyan-100/80">@item.Summary</p>
-                            <div class="text-sm text-slate-400 leading-relaxed mt-2">@item.Content</div>
-                        </article>
-                    }
-                </div>
-            }
+        }
+    </section>
+
+    <aside class="soft-card">
+        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+            <div>
+                <h2 class="section-title mb-1">Live Tech Feed</h2>
+                <small id="technews-updated" class="text-muted"></small>
+            </div>
         </div>
-    </div>
-
-    <div class="col-lg-4">
-        <aside class="bg-[#1e2336] rounded-2xl p-5 border border-slate-700 shadow-xl h-100">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h2 class="h6 text-white mb-0">Live Tech Feed</h2>
-                <small id="technews-updated" class="text-slate-400"></small>
-            </div>
-            <div id="technews-loading" class="text-slate-400 small">Loading...</div>
-            <div id="technews-error" class="text-warning small d-none">Unable to load feed right now.</div>
-            <div id="technews-list" class="d-flex flex-column gap-3"></div>
-        </aside>
-    </div>
+        <div id="technews-loading" class="text-muted small">Loading...</div>
+        <div id="technews-error" class="text-warning small d-none">Unable to load feed right now.</div>
+        <div id="technews-list" class="d-flex flex-column gap-2"></div>
+    </aside>
 </div>
 
 @section Scripts {
@@ -83,14 +78,14 @@
                 card.href = link;
                 card.target = "_blank";
                 card.rel = "noreferrer noopener";
-                card.className = "text-decoration-none border border-slate-700 rounded p-3";
+                card.className = "list-card";
 
                 const title = document.createElement('div');
-                title.className = "text-white fw-semibold small";
+                title.className = "list-card-title";
                 title.textContent = item.title || "Untitled";
 
                 const by = document.createElement('div');
-                by.className = "text-slate-400 small mt-1";
+                by.className = "list-card-meta";
                 by.textContent = `by ${item.by || "unknown"}`;
 
                 card.appendChild(title);

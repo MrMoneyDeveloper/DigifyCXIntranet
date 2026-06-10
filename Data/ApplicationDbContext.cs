@@ -24,40 +24,15 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<PolicyDocument> PolicyDocuments => Set<PolicyDocument>();
     public DbSet<ZendeskPolicyArticle> ZendeskPolicyArticles => Set<ZendeskPolicyArticle>();
     public DbSet<PolicyAcknowledgement> PolicyAcknowledgements => Set<PolicyAcknowledgement>();
+    public DbSet<ZendeskSyncLog> ZendeskSyncLogs => Set<ZendeskSyncLog>();
+    public DbSet<FinanceAuditLog> FinanceAuditLogs => Set<FinanceAuditLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Fix the multiple cascade paths error for External Applications using 'builder'
-        builder.Entity<ExternalApplication>()
-            .HasOne(e => e.ReferralInvite)
-            .WithMany()
-            .HasForeignKey(e => e.ReferralInviteId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        builder.Entity<CanteenOrder>()
-            .Property(x => x.TotalAmount)
-            .HasPrecision(18, 2);
-
-        builder.Entity<MenuItem>()
-            .Property(x => x.Price)
-            .HasPrecision(18, 2);
-
-        builder.Entity<ReferralInvite>()
-            .HasIndex(x => x.Token)
-            .IsUnique();
-
-        builder.Entity<CanteenBatchRun>()
-            .HasIndex(x => x.RunKey)
-            .IsUnique();
-
-        builder.Entity<PayrollRun>()
-            .HasIndex(x => x.RunKey)
-            .IsUnique();
-
-        builder.Entity<PolicyAcknowledgement>()
-            .HasIndex(x => new { x.EmployeeDomainName, x.PolicyArticleId, x.PolicyVersion })
-            .IsUnique();
+        builder.ConfigureCanteenDomain();
+        builder.ConfigureHrDomain();
+        builder.ConfigurePolicyDomain();
     }
 }

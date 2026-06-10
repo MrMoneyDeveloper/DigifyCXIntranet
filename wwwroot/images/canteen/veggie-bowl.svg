@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Veggie bowl">
+  <rect width="640" height="420" fill="#edf3ee"/>
+  <path d="M106 184h428c16 0 29 15 26 31-18 101-98 153-240 153S98 316 80 215c-3-16 10-31 26-31z" fill="#f4d6a2"/>
+  <circle cx="230" cy="171" r="40" fill="#e96052"/>
+  <circle cx="324" cy="155" r="46" fill="#7abc5a"/>
+  <circle cx="425" cy="178" r="36" fill="#f0c045"/>
+  <path d="M200 246c70-28 151-29 240-4" fill="none" stroke="#5d9b5b" stroke-width="30" stroke-linecap="round"/>
+</svg>

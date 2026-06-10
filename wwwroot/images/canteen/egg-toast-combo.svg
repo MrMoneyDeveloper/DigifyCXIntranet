@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 420" role="img" aria-label="Egg and toast combo">
+  <rect width="640" height="420" fill="#eef5ea"/>
+  <ellipse cx="320" cy="222" rx="232" ry="132" fill="#dbe8ff"/>
+  <rect x="142" y="128" width="154" height="184" rx="30" fill="#c07b33"/>
+  <rect x="164" y="151" width="110" height="138" rx="18" fill="#e6b56e"/>
+  <path d="M337 147c54-40 137-3 149 54 15 70-48 125-120 95-72-31-90-104-29-149z" fill="#fff8e8"/>
+  <circle cx="395" cy="220" r="42" fill="#f6b432"/>
+</svg>

@@ -54,7 +54,7 @@ public class AnnouncementsModel : PageModel
 
     public async Task<IActionResult> OnPostToggleActiveAsync(int id)
     {
-        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == id);
+        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();
@@ -66,9 +66,25 @@ public class AnnouncementsModel : PageModel
         return RedirectToPage();
     }
 
+    public async Task<IActionResult> OnPostDeleteAsync(int id)
+    {
+        var entity = await _db.Announcements.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        if (entity is null)
+        {
+            return NotFound();
+        }
+
+        entity.IsActive = false;
+        entity.IsDeleted = true;
+        entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
+        await _db.SaveChangesAsync();
+        return RedirectToPage();
+    }
+
     private async Task LoadAsync()
     {
         Items = await _db.Announcements
+            .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.PublishDateUtc)
             .ToListAsync();
     }

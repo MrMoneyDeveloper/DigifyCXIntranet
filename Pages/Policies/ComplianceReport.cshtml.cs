@@ -1,5 +1,6 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -9,12 +10,12 @@ using System.Text;
 
 namespace DigifyCXIntranet.Pages.Policies;
 
-[Authorize(Policy = "AdminOnly")]
+[Authorize(Policy = AppPolicies.HrOperations)]
 public class ComplianceReportModel : PageModel
 {
-    private readonly ApplicationDbContext _db;
+    private readonly PolicyDbContext _db;
 
-    public ComplianceReportModel(ApplicationDbContext db)
+    public ComplianceReportModel(PolicyDbContext db)
     {
         _db = db;
     }
