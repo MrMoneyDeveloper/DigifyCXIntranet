@@ -7,6 +7,7 @@
         path.Equals("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) ||
         path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
 }
+@inject DigifyCXIntranet.Services.IAdminAccessService NavAdminAccess
 <!DOCTYPE html>
 <html lang="en" class="h-full">
 <head>
@@ -56,21 +57,20 @@
     <!-- Fixed background container (Light Version) -->
     <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#97b3d9] app-bg-shell">
     
-        <!-- Large, soft branded shapes (Opacity lowered to 5% so they are super subtle on the light background) -->
+        <!-- Large, soft branded shapes -->
         <div class="absolute -left-28 -top-24 h-72 w-72 rounded-full bg-cyan-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-left"></div>
         <div class="absolute -right-24 top-20 h-80 w-80 rounded-full bg-indigo-600/40 blur-3xl animate-bob app-bg-blob app-bg-blob-right" style="animation-delay: 1.2s"></div>
     
     </div>
-    <!-- DARK HEADER (Updated to match Canva Mockup) -->
+
+    <!-- DARK HEADER -->
     <header class="sticky top-0 z-40 border-b border-slate-800 bg-[#1e2336] shadow-md">
+        <!-- ROW 1: Logo + Main Nav + Profile -->
         <nav class="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 lg:px-6">
         
             <!-- LOGO SECTION -->
             <a class="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-white transition hover:text-cyan-400" asp-area="" asp-page="/Index">
-    
-                <!-- Your custom PNG Logo -->
                 <img src="~/images/DigifyLogo-icon.png" alt="DigifyCX Logo" class="h-8 w-auto object-contain" />
-    
                 DigifyCX
             </a>
 
@@ -83,24 +83,98 @@
                 <li>
                     <a class="relative flex items-center justify-center rounded-full bg-gradient-to-r from-[#9eafe5] to-[#beb2e8] px-6 py-2 font-extrabold text-white shadow-[0_4px_0_#8092c7] transition-all hover:translate-y-[2px] hover:shadow-[0_2px_0_#8092c7] active:translate-y-[4px] active:shadow-none" asp-page="/Announcements/Index">
                         What's New?
-                        <!-- Inner glow effect -->
                         <span class="absolute inset-0 rounded-full border-2 border-white/20"></span>
                     </a>
                 </li>
             
                 <li><a class="transition hover:text-cyan-300" asp-page="/Jobs/Index">Job Postings</a></li>
                 <li><a class="transition hover:text-cyan-300" asp-page="/Policies/Index">Policies</a></li>
-            
-                <!-- Kept the extra pages, just pushed them to the end -->
                 <li><a class="transition hover:text-cyan-300" asp-page="/Faq/Index">FAQ</a></li>
             </ul>
 
-            <!-- PROFILE / SIGN OUT (Leaves this exactly as we built it) -->
+            <!-- PROFILE / SIGN OUT -->
             <div class="flex-shrink-0">
                 <partial name="_LoginPartial" />
             </div>
         
         </nav>
+
+        @if (User?.Identity?.IsAuthenticated == true)
+        {
+            <!-- ROW 2: Role-Specific Quick Actions Bar -->
+            <div class="border-t border-slate-700/60 bg-[#171b2d]">
+                <div class="mx-auto flex max-w-7xl flex-wrap items-center gap-2 px-4 py-2 lg:px-6">
+
+                    @if (NavAdminAccess.IsAdmin(User))
+                    {
+                        <!-- ── ADMIN QUICK ACTIONS ── -->
+                        <span class="mr-2 text-[10px] font-bold uppercase tracking-widest text-amber-400/70">Admin Actions</span>
+
+                        <a asp-page="/Admin/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full bg-amber-500 px-4 py-1.5 text-xs font-bold text-slate-900 shadow-md transition hover:bg-amber-400 hover:shadow-amber-400/30">
+                            <!-- shield icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            Admin Console
+                        </a>
+
+                        <a asp-page="/Announcements/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-300 transition hover:border-amber-400 hover:bg-amber-500/20">
+                            <!-- megaphone icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"/></svg>
+                            Manage Announcements
+                        </a>
+
+                        <a asp-page="/Jobs/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-300 transition hover:border-amber-400 hover:bg-amber-500/20">
+                            <!-- briefcase icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                            Post / Manage Jobs
+                        </a>
+
+                        <a asp-page="/Policies/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-4 py-1.5 text-xs font-bold text-amber-300 transition hover:border-amber-400 hover:bg-amber-500/20">
+                            <!-- document icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            Manage Policies
+                        </a>
+                    }
+                    else
+                    {
+                        <!-- ── EMPLOYEE QUICK ACTIONS ── -->
+                        <span class="mr-2 text-[10px] font-bold uppercase tracking-widest text-cyan-400/70">Quick Actions</span>
+
+                        <a asp-page="/Canteen/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full bg-cyan-500 px-4 py-1.5 text-xs font-bold text-white shadow-md transition hover:bg-cyan-400 hover:shadow-cyan-400/30">
+                            <!-- fork & knife icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h18M3 3v4a9 9 0 009 9 9 9 0 009-9V3M12 15v6"/></svg>
+                            Submit Canteen Request
+                        </a>
+
+                        <a asp-page="/Jobs/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold text-cyan-300 transition hover:border-cyan-400 hover:bg-cyan-500/20">
+                            <!-- briefcase icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2zM16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/></svg>
+                            Browse Open Jobs
+                        </a>
+
+                        <a asp-page="/Faq/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold text-cyan-300 transition hover:border-cyan-400 hover:bg-cyan-500/20">
+                            <!-- question mark icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3M12 17h.01"/></svg>
+                            Read FAQs
+                        </a>
+
+                        <a asp-page="/Policies/Index"
+                           class="inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-cyan-500/10 px-4 py-1.5 text-xs font-bold text-cyan-300 transition hover:border-cyan-400 hover:bg-cyan-500/20">
+                            <!-- document icon -->
+                            <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                            View Policies
+                        </a>
+                    }
+
+                </div>
+            </div>
+        }
     </header>
 
     <main role="main" class="mx-auto w-full max-w-7xl px-4 py-6 lg:px-6 animate-reveal flex-grow">
