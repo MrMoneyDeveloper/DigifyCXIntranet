@@ -86,7 +86,7 @@ Notes:
             requesterEmail:    employeeEmail,
             employeeFullName:  employeeName,
             employeeId:        employeeId,
-            managerEmail:      managerEmail,
+            managerEmail:      managerEmail,   // sent only if non-empty (see core method)
             onBehalfOfEmail:   employeeEmail,
             attachment:        resumeFile,
             tags:              ["digifycx_intranet", "hr_internal_application"],
@@ -95,6 +95,14 @@ Notes:
 
     // ------------------------------------------------------------------
     // Referral — requester = candidate email
+    //
+    // NOTE: managerEmail is intentionally NOT sent to Zendesk.
+    // The CXI form uses cxi_hr_general as the HR query type, and that
+    // query type does NOT show the Manager Email field in the form
+    // conditions.  Sending a value for a hidden conditional field
+    // causes Zendesk to return HTTP 422 "Manager's email (for approval)
+    // is invalid".  The referrer identity is captured in the ticket body
+    // instead.
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateReferralTicketAsync(
         JobPosting job,
@@ -131,7 +139,7 @@ Notes:
             requesterEmail:    candidateEmail,
             employeeFullName:  candidateName,
             employeeId:        string.Empty,
-            managerEmail:      referrerEmail,
+            managerEmail:      string.Empty,   // intentionally omitted — not a valid field for cxi_hr_general
             onBehalfOfEmail:   referrerEmail,
             attachment:        resumeFile,
             tags:              ["digifycx_intranet", "hr_referral"],
@@ -176,10 +184,12 @@ Notes:
                 new { id = FieldRequestingOnBehalfOf, value = onBehalfOfEmail }
             };
 
+            // Only include optional fields when they carry a value —
+            // sending empty strings for conditional fields causes Zendesk 422.
             if (!string.IsNullOrWhiteSpace(employeeId))
-                customFields.Add(new { id = FieldEmployeeId,    value = employeeId.Trim() });
+                customFields.Add(new { id = FieldEmployeeId,   value = employeeId.Trim() });
             if (!string.IsNullOrWhiteSpace(managerEmail))
-                customFields.Add(new { id = FieldManagerEmail,  value = managerEmail.Trim() });
+                customFields.Add(new { id = FieldManagerEmail, value = managerEmail.Trim() });
 
             // 3. Ticket payload
             var payload = new
@@ -215,12 +225,9 @@ Notes:
             if (!response.IsSuccessStatusCode)
             {
                 var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
-
-                // Log full raw body at Warning so it appears in the trace / log output
                 _logger.LogWarning(
                     "Zendesk ticket creation failed. Status={Status} Subject={Subject}\nParsed: {Error}\nRaw response body:\n{Body}",
                     (int)response.StatusCode, subject, errorMsg, responseBody);
-
                 return Fail(errorMsg);
             }
 
@@ -253,16 +260,6 @@ Notes:
 
     // ------------------------------------------------------------------
     // Parses Zendesk error response body into a human-readable message.
-    //
-    // Zendesk 422 body shape:
-    // {
-    //   "error": "RecordInvalid",
-    //   "description": "Record validation errors",
-    //   "details": {
-    //     "ticket_form_id": [{ "description": "Ticket form 123 is not enabled" }],
-    //     "subject":        [{ "description": "can't be blank" }]
-    //   }
-    // }
     // ------------------------------------------------------------------
     private static string BuildDetailedErrorMessage(int statusCode, string? reason, string responseBody)
     {
@@ -275,7 +272,6 @@ Notes:
                          : root.TryGetProperty("error",       out var err)  ? err.GetString()
                          : null;
 
-            // Flatten the details object: { "field_name": [{"description": "..."}, ...], ... }
             var fieldErrors = new List<string>();
             if (root.TryGetProperty("details", out var details) &&
                 details.ValueKind == JsonValueKind.Object)
@@ -308,7 +304,6 @@ Notes:
         }
         catch
         {
-            // Not valid JSON — just return a truncated raw snippet
             return $"HTTP {statusCode} ({reason}): {responseBody[..Math.Min(400, responseBody.Length)]}";
         }
     }
