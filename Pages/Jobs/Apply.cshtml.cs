@@ -35,9 +35,8 @@ public class ApplyModel : PageModel
 
     public JobPosting? Job { get; private set; }
 
-    // TempData: success — all stored as string (DefaultTempDataSerializer only handles primitives)
     [TempData] public string JobApplyMessage   { get; set; } = string.Empty;
-    [TempData] public string JobApplyTicketId  { get; set; } = string.Empty;  // e.g. "34512"
+    [TempData] public string JobApplyTicketId  { get; set; } = string.Empty;
     [TempData] public string JobApplyTicketUrl { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync(int id)
@@ -45,7 +44,7 @@ public class ApplyModel : PageModel
         Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
         if (Job is null) return NotFound();
 
-        Input.JobPostingId = id;
+        Input.JobPostingId  = id;
         Input.EmployeeName  = UserNameHelper.GetShortName(User);
         Input.EmployeeEmail = User.FindFirstValue(ClaimTypes.Email) ?? $"{Input.EmployeeName}@company.local";
         return Page();
@@ -75,12 +74,15 @@ public class ApplyModel : PageModel
             return Page();
         }
 
+        // EmployeeId and ManagerEmail are not collected from the user —
+        // pass empty strings so the service omits those Zendesk fields.
+        // Ticket routing (form, group, tags) is unaffected.
         var result = await _zendeskTicketService.CreateInternalApplicationTicketAsync(
             Job,
             Input.EmployeeName,
             Input.EmployeeEmail,
-            Input.EmployeeId,
-            Input.ManagerEmail,
+            employeeId:   string.Empty,
+            managerEmail: string.Empty,
             Input.Notes,
             ResumeFile);
 
@@ -124,12 +126,6 @@ public class ApplyModel : PageModel
 
         [Required, EmailAddress, MaxLength(200)]
         public string EmployeeEmail { get; set; } = string.Empty;
-
-        [MaxLength(80)]
-        public string EmployeeId { get; set; } = string.Empty;
-
-        [EmailAddress, MaxLength(200)]
-        public string ManagerEmail { get; set; } = string.Empty;
 
         [MaxLength(2000)]
         public string Notes { get; set; } = string.Empty;
