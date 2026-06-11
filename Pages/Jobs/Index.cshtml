@@ -23,7 +23,7 @@
         </svg>
         <div>
             <strong>@Model.JobApplyMessage</strong>
-            @if (Model.JobApplyTicketId.HasValue)
+            @if (!string.IsNullOrWhiteSpace(Model.JobApplyTicketId))
             {
                 <div class="mt-1 fs-sm">
                     Zendesk Ticket&#160;<strong>#@Model.JobApplyTicketId</strong>
@@ -53,7 +53,7 @@
         </svg>
         <div>
             <strong>@Model.ReferralMessage</strong>
-            @if (Model.ReferralTicketId.HasValue)
+            @if (!string.IsNullOrWhiteSpace(Model.ReferralTicketId))
             {
                 <div class="mt-1 fs-sm">
                     Zendesk Ticket&#160;<strong>#@Model.ReferralTicketId</strong>
