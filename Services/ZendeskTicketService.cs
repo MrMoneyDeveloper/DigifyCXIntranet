@@ -211,22 +211,16 @@ Notes:
             using var response     = await _httpClient.SendAsync(request, cts.Token);
             var       responseBody = await response.Content.ReadAsStringAsync(cts.Token);
 
-            // 5. Surface the full error so operators can diagnose
+            // 5. Surface the full error + field-level details so operators can diagnose
             if (!response.IsSuccessStatusCode)
             {
-                // Try to extract Zendesk's own error description
-                string detail;
-                try
-                {
-                    using var errDoc = JsonDocument.Parse(responseBody);
-                    detail = errDoc.RootElement.TryGetProperty("description", out var d) ? d.GetString() ?? string.Empty
-                           : errDoc.RootElement.TryGetProperty("error",       out var e) ? e.GetString() ?? string.Empty
-                           : responseBody[..Math.Min(300, responseBody.Length)];
-                }
-                catch { detail = responseBody[..Math.Min(300, responseBody.Length)]; }
+                var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
 
-                var errorMsg = $"Zendesk returned HTTP {(int)response.StatusCode} ({response.ReasonPhrase}): {detail}";
-                _logger.LogWarning("Zendesk ticket creation failed. {Error}", errorMsg);
+                // Log full raw body at Warning so it appears in the trace / log output
+                _logger.LogWarning(
+                    "Zendesk ticket creation failed. Status={Status} Subject={Subject}\nParsed: {Error}\nRaw response body:\n{Body}",
+                    (int)response.StatusCode, subject, errorMsg, responseBody);
+
                 return Fail(errorMsg);
             }
 
@@ -254,6 +248,68 @@ Notes:
         {
             _logger.LogError(ex, "Unexpected error during Zendesk ticket creation.");
             return Fail($"Unexpected error: {ex.Message}");
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Parses Zendesk error response body into a human-readable message.
+    //
+    // Zendesk 422 body shape:
+    // {
+    //   "error": "RecordInvalid",
+    //   "description": "Record validation errors",
+    //   "details": {
+    //     "ticket_form_id": [{ "description": "Ticket form 123 is not enabled" }],
+    //     "subject":        [{ "description": "can't be blank" }]
+    //   }
+    // }
+    // ------------------------------------------------------------------
+    private static string BuildDetailedErrorMessage(int statusCode, string? reason, string responseBody)
+    {
+        try
+        {
+            using var errDoc = JsonDocument.Parse(responseBody);
+            var root = errDoc.RootElement;
+
+            var topLevel = root.TryGetProperty("description", out var desc) ? desc.GetString()
+                         : root.TryGetProperty("error",       out var err)  ? err.GetString()
+                         : null;
+
+            // Flatten the details object: { "field_name": [{"description": "..."}, ...], ... }
+            var fieldErrors = new List<string>();
+            if (root.TryGetProperty("details", out var details) &&
+                details.ValueKind == JsonValueKind.Object)
+            {
+                foreach (var field in details.EnumerateObject())
+                {
+                    if (field.Value.ValueKind != JsonValueKind.Array) continue;
+                    foreach (var item in field.Value.EnumerateArray())
+                    {
+                        var fieldDesc = item.TryGetProperty("description", out var fd)
+                            ? fd.GetString() : null;
+                        if (!string.IsNullOrWhiteSpace(fieldDesc))
+                            fieldErrors.Add($"  [{field.Name}] {fieldDesc}");
+                    }
+                }
+            }
+
+            var sb = new StringBuilder();
+            sb.Append($"HTTP {statusCode} ({reason})");
+            if (!string.IsNullOrWhiteSpace(topLevel))
+                sb.Append($": {topLevel}");
+            if (fieldErrors.Count > 0)
+            {
+                sb.AppendLine();
+                sb.AppendLine("Field validation errors:");
+                foreach (var fe in fieldErrors)
+                    sb.AppendLine(fe);
+            }
+            return sb.ToString().TrimEnd();
+        }
+        catch
+        {
+            // Not valid JSON — just return a truncated raw snippet
+            return $"HTTP {statusCode} ({reason}): {responseBody[..Math.Min(400, responseBody.Length)]}";
         }
     }
 
