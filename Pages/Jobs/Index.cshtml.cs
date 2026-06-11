@@ -33,18 +33,20 @@ public class IndexModel : PageModel
     [BindProperty]
     public IFormFile? ReferralResumeFile { get; set; }
 
-    [TempData]
-    public string FeedbackMessage { get; set; } = string.Empty;
+    // ---- internal apply result (passed from Apply page) ----
+    [TempData] public string JobApplyMessage   { get; set; } = string.Empty;
+    [TempData] public long?  JobApplyTicketId  { get; set; }
+    [TempData] public string JobApplyTicketUrl { get; set; } = string.Empty;
 
-    [TempData]
-    public string JobApplyMessage { get; set; } = string.Empty;
+    // ---- referral result (set here, consumed here after redirect) ----
+    [TempData] public string ReferralMessage   { get; set; } = string.Empty;
+    [TempData] public long?  ReferralTicketId  { get; set; }
+    [TempData] public string ReferralTicketUrl { get; set; } = string.Empty;
+    [TempData] public string ReferralError     { get; set; } = string.Empty;
 
     public List<JobPosting> Items { get; private set; } = new();
 
-    public async Task OnGetAsync()
-    {
-        await LoadAsync();
-    }
+    public async Task OnGetAsync() => await LoadAsync();
 
     public async Task<IActionResult> OnPostReferAsync()
     {
@@ -54,7 +56,8 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        var job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Referral.JobPostingId && x.IsActive && !x.IsDeleted);
+        var job = await _db.JobPostings.FirstOrDefaultAsync(
+            x => x.Id == Referral.JobPostingId && x.IsActive && !x.IsDeleted);
         if (job is null)
         {
             ModelState.AddModelError(string.Empty, "Selected job posting was not found.");
@@ -73,11 +76,10 @@ public class IndexModel : PageModel
         {
             if (ReferralResumeFile.Length > 5 * 1024 * 1024)
             {
-                ModelState.AddModelError(nameof(ReferralResumeFile), "Resume file must be 5MB or less.");
+                ModelState.AddModelError(nameof(ReferralResumeFile), "Resume file must be 5 MB or less.");
                 await LoadAsync();
                 return Page();
             }
-
             var ext = Path.GetExtension(ReferralResumeFile.FileName).ToLowerInvariant();
             if (!AllowedResumeExtensions.Contains(ext))
             {
@@ -87,8 +89,9 @@ public class IndexModel : PageModel
             }
         }
 
-        var referrerName = UserNameHelper.GetShortName(User);
+        var referrerName  = UserNameHelper.GetShortName(User);
         var referrerEmail = User.FindFirstValue(ClaimTypes.Email) ?? $"{referrerName}@company.local";
+
         var ticket = await _zendeskTicketService.CreateReferralTicketAsync(
             job,
             referrerName,
@@ -101,47 +104,51 @@ public class IndexModel : PageModel
 
         if (!ticket.Succeeded)
         {
-            await _auditService.WriteAsync(referrerName, "ZendeskTicketFailed", "ReferralApplication", $"job={job.Id};candidate={Referral.CandidateEmail};message={ticket.Message}");
-            ModelState.AddModelError(string.Empty, ticket.Message);
-            await LoadAsync();
-            return Page();
+            await _auditService.WriteAsync(referrerName, "ZendeskTicketFailed", "ReferralApplication",
+                $"job={job.Id};candidate={Referral.CandidateEmail};error={ticket.Message}");
+            ReferralError = ticket.Message;
+            return RedirectToPage();
         }
 
         var invite = new ReferralInvite
         {
-            JobPostingId = job.Id,
-            ReferrerEmployeeUsername = referrerName,
-            ReferrerEmployeeEmail = referrerEmail,
-            CandidateName = Referral.CandidateName.Trim(),
-            CandidateEmail = Referral.CandidateEmail.Trim(),
-            CandidatePhone = Referral.CandidatePhone.Trim(),
-            Notes = Referral.Notes.Trim(),
-            Token = $"ref_{Guid.NewGuid():N}",
-            ZendeskTicketId = ticket.TicketId,
-            CreatedUtc = DateTime.UtcNow,
-            ExpiresUtc = DateTime.UtcNow.AddDays(14),
-            IsConsumed = true
+            JobPostingId               = job.Id,
+            ReferrerEmployeeUsername   = referrerName,
+            ReferrerEmployeeEmail      = referrerEmail,
+            CandidateName              = Referral.CandidateName.Trim(),
+            CandidateEmail             = Referral.CandidateEmail.Trim(),
+            CandidatePhone             = Referral.CandidatePhone.Trim(),
+            Notes                      = Referral.Notes.Trim(),
+            Token                      = $"ref_{Guid.NewGuid():N}",
+            ZendeskTicketId            = ticket.TicketId,
+            CreatedUtc                 = DateTime.UtcNow,
+            ExpiresUtc                 = DateTime.UtcNow.AddDays(14),
+            IsConsumed                 = true
         };
         _db.ReferralInvites.Add(invite);
 
         _db.ExternalApplications.Add(new ExternalApplication
         {
-            JobPostingId = job.Id,
-            ReferralInvite = invite,
-            CandidateName = Referral.CandidateName.Trim(),
-            CandidateEmail = Referral.CandidateEmail.Trim(),
-            CandidatePhone = Referral.CandidatePhone.Trim(),
-            Notes = Referral.Notes.Trim(),
+            JobPostingId    = job.Id,
+            ReferralInvite  = invite,
+            CandidateName   = Referral.CandidateName.Trim(),
+            CandidateEmail  = Referral.CandidateEmail.Trim(),
+            CandidatePhone  = Referral.CandidatePhone.Trim(),
+            Notes           = Referral.Notes.Trim(),
             ZendeskTicketId = ticket.TicketId,
-            ZendeskTicketUrl = ticket.TicketUrl,
-            SubmittedUtc = DateTime.UtcNow,
-            Status = "Submitted"
+            ZendeskTicketUrl= ticket.TicketUrl,
+            SubmittedUtc    = DateTime.UtcNow,
+            Status          = "Submitted"
         });
 
         await _db.SaveChangesAsync();
-        await _auditService.WriteAsync(referrerName, "ZendeskTicketCreated", "ReferralApplication", $"job={job.Id};candidate={Referral.CandidateEmail};ticket={ticket.TicketId}");
+        await _auditService.WriteAsync(referrerName, "ZendeskTicketCreated", "ReferralApplication",
+            $"job={job.Id};candidate={Referral.CandidateEmail};ticket={ticket.TicketId}");
 
-        FeedbackMessage = "Referral submitted to HR in Zendesk.";
+        ReferralMessage   = $"Referral for {Referral.CandidateName.Trim()} submitted to HR.";
+        ReferralTicketId  = ticket.TicketId;
+        ReferralTicketUrl = ticket.TicketUrl ?? string.Empty;
+
         return RedirectToPage();
     }
 
@@ -160,13 +167,10 @@ public class IndexModel : PageModel
         [Required, MaxLength(150)]
         public string CandidateName { get; set; } = string.Empty;
 
-        [Required]
-        [EmailAddress]
-        [MaxLength(200)]
+        [Required, EmailAddress, MaxLength(200)]
         public string CandidateEmail { get; set; } = string.Empty;
 
-        [Phone]
-        [MaxLength(60)]
+        [Phone, MaxLength(60)]
         public string CandidatePhone { get; set; } = string.Empty;
 
         [MaxLength(2000)]

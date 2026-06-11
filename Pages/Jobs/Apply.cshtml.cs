@@ -30,18 +30,26 @@ public class ApplyModel : PageModel
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
+    [BindProperty]
+    public IFormFile? ResumeFile { get; set; }
+
     public JobPosting? Job { get; private set; }
+
+    // ---- TempData: success ----
+    [TempData] public string JobApplyMessage  { get; set; } = string.Empty;
+    [TempData] public long?  JobApplyTicketId  { get; set; }
+    [TempData] public string JobApplyTicketUrl { get; set; } = string.Empty;
+
+    // ---- TempData: failure ----
+    [TempData] public string JobApplyErrorMessage { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
         Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
-        if (Job is null)
-        {
-            return NotFound();
-        }
+        if (Job is null) return NotFound();
 
         Input.JobPostingId = id;
-        Input.EmployeeName = UserNameHelper.GetShortName(User);
+        Input.EmployeeName  = UserNameHelper.GetShortName(User);
         Input.EmployeeEmail = User.FindFirstValue(ClaimTypes.Email) ?? $"{Input.EmployeeName}@company.local";
         return Page();
     }
@@ -49,15 +57,9 @@ public class ApplyModel : PageModel
     public async Task<IActionResult> OnPostAsync()
     {
         Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive && !x.IsDeleted);
-        if (Job is null)
-        {
-            return NotFound();
-        }
+        if (Job is null) return NotFound();
 
-        if (!ModelState.IsValid)
-        {
-            return Page();
-        }
+        if (!ModelState.IsValid) return Page();
 
         if (ResumeFile is null || ResumeFile.Length <= 0)
         {
@@ -67,12 +69,12 @@ public class ApplyModel : PageModel
 
         if (ResumeFile.Length > 5 * 1024 * 1024)
         {
-            ModelState.AddModelError(nameof(ResumeFile), "Resume file must be 5MB or less.");
+            ModelState.AddModelError(nameof(ResumeFile), "Resume file must be 5 MB or less.");
             return Page();
         }
 
-        var extension = Path.GetExtension(ResumeFile.FileName).ToLowerInvariant();
-        if (!AllowedResumeExtensions.Contains(extension))
+        var ext = Path.GetExtension(ResumeFile.FileName).ToLowerInvariant();
+        if (!AllowedResumeExtensions.Contains(ext))
         {
             ModelState.AddModelError(nameof(ResumeFile), "Only PDF and DOCX files are allowed.");
             return Page();
@@ -87,32 +89,39 @@ public class ApplyModel : PageModel
             Input.Notes,
             ResumeFile);
 
+        var actor = UserNameHelper.GetShortName(User);
+
         if (!result.Succeeded)
         {
-            await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "ZendeskTicketFailed", "InternalJobApplication", $"job={Job.Id};employee={Input.EmployeeEmail};message={result.Message}");
+            await _auditService.WriteAsync(actor, "ZendeskTicketFailed", "InternalJobApplication",
+                $"job={Job.Id};employee={Input.EmployeeEmail};error={result.Message}");
+
+            // Stay on the Apply page and show the detailed error inline
             ModelState.AddModelError(string.Empty, result.Message);
             return Page();
         }
 
         _db.InternalJobApplications.Add(new InternalJobApplication
         {
-            JobPostingId = Job.Id,
+            JobPostingId     = Job.Id,
             EmployeeUsername = Input.EmployeeName,
-            EmployeeEmail = Input.EmployeeEmail,
-            Notes = Input.Notes,
-            ZendeskTicketId = result.TicketId,
+            EmployeeEmail    = Input.EmployeeEmail,
+            Notes            = Input.Notes,
+            ZendeskTicketId  = result.TicketId,
             ZendeskTicketUrl = result.TicketUrl,
-            SubmittedUtc = DateTime.UtcNow
+            SubmittedUtc     = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
-        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "ZendeskTicketCreated", "InternalJobApplication", $"job={Job.Id};employee={Input.EmployeeEmail};ticket={result.TicketId}");
+        await _auditService.WriteAsync(actor, "ZendeskTicketCreated", "InternalJobApplication",
+            $"job={Job.Id};employee={Input.EmployeeEmail};ticket={result.TicketId}");
 
-        TempData["JobApplyMessage"] = "Application submitted to HR in Zendesk.";
+        // Pass confirmation data to the redirect target
+        JobApplyMessage   = $"Application submitted successfully for \u201c{Job.Title}\u201d.";
+        JobApplyTicketId  = result.TicketId;
+        JobApplyTicketUrl = result.TicketUrl ?? string.Empty;
+
         return RedirectToPage("/Jobs/Index");
     }
-
-    [BindProperty]
-    public IFormFile? ResumeFile { get; set; }
 
     public class InputModel
     {

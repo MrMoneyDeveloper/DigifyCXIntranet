@@ -10,34 +10,31 @@ namespace DigifyCXIntranet.Services;
 /// <summary>
 /// Creates Zendesk HR tickets for internal job applications and employee
 /// referrals.  All ticket-routing IDs and custom-field values are
-/// hard-coded here so tickets always land in the correct HR group,
-/// form, and queue — independent of appsettings.
+/// hard-coded so tickets always land in the correct HR group and form
+/// regardless of appsettings configuration.
 /// </summary>
 public class ZendeskTicketService : IZendeskTicketService
 {
     // ----------------------------------------------------------------
     // Hard-coded Zendesk HR ticket constants
-    // Form: CXI — Internal Support & Requests
-    private const long TicketFormId = 22989127409436L;
-    // Group: CXI — HR People Ops
-    private const long HrGroupId = 22708167587228L;
+    // ----------------------------------------------------------------
+    private const long   TicketFormId             = 22989127409436L;
+    private const long   HrGroupId                = 22708167587228L;
 
-    // Custom field IDs
-    private const long FieldRequesterEmail       = 22988070511644L;
-    private const long FieldDepartment           = 22964977267612L;
-    private const long FieldInquiryType          = 22964896825500L;
-    private const long FieldUrgency              = 22965145372572L;
-    private const long FieldHrQueryType          = 22729769116956L;
-    private const long FieldEmployeeFullName     = 22729924058012L;
-    private const long FieldEmployeeId           = 22729955119004L;
-    private const long FieldManagerEmail         = 22971445823900L;
-    private const long FieldRequestingOnBehalfOf = 24644803197724L;
+    private const long   FieldRequesterEmail       = 22988070511644L;
+    private const long   FieldDepartment           = 22964977267612L;
+    private const long   FieldInquiryType          = 22964896825500L;
+    private const long   FieldUrgency              = 22965145372572L;
+    private const long   FieldHrQueryType          = 22729769116956L;
+    private const long   FieldEmployeeFullName     = 22729924058012L;
+    private const long   FieldEmployeeId           = 22729955119004L;
+    private const long   FieldManagerEmail         = 22971445823900L;
+    private const long   FieldRequestingOnBehalfOf = 24644803197724L;
 
-    // Custom field values
-    private const string ValDepartment   = "cxi_dept_hr";
-    private const string ValInquiryType  = "cxi_type_request";
-    private const string ValUrgency      = "cxi_p2";
-    private const string ValHrQueryType  = "cxi_hr_general";
+    private const string ValDepartment  = "cxi_dept_hr";
+    private const string ValInquiryType = "cxi_type_request";
+    private const string ValUrgency     = "cxi_p2";
+    private const string ValHrQueryType = "cxi_hr_general";
     // ----------------------------------------------------------------
 
     private readonly HttpClient _httpClient;
@@ -50,14 +47,12 @@ public class ZendeskTicketService : IZendeskTicketService
         ILogger<ZendeskTicketService> logger)
     {
         _httpClient = httpClientFactory.CreateClient(nameof(ZendeskTicketService));
-        _options = options.Value;
-        _logger = logger;
+        _options    = options.Value;
+        _logger     = logger;
     }
 
     // ------------------------------------------------------------------
-    // Internal application
-    // Requester = signed-in employee email.
-    // Ticket body contains job details, employee info, notes and CV.
+    // Internal application — requester = signed-in employee
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateInternalApplicationTicketAsync(
         JobPosting job,
@@ -78,7 +73,7 @@ Department   : {job.Department}
 
 Employee Name  : {employeeName}
 Employee Email : {employeeEmail}
-Employee ID    : {(string.IsNullOrWhiteSpace(employeeId) ? "(not provided)" : employeeId)}
+Employee ID    : {(string.IsNullOrWhiteSpace(employeeId)  ? "(not provided)" : employeeId)}
 Manager Email  : {(string.IsNullOrWhiteSpace(managerEmail) ? "(not provided)" : managerEmail)}
 
 Notes:
@@ -86,8 +81,7 @@ Notes:
 """;
 
         return CreateHrTicketCoreAsync(
-            subject:           subject,
-            body:              body,
+            subject, body,
             requesterName:     employeeName,
             requesterEmail:    employeeEmail,
             employeeFullName:  employeeName,
@@ -95,14 +89,12 @@ Notes:
             managerEmail:      managerEmail,
             onBehalfOfEmail:   employeeEmail,
             attachment:        resumeFile,
-            tags:              new[] { "digifycx_intranet", "hr_internal_application" },
+            tags:              ["digifycx_intranet", "hr_internal_application"],
             cancellationToken: cancellationToken);
     }
 
     // ------------------------------------------------------------------
-    // Employee referral
-    // Requester = candidate email (so Zendesk ticket is opened for them).
-    // Ticket body contains referrer details and job details.
+    // Referral — requester = candidate email
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateReferralTicketAsync(
         JobPosting job,
@@ -115,7 +107,7 @@ Notes:
         IFormFile? resumeFile,
         CancellationToken cancellationToken = default)
     {
-        var subject = $"Referral application: {job.Title} — {candidateName}";
+        var subject = $"Referral application: {job.Title} \u2014 {candidateName}";
         var body = $"""
 External referral submitted via DigifyCX Intranet.
 
@@ -126,31 +118,28 @@ Candidate Name  : {candidateName}
 Candidate Email : {candidateEmail}
 Candidate Phone : {(string.IsNullOrWhiteSpace(candidatePhone) ? "(not provided)" : candidatePhone)}
 
-Referred by     : {referrerName}
-Referrer Email  : {referrerEmail}
+Referred by    : {referrerName}
+Referrer Email : {referrerEmail}
 
 Notes:
 {(string.IsNullOrWhiteSpace(notes) ? "(none)" : notes)}
 """;
 
         return CreateHrTicketCoreAsync(
-            subject:           subject,
-            body:              body,
+            subject, body,
             requesterName:     candidateName,
             requesterEmail:    candidateEmail,
             employeeFullName:  candidateName,
             employeeId:        string.Empty,
-            managerEmail:      referrerEmail,    // referrer email in manager field for HR routing
+            managerEmail:      referrerEmail,
             onBehalfOfEmail:   referrerEmail,
             attachment:        resumeFile,
-            tags:              new[] { "digifycx_intranet", "hr_referral" },
+            tags:              ["digifycx_intranet", "hr_referral"],
             cancellationToken: cancellationToken);
     }
 
     // ------------------------------------------------------------------
-    // Core ticket creator — all HR tickets go through here.
-    // All routing IDs and custom-field values are sourced from the
-    // hard-coded constants at the top of this file.
+    // Core — builds and POSTs the ticket, surfaces detailed errors
     // ------------------------------------------------------------------
     private async Task<ZendeskTicketResult> CreateHrTicketCoreAsync(
         string subject,
@@ -166,21 +155,16 @@ Notes:
         CancellationToken cancellationToken)
     {
         if (!IsConfigured(out var configError))
-        {
-            return new ZendeskTicketResult(false, null, string.Empty, configError);
-        }
+            return Fail(configError);
 
         try
         {
-            // 1. Upload CV / resume if provided
+            // 1. Upload CV / resume
             var uploads = new List<string>();
             if (attachment is { Length: > 0 })
-            {
                 uploads.Add(await UploadAsync(attachment, cancellationToken));
-            }
 
-            // 2. Build custom fields — always include required fields;
-            //    optional fields only when non-empty.
+            // 2. Custom fields — required + optional
             var customFields = new List<object>
             {
                 new { id = FieldRequesterEmail,       value = requesterEmail },
@@ -193,16 +177,11 @@ Notes:
             };
 
             if (!string.IsNullOrWhiteSpace(employeeId))
-            {
-                customFields.Add(new { id = FieldEmployeeId, value = employeeId.Trim() });
-            }
-
+                customFields.Add(new { id = FieldEmployeeId,    value = employeeId.Trim() });
             if (!string.IsNullOrWhiteSpace(managerEmail))
-            {
-                customFields.Add(new { id = FieldManagerEmail, value = managerEmail.Trim() });
-            }
+                customFields.Add(new { id = FieldManagerEmail,  value = managerEmail.Trim() });
 
-            // 3. Assemble the full ticket payload
+            // 3. Ticket payload
             var payload = new
             {
                 ticket = new
@@ -215,52 +194,71 @@ Notes:
                         name  = string.IsNullOrWhiteSpace(requesterName) ? requesterEmail : requesterName,
                         email = requesterEmail
                     },
-                    comment = new
-                    {
-                        body,
-                        uploads
-                    },
+                    comment = new { body, uploads },
                     custom_fields = customFields,
                     tags
                 }
             };
 
-            // 4. POST to Zendesk
+            // 4. POST
             using var request = BuildRequest(HttpMethod.Post, "/api/v2/tickets.json");
-            request.Content = new StringContent(
+            request.Content   = new StringContent(
                 JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
             using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             cts.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.TimeoutSeconds, 5, 90)));
 
-            using var response = await _httpClient.SendAsync(request, cts.Token);
-            var responseBody  = await response.Content.ReadAsStringAsync(cts.Token);
+            using var response     = await _httpClient.SendAsync(request, cts.Token);
+            var       responseBody = await response.Content.ReadAsStringAsync(cts.Token);
 
+            // 5. Surface the full error so operators can diagnose
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning(
-                    "Zendesk ticket creation failed. Status={Status} Body={Body}",
-                    response.StatusCode, responseBody);
-                return new ZendeskTicketResult(
-                    false, null, string.Empty,
-                    $"Zendesk returned {(int)response.StatusCode}.");
+                // Try to extract Zendesk's own error description
+                string detail;
+                try
+                {
+                    using var errDoc = JsonDocument.Parse(responseBody);
+                    detail = errDoc.RootElement.TryGetProperty("description", out var d) ? d.GetString() ?? string.Empty
+                           : errDoc.RootElement.TryGetProperty("error",       out var e) ? e.GetString() ?? string.Empty
+                           : responseBody[..Math.Min(300, responseBody.Length)];
+                }
+                catch { detail = responseBody[..Math.Min(300, responseBody.Length)]; }
+
+                var errorMsg = $"Zendesk returned HTTP {(int)response.StatusCode} ({response.ReasonPhrase}): {detail}";
+                _logger.LogWarning("Zendesk ticket creation failed. {Error}", errorMsg);
+                return Fail(errorMsg);
             }
 
-            using var doc     = JsonDocument.Parse(responseBody);
-            var ticketId      = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
-            var ticketUrl     = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";
+            // 6. Parse the created ticket ID
+            using var doc   = JsonDocument.Parse(responseBody);
+            var ticketId    = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
+            var ticketUrl   = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";
 
+            _logger.LogInformation("Zendesk ticket #{TicketId} created ({Url}).", ticketId, ticketUrl);
             return new ZendeskTicketResult(true, ticketId, ticketUrl, "Ticket created.");
+        }
+        catch (TaskCanceledException)
+        {
+            const string msg = "Zendesk request timed out. The ticket may not have been created.";
+            _logger.LogWarning(msg);
+            return Fail(msg);
+        }
+        catch (HttpRequestException ex)
+        {
+            var msg = $"Network error reaching Zendesk: {ex.Message}";
+            _logger.LogError(ex, msg);
+            return Fail(msg);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Zendesk ticket creation threw an exception.");
-            return new ZendeskTicketResult(false, null, string.Empty, ex.Message);
+            _logger.LogError(ex, "Unexpected error during Zendesk ticket creation.");
+            return Fail($"Unexpected error: {ex.Message}");
         }
     }
 
     // ------------------------------------------------------------------
-    // Upload a file to Zendesk and return the upload token.
+    // Upload a file and return the upload token
     // ------------------------------------------------------------------
     private async Task<string> UploadAsync(IFormFile file, CancellationToken cancellationToken)
     {
@@ -271,42 +269,38 @@ Notes:
         await using var stream = file.OpenReadStream();
         request.Content = new StreamContent(stream);
         request.Content.Headers.ContentType = new MediaTypeHeaderValue(
-            string.IsNullOrWhiteSpace(file.ContentType)
-                ? "application/octet-stream"
-                : file.ContentType);
+            string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType);
 
         using var response = await _httpClient.SendAsync(request, cancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var responseBody = await response.Content.ReadAsStringAsync(cancellationToken);
-        using var doc    = JsonDocument.Parse(responseBody);
-        return doc.RootElement
-                   .GetProperty("upload")
-                   .GetProperty("token")
-                   .GetString() ?? string.Empty;
+        var body = await response.Content.ReadAsStringAsync(cancellationToken);
+        using var doc = JsonDocument.Parse(body);
+        return doc.RootElement.GetProperty("upload").GetProperty("token").GetString() ?? string.Empty;
     }
 
     private HttpRequestMessage BuildRequest(HttpMethod method, string path)
     {
-        var request = new HttpRequestMessage(method, $"{_options.BaseUrl.TrimEnd('/')}{path}");
+        var request     = new HttpRequestMessage(method, $"{_options.BaseUrl.TrimEnd('/')}{path}");
         var credentials = Convert.ToBase64String(
             Encoding.UTF8.GetBytes($"{_options.Email}/token:{_options.ApiToken}"));
-        request.Headers.Authorization =
-            new AuthenticationHeaderValue("Basic", credentials);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Basic", credentials);
         return request;
     }
 
     private bool IsConfigured(out string message)
     {
         if (string.IsNullOrWhiteSpace(_options.BaseUrl) ||
-            string.IsNullOrWhiteSpace(_options.Email) ||
+            string.IsNullOrWhiteSpace(_options.Email)   ||
             string.IsNullOrWhiteSpace(_options.ApiToken))
         {
-            message = "Zendesk integration is not configured (BaseUrl / Email / ApiToken missing).";
+            message = "Zendesk is not configured on this server (BaseUrl / Email / ApiToken missing in appsettings). Contact your system administrator.";
             return false;
         }
-
         message = string.Empty;
         return true;
     }
+
+    private static ZendeskTicketResult Fail(string message) =>
+        new(false, null, string.Empty, message);
 }

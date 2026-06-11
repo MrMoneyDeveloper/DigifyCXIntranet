@@ -7,22 +7,94 @@
 <section class="hero-panel mb-4">
     <div class="page-kicker mb-3">Internal Openings</div>
     <h1 class="page-title">Roles that power <span>high performance</span></h1>
-    <p class="page-copy mt-3 mb-0">Apply for yourself or refer someone strong. Referral details are sent to HR through Zendesk.</p>
+    <p class="page-copy mt-3 mb-0">Apply for yourself or refer someone strong. All submissions go directly to HR via Zendesk.</p>
 </section>
 
-@if (!string.IsNullOrWhiteSpace(Model.FeedbackMessage))
-{
-    <div class="alert alert-success">@Model.FeedbackMessage</div>
-}
+@* ================================================================ *@
+@* INTERNAL APPLICATION RESULT (redirected from Apply page)         *@
+@* ================================================================ *@
 @if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
 {
-    <div class="alert alert-success">@Model.JobApplyMessage</div>
+    <div class="alert alert-success d-flex align-items-start gap-3 mb-4" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <strong>@Model.JobApplyMessage</strong>
+            @if (Model.JobApplyTicketId.HasValue)
+            {
+                <div class="mt-1 fs-sm">
+                    Zendesk Ticket&#160;<strong>#@Model.JobApplyTicketId</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.JobApplyTicketUrl))
+                    {
+                        <span>&mdash;
+                            <a href="@Model.JobApplyTicketUrl" target="_blank" rel="noopener noreferrer"
+                               class="alert-link fw-semibold">View in Zendesk &rarr;</a>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
 }
 
+@* ================================================================ *@
+@* REFERRAL RESULT                                                  *@
+@* ================================================================ *@
+@if (!string.IsNullOrWhiteSpace(Model.ReferralMessage))
+{
+    <div class="alert alert-success d-flex align-items-start gap-3 mb-4" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <strong>@Model.ReferralMessage</strong>
+            @if (Model.ReferralTicketId.HasValue)
+            {
+                <div class="mt-1 fs-sm">
+                    Zendesk Ticket&#160;<strong>#@Model.ReferralTicketId</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.ReferralTicketUrl))
+                    {
+                        <span>&mdash;
+                            <a href="@Model.ReferralTicketUrl" target="_blank" rel="noopener noreferrer"
+                               class="alert-link fw-semibold">View in Zendesk &rarr;</a>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ReferralError))
+{
+    <div class="alert alert-danger d-flex align-items-start gap-3 mb-4" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+        <div>
+            <strong>Referral could not be submitted to Zendesk.</strong>
+            <div class="mt-1">@Model.ReferralError</div>
+            <div class="mt-2 text-muted" style="font-size:.85em">
+                If this keeps happening, contact your system administrator and quote the error above.
+            </div>
+        </div>
+    </div>
+}
+
+@* ================================================================ *@
+@* JOB LISTING                                                      *@
+@* ================================================================ *@
 @if (Model.Items.Count == 0)
 {
     <section class="soft-card text-center py-5">
-        <h2 class="h5 mb-0">No active job postings</h2>
+        <h2 class="h5 mb-0">No active job postings right now</h2>
     </section>
 }
 else
@@ -74,19 +146,19 @@ else
                                     <form method="post" asp-page-handler="Refer" enctype="multipart/form-data" class="row g-3">
                                         <input type="hidden" asp-for="Referral.JobPostingId" value="@item.Id" />
                                         <div class="col-md-6">
-                                            <input name="Referral.CandidateName" class="form-control" placeholder="Candidate name" />
+                                            <input name="Referral.CandidateName" class="form-control" placeholder="Candidate name" required />
                                         </div>
                                         <div class="col-md-6">
-                                            <input name="Referral.CandidateEmail" class="form-control" placeholder="candidate@email.com" />
+                                            <input name="Referral.CandidateEmail" type="email" class="form-control" placeholder="candidate@email.com" required />
                                         </div>
                                         <div class="col-md-6">
-                                            <input name="Referral.CandidatePhone" class="form-control" placeholder="Phone" />
+                                            <input name="Referral.CandidatePhone" class="form-control" placeholder="Phone (optional)" />
                                         </div>
                                         <div class="col-md-6">
                                             <input name="ReferralResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
                                         </div>
                                         <div class="col-12">
-                                            <textarea name="Referral.Notes" rows="3" class="form-control" placeholder="Referral notes"></textarea>
+                                            <textarea name="Referral.Notes" rows="3" class="form-control" placeholder="Referral notes (optional)"></textarea>
                                         </div>
                                         <div class="col-12">
                                             <button type="submit" class="btn btn-outline-primary">Submit Referral</button>

@@ -4,12 +4,59 @@
     ViewData["Title"] = "Apply";
 }
 
+@* ------------------------------------------------------------------ *@
+@* Zendesk ticket confirmation banner (shown after redirect-back edge  *@
+@* case — normally displayed on Jobs/Index after redirect)              *@
+@* ------------------------------------------------------------------ *@
+@if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
+{
+    <div class="alert alert-success d-flex align-items-start gap-3" role="alert">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+            <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+            <strong>@Model.JobApplyMessage</strong>
+            @if (Model.JobApplyTicketId.HasValue)
+            {
+                <div class="mt-1">
+                    Zendesk Ticket&#160;<strong>#@Model.JobApplyTicketId</strong>
+                    @if (!string.IsNullOrWhiteSpace(Model.JobApplyTicketUrl))
+                    {
+                        <span>&mdash;
+                            <a href="@Model.JobApplyTicketUrl" target="_blank" rel="noopener noreferrer"
+                               class="alert-link">View in Zendesk</a>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+}
+
 @if (Model.Job is null)
 {
-    <div class="alert alert-warning">Job not found.</div>
+    <div class="alert alert-warning">Job not found or no longer active.</div>
 }
 else
 {
+    @* Inline validation / Zendesk error *@
+    @if (!ViewData.ModelState.IsValid)
+    {
+        <div class="alert alert-danger d-flex align-items-start gap-3" role="alert">
+            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="none"
+                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" class="flex-shrink-0 mt-1">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+                <strong>Submission failed — please review the details below.</strong>
+                <div asp-validation-summary="All" class="mt-2 mb-0"></div>
+            </div>
+        </div>
+    }
+
     <section class="card-elevated p-4">
         <h1 class="h4 mb-1">Apply Internally: @Model.Job.Title</h1>
         <p class="text-muted mb-4">@Model.Job.Department</p>
@@ -19,30 +66,30 @@ else
             <div class="col-md-6">
                 <label asp-for="Input.EmployeeName" class="form-label"></label>
                 <input asp-for="Input.EmployeeName" class="form-control" />
-                <span asp-validation-for="Input.EmployeeName" class="text-danger"></span>
+                <span asp-validation-for="Input.EmployeeName" class="text-danger small"></span>
             </div>
             <div class="col-md-6">
                 <label asp-for="Input.EmployeeEmail" class="form-label"></label>
                 <input asp-for="Input.EmployeeEmail" class="form-control" />
-                <span asp-validation-for="Input.EmployeeEmail" class="text-danger"></span>
+                <span asp-validation-for="Input.EmployeeEmail" class="text-danger small"></span>
             </div>
             <div class="col-md-6">
-                <label asp-for="Input.EmployeeId" class="form-label">Employee ID</label>
+                <label asp-for="Input.EmployeeId" class="form-label">Employee ID <span class="text-muted">(optional)</span></label>
                 <input asp-for="Input.EmployeeId" class="form-control" />
             </div>
             <div class="col-md-6">
-                <label asp-for="Input.ManagerEmail" class="form-label">Manager Email</label>
+                <label asp-for="Input.ManagerEmail" class="form-label">Manager Email <span class="text-muted">(optional)</span></label>
                 <input asp-for="Input.ManagerEmail" class="form-control" />
-                <span asp-validation-for="Input.ManagerEmail" class="text-danger"></span>
+                <span asp-validation-for="Input.ManagerEmail" class="text-danger small"></span>
             </div>
             <div class="col-12">
                 <label asp-for="Input.Notes" class="form-label"></label>
                 <textarea asp-for="Input.Notes" rows="4" class="form-control"></textarea>
             </div>
             <div class="col-12">
-                <label asp-for="ResumeFile" class="form-label">Resume (PDF/DOCX, max 5MB)</label>
+                <label asp-for="ResumeFile" class="form-label">Resume <span class="text-muted">(PDF or DOCX &mdash; max 5 MB)</span></label>
                 <input asp-for="ResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
-                <span asp-validation-for="ResumeFile" class="text-danger"></span>
+                <span asp-validation-for="ResumeFile" class="text-danger small"></span>
             </div>
             <div class="col-12 d-flex gap-2">
                 <button type="submit" class="btn btn-primary">Submit Application</button>
