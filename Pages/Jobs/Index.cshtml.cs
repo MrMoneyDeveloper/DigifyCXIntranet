@@ -50,41 +50,37 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostReferAsync()
     {
+        await LoadAsync();
+
         if (!ModelState.IsValid)
-        {
-            await LoadAsync();
             return Page();
-        }
 
         var job = await _db.JobPostings.FirstOrDefaultAsync(
             x => x.Id == Referral.JobPostingId && x.IsActive && !x.IsDeleted);
         if (job is null)
         {
             ModelState.AddModelError(string.Empty, "Selected job posting was not found.");
-            await LoadAsync();
             return Page();
         }
 
         if (!job.IsExternalReferral)
         {
             ModelState.AddModelError(string.Empty, "External referrals are disabled for this job.");
-            await LoadAsync();
             return Page();
         }
 
+        // Validate optional resume file
         if (ReferralResumeFile is { Length: > 0 })
         {
             if (ReferralResumeFile.Length > 5 * 1024 * 1024)
             {
                 ModelState.AddModelError(nameof(ReferralResumeFile), "Resume file must be 5 MB or less.");
-                await LoadAsync();
                 return Page();
             }
             var ext = Path.GetExtension(ReferralResumeFile.FileName).ToLowerInvariant();
             if (!AllowedResumeExtensions.Contains(ext))
             {
                 ModelState.AddModelError(nameof(ReferralResumeFile), "Only PDF and DOCX files are allowed.");
-                await LoadAsync();
                 return Page();
             }
         }
@@ -102,14 +98,18 @@ public class IndexModel : PageModel
             Referral.Notes,
             ReferralResumeFile);
 
+        var actor = referrerName;
+
         if (!ticket.Succeeded)
         {
-            await _auditService.WriteAsync(referrerName, "ZendeskTicketFailed", "ReferralApplication",
+            await _auditService.WriteAsync(actor, "ZendeskTicketFailed", "ReferralApplication",
                 $"job={job.Id};candidate={Referral.CandidateEmail};error={ticket.Message}");
-            ReferralError = ticket.Message;
-            return RedirectToPage();
+            // Surface error inline on the page (no redirect — keeps form state)
+            ModelState.AddModelError(string.Empty, ticket.Message);
+            return Page();
         }
 
+        // Persist referral invite record
         var invite = new ReferralInvite
         {
             JobPostingId             = job.Id,
@@ -142,10 +142,11 @@ public class IndexModel : PageModel
         });
 
         await _db.SaveChangesAsync();
-        await _auditService.WriteAsync(referrerName, "ZendeskTicketCreated", "ReferralApplication",
+        await _auditService.WriteAsync(actor, "ZendeskTicketCreated", "ReferralApplication",
             $"job={job.Id};candidate={Referral.CandidateEmail};ticket={ticket.TicketId}");
 
-        ReferralMessage   = $"Referral for {Referral.CandidateName.Trim()} submitted to HR.";
+        // Set TempData so the success banner renders after the redirect
+        ReferralMessage   = $"Referral for {Referral.CandidateName.Trim()} submitted to HR successfully.";
         ReferralTicketId  = ticket.TicketId?.ToString() ?? string.Empty;
         ReferralTicketUrl = ticket.TicketUrl ?? string.Empty;
 
