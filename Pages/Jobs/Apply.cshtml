@@ -4,10 +4,6 @@
     ViewData["Title"] = "Apply";
 }
 
-@* ------------------------------------------------------------------ *@
-@* Zendesk ticket confirmation banner (shown after redirect-back edge  *@
-@* case — normally displayed on Jobs/Index after redirect)              *@
-@* ------------------------------------------------------------------ *@
 @if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
 {
     <div class="alert alert-success d-flex align-items-start gap-3" role="alert">
@@ -18,7 +14,7 @@
         </svg>
         <div>
             <strong>@Model.JobApplyMessage</strong>
-            @if (Model.JobApplyTicketId.HasValue)
+            @if (!string.IsNullOrWhiteSpace(Model.JobApplyTicketId))
             {
                 <div class="mt-1">
                     Zendesk Ticket&#160;<strong>#@Model.JobApplyTicketId</strong>
@@ -26,7 +22,7 @@
                     {
                         <span>&mdash;
                             <a href="@Model.JobApplyTicketUrl" target="_blank" rel="noopener noreferrer"
-                               class="alert-link">View in Zendesk</a>
+                               class="alert-link">View in Zendesk &rarr;</a>
                         </span>
                     }
                 </div>
@@ -41,7 +37,6 @@
 }
 else
 {
-    @* Inline validation / Zendesk error *@
     @if (!ViewData.ModelState.IsValid)
     {
         <div class="alert alert-danger d-flex align-items-start gap-3" role="alert">
@@ -87,7 +82,7 @@ else
                 <textarea asp-for="Input.Notes" rows="4" class="form-control"></textarea>
             </div>
             <div class="col-12">
-                <label asp-for="ResumeFile" class="form-label">Resume <span class="text-muted">(PDF or DOCX &mdash; max 5 MB)</span></label>
+                <label asp-for="ResumeFile" class="form-label">Resume <span class="text-muted">(PDF or DOCX — max 5 MB)</span></label>
                 <input asp-for="ResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
                 <span asp-validation-for="ResumeFile" class="text-danger small"></span>
             </div>

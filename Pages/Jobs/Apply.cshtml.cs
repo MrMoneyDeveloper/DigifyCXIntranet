@@ -35,13 +35,10 @@ public class ApplyModel : PageModel
 
     public JobPosting? Job { get; private set; }
 
-    // ---- TempData: success ----
-    [TempData] public string JobApplyMessage  { get; set; } = string.Empty;
-    [TempData] public long?  JobApplyTicketId  { get; set; }
+    // TempData: success — all stored as string (DefaultTempDataSerializer only handles primitives)
+    [TempData] public string JobApplyMessage   { get; set; } = string.Empty;
+    [TempData] public string JobApplyTicketId  { get; set; } = string.Empty;  // e.g. "34512"
     [TempData] public string JobApplyTicketUrl { get; set; } = string.Empty;
-
-    // ---- TempData: failure ----
-    [TempData] public string JobApplyErrorMessage { get; set; } = string.Empty;
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
@@ -66,13 +63,11 @@ public class ApplyModel : PageModel
             ModelState.AddModelError(nameof(ResumeFile), "Resume file is required.");
             return Page();
         }
-
         if (ResumeFile.Length > 5 * 1024 * 1024)
         {
             ModelState.AddModelError(nameof(ResumeFile), "Resume file must be 5 MB or less.");
             return Page();
         }
-
         var ext = Path.GetExtension(ResumeFile.FileName).ToLowerInvariant();
         if (!AllowedResumeExtensions.Contains(ext))
         {
@@ -95,8 +90,6 @@ public class ApplyModel : PageModel
         {
             await _auditService.WriteAsync(actor, "ZendeskTicketFailed", "InternalJobApplication",
                 $"job={Job.Id};employee={Input.EmployeeEmail};error={result.Message}");
-
-            // Stay on the Apply page and show the detailed error inline
             ModelState.AddModelError(string.Empty, result.Message);
             return Page();
         }
@@ -115,9 +108,8 @@ public class ApplyModel : PageModel
         await _auditService.WriteAsync(actor, "ZendeskTicketCreated", "InternalJobApplication",
             $"job={Job.Id};employee={Input.EmployeeEmail};ticket={result.TicketId}");
 
-        // Pass confirmation data to the redirect target
         JobApplyMessage   = $"Application submitted successfully for \u201c{Job.Title}\u201d.";
-        JobApplyTicketId  = result.TicketId;
+        JobApplyTicketId  = result.TicketId?.ToString() ?? string.Empty;
         JobApplyTicketUrl = result.TicketUrl ?? string.Empty;
 
         return RedirectToPage("/Jobs/Index");

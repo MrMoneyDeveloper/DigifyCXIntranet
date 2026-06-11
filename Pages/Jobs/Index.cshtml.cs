@@ -33,14 +33,14 @@ public class IndexModel : PageModel
     [BindProperty]
     public IFormFile? ReferralResumeFile { get; set; }
 
-    // ---- internal apply result (passed from Apply page) ----
+    // TempData from Apply page (internal application result)
     [TempData] public string JobApplyMessage   { get; set; } = string.Empty;
-    [TempData] public long?  JobApplyTicketId  { get; set; }
+    [TempData] public string JobApplyTicketId  { get; set; } = string.Empty;
     [TempData] public string JobApplyTicketUrl { get; set; } = string.Empty;
 
-    // ---- referral result (set here, consumed here after redirect) ----
+    // TempData for referral result (set and consumed on this page)
     [TempData] public string ReferralMessage   { get; set; } = string.Empty;
-    [TempData] public long?  ReferralTicketId  { get; set; }
+    [TempData] public string ReferralTicketId  { get; set; } = string.Empty;
     [TempData] public string ReferralTicketUrl { get; set; } = string.Empty;
     [TempData] public string ReferralError     { get; set; } = string.Empty;
 
@@ -112,33 +112,33 @@ public class IndexModel : PageModel
 
         var invite = new ReferralInvite
         {
-            JobPostingId               = job.Id,
-            ReferrerEmployeeUsername   = referrerName,
-            ReferrerEmployeeEmail      = referrerEmail,
-            CandidateName              = Referral.CandidateName.Trim(),
-            CandidateEmail             = Referral.CandidateEmail.Trim(),
-            CandidatePhone             = Referral.CandidatePhone.Trim(),
-            Notes                      = Referral.Notes.Trim(),
-            Token                      = $"ref_{Guid.NewGuid():N}",
-            ZendeskTicketId            = ticket.TicketId,
-            CreatedUtc                 = DateTime.UtcNow,
-            ExpiresUtc                 = DateTime.UtcNow.AddDays(14),
-            IsConsumed                 = true
+            JobPostingId             = job.Id,
+            ReferrerEmployeeUsername = referrerName,
+            ReferrerEmployeeEmail    = referrerEmail,
+            CandidateName            = Referral.CandidateName.Trim(),
+            CandidateEmail           = Referral.CandidateEmail.Trim(),
+            CandidatePhone           = Referral.CandidatePhone.Trim(),
+            Notes                    = Referral.Notes.Trim(),
+            Token                    = $"ref_{Guid.NewGuid():N}",
+            ZendeskTicketId          = ticket.TicketId,
+            CreatedUtc               = DateTime.UtcNow,
+            ExpiresUtc               = DateTime.UtcNow.AddDays(14),
+            IsConsumed               = true
         };
         _db.ReferralInvites.Add(invite);
 
         _db.ExternalApplications.Add(new ExternalApplication
         {
-            JobPostingId    = job.Id,
-            ReferralInvite  = invite,
-            CandidateName   = Referral.CandidateName.Trim(),
-            CandidateEmail  = Referral.CandidateEmail.Trim(),
-            CandidatePhone  = Referral.CandidatePhone.Trim(),
-            Notes           = Referral.Notes.Trim(),
-            ZendeskTicketId = ticket.TicketId,
-            ZendeskTicketUrl= ticket.TicketUrl,
-            SubmittedUtc    = DateTime.UtcNow,
-            Status          = "Submitted"
+            JobPostingId     = job.Id,
+            ReferralInvite   = invite,
+            CandidateName    = Referral.CandidateName.Trim(),
+            CandidateEmail   = Referral.CandidateEmail.Trim(),
+            CandidatePhone   = Referral.CandidatePhone.Trim(),
+            Notes            = Referral.Notes.Trim(),
+            ZendeskTicketId  = ticket.TicketId,
+            ZendeskTicketUrl = ticket.TicketUrl,
+            SubmittedUtc     = DateTime.UtcNow,
+            Status           = "Submitted"
         });
 
         await _db.SaveChangesAsync();
@@ -146,7 +146,7 @@ public class IndexModel : PageModel
             $"job={job.Id};candidate={Referral.CandidateEmail};ticket={ticket.TicketId}");
 
         ReferralMessage   = $"Referral for {Referral.CandidateName.Trim()} submitted to HR.";
-        ReferralTicketId  = ticket.TicketId;
+        ReferralTicketId  = ticket.TicketId?.ToString() ?? string.Empty;
         ReferralTicketUrl = ticket.TicketUrl ?? string.Empty;
 
         return RedirectToPage();
