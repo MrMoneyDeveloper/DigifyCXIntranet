@@ -28,7 +28,11 @@ public class ZendeskTicketService : IZendeskTicketService
     private const long   FieldHrQueryType          = 22729769116956L;
     private const long   FieldEmployeeFullName     = 22729924058012L;
     private const long   FieldEmployeeId           = 22729955119004L;
-    private const long   FieldManagerEmail         = 22971445823900L;
+    // NOTE: FieldManagerEmail (22971445823900) is intentionally NOT sent.
+    // The CXI form uses cxi_hr_general which does not expose the Manager
+    // Email conditional field. POSTing any value to a hidden conditional
+    // field causes Zendesk to return HTTP 422. Manager email is captured
+    // in the ticket body text instead.
     private const long   FieldRequestingOnBehalfOf = 24644803197724L;
 
     private const string ValDepartment  = "cxi_dept_hr";
@@ -82,27 +86,18 @@ Notes:
 
         return CreateHrTicketCoreAsync(
             subject, body,
-            requesterName:     employeeName,
-            requesterEmail:    employeeEmail,
-            employeeFullName:  employeeName,
-            employeeId:        employeeId,
-            managerEmail:      managerEmail,   // sent only if non-empty (see core method)
-            onBehalfOfEmail:   employeeEmail,
-            attachment:        resumeFile,
-            tags:              ["digifycx_intranet", "hr_internal_application"],
+            requesterName:    employeeName,
+            requesterEmail:   employeeEmail,
+            employeeFullName: employeeName,
+            employeeId:       employeeId,
+            onBehalfOfEmail:  employeeEmail,
+            attachment:       resumeFile,
+            tags:             ["digifycx_intranet", "hr_internal_application"],
             cancellationToken: cancellationToken);
     }
 
     // ------------------------------------------------------------------
     // Referral — requester = candidate email
-    //
-    // NOTE: managerEmail is intentionally NOT sent to Zendesk.
-    // The CXI form uses cxi_hr_general as the HR query type, and that
-    // query type does NOT show the Manager Email field in the form
-    // conditions.  Sending a value for a hidden conditional field
-    // causes Zendesk to return HTTP 422 "Manager's email (for approval)
-    // is invalid".  The referrer identity is captured in the ticket body
-    // instead.
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateReferralTicketAsync(
         JobPosting job,
@@ -135,14 +130,13 @@ Notes:
 
         return CreateHrTicketCoreAsync(
             subject, body,
-            requesterName:     candidateName,
-            requesterEmail:    candidateEmail,
-            employeeFullName:  candidateName,
-            employeeId:        string.Empty,
-            managerEmail:      string.Empty,   // intentionally omitted — not a valid field for cxi_hr_general
-            onBehalfOfEmail:   referrerEmail,
-            attachment:        resumeFile,
-            tags:              ["digifycx_intranet", "hr_referral"],
+            requesterName:    candidateName,
+            requesterEmail:   candidateEmail,
+            employeeFullName: candidateName,
+            employeeId:       string.Empty,
+            onBehalfOfEmail:  referrerEmail,
+            attachment:       resumeFile,
+            tags:             ["digifycx_intranet", "hr_referral"],
             cancellationToken: cancellationToken);
     }
 
@@ -156,7 +150,6 @@ Notes:
         string requesterEmail,
         string employeeFullName,
         string employeeId,
-        string managerEmail,
         string onBehalfOfEmail,
         IFormFile? attachment,
         string[] tags,
@@ -172,7 +165,10 @@ Notes:
             if (attachment is { Length: > 0 })
                 uploads.Add(await UploadAsync(attachment, cancellationToken));
 
-            // 2. Custom fields — required + optional
+            // 2. Custom fields
+            // Only send fields that are always visible for cxi_hr_general.
+            // Conditional fields (Manager Email) are omitted — Zendesk 422s
+            // if you POST a value to a field the form conditions keep hidden.
             var customFields = new List<object>
             {
                 new { id = FieldRequesterEmail,       value = requesterEmail },
@@ -184,12 +180,8 @@ Notes:
                 new { id = FieldRequestingOnBehalfOf, value = onBehalfOfEmail }
             };
 
-            // Only include optional fields when they carry a value —
-            // sending empty strings for conditional fields causes Zendesk 422.
             if (!string.IsNullOrWhiteSpace(employeeId))
-                customFields.Add(new { id = FieldEmployeeId,   value = employeeId.Trim() });
-            if (!string.IsNullOrWhiteSpace(managerEmail))
-                customFields.Add(new { id = FieldManagerEmail, value = managerEmail.Trim() });
+                customFields.Add(new { id = FieldEmployeeId, value = employeeId.Trim() });
 
             // 3. Ticket payload
             var payload = new
@@ -221,7 +213,7 @@ Notes:
             using var response     = await _httpClient.SendAsync(request, cts.Token);
             var       responseBody = await response.Content.ReadAsStringAsync(cts.Token);
 
-            // 5. Surface the full error + field-level details so operators can diagnose
+            // 5. Surface full error details
             if (!response.IsSuccessStatusCode)
             {
                 var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
@@ -232,9 +224,9 @@ Notes:
             }
 
             // 6. Parse the created ticket ID
-            using var doc   = JsonDocument.Parse(responseBody);
-            var ticketId    = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
-            var ticketUrl   = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";
+            using var doc = JsonDocument.Parse(responseBody);
+            var ticketId  = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
+            var ticketUrl = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";
 
             _logger.LogInformation("Zendesk ticket #{TicketId} created ({Url}).", ticketId, ticketUrl);
             return new ZendeskTicketResult(true, ticketId, ticketUrl, "Ticket created.");
