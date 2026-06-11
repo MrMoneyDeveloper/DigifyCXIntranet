@@ -97,7 +97,13 @@ Notes:
     }
 
     // ------------------------------------------------------------------
-    // Referral — requester = candidate email
+    // Referral — requester = referrer (employee), NOT the external candidate.
+    //
+    // Using the candidate's external email as the Zendesk requester causes
+    // the ticket to fail because Zendesk cannot resolve an unknown external
+    // address against the HR form's agent-facing fields.
+    // Instead we treat the referring employee as the requester (exactly like
+    // an internal application) and capture all candidate details in the body.
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateReferralTicketAsync(
         JobPosting job,
@@ -110,7 +116,7 @@ Notes:
         IFormFile? resumeFile,
         CancellationToken cancellationToken = default)
     {
-        var subject = $"Referral application: {job.Title} \u2014 {candidateName}";
+        var subject = $"Referral: {job.Title} \u2014 {candidateName}";
         var body = $"""
 External referral submitted via DigifyCX Intranet.
 
@@ -128,11 +134,14 @@ Notes:
 {(string.IsNullOrWhiteSpace(notes) ? "(none)" : notes)}
 """;
 
+        // Use referrerName/referrerEmail as the Zendesk requester — mirrors
+        // the internal application flow so the ticket is always owned by a
+        // known agent/employee identity.
         return CreateHrTicketCoreAsync(
             subject, body,
-            requesterName:    candidateName,
-            requesterEmail:   candidateEmail,
-            employeeFullName: candidateName,
+            requesterName:    referrerName,
+            requesterEmail:   referrerEmail,
+            employeeFullName: referrerName,
             employeeId:       string.Empty,
             onBehalfOfEmail:  referrerEmail,
             attachment:       resumeFile,
@@ -236,9 +245,8 @@ Notes:
         }
         catch (HttpRequestException ex)
         {
-            var msg = $"Network error reaching Zendesk: {ex.Message}";
             _logger.LogError(ex, "Network error reaching Zendesk: {Message}", ex.Message);
-            return Fail(msg);
+            return Fail($"Network error reaching Zendesk: {ex.Message}");
         }
         catch (Exception ex)
         {
