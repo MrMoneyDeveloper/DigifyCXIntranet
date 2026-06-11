@@ -18,11 +18,10 @@
     {
         <li>
             <a asp-page="/Profile/Index" title="Manage Admin Profile"
-                   class="inline-flex items-center justify-center rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400 transition hover:border-amber-400 hover:bg-amber-500/20">
+               class="inline-flex items-center justify-center rounded-full border border-amber-500/50 bg-amber-500/10 px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-amber-400 transition hover:border-amber-400 hover:bg-amber-500/20">
                 @role
             </a>
         </li>
-        
         <li>
             <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
                 <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
@@ -39,15 +38,12 @@
                 @role
             </a>
         </li>
-        @if (string.Equals(User.Identity?.AuthenticationType, "Cookies", StringComparison.OrdinalIgnoreCase))
-        {
-            <li>
-                <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
-                    <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
-                        Sign Out
-                    </button>
-                </form>
-            </li>
-        }
+        <li>
+            <form method="post" asp-page="/Account/Logout" asp-route-returnUrl="/Account/Login" class="m-0 p-0 flex">
+                <button type="submit" class="inline-flex items-center justify-center rounded-full bg-rose-600 px-5 py-1.5 text-sm font-bold text-white shadow-md transition hover:bg-rose-500 hover:shadow-rose-500/25">
+                    Sign Out
+                </button>
+            </form>
+        </li>
     }
 </ul>

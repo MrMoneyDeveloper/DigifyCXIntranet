@@ -166,9 +166,6 @@ Notes:
                 uploads.Add(await UploadAsync(attachment, cancellationToken));
 
             // 2. Custom fields
-            // Only send fields that are always visible for cxi_hr_general.
-            // Conditional fields (Manager Email) are omitted — Zendesk 422s
-            // if you POST a value to a field the form conditions keep hidden.
             var customFields = new List<object>
             {
                 new { id = FieldRequesterEmail,       value = requesterEmail },
@@ -218,7 +215,7 @@ Notes:
             {
                 var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
                 _logger.LogWarning(
-                    "Zendesk ticket creation failed. Status={Status} Subject={Subject}\nParsed: {Error}\nRaw response body:\n{Body}",
+                    "Zendesk ticket creation failed. Status={Status} Subject={Subject} Error={Error} Body={Body}",
                     (int)response.StatusCode, subject, errorMsg, responseBody);
                 return Fail(errorMsg);
             }
@@ -240,12 +237,12 @@ Notes:
         catch (HttpRequestException ex)
         {
             var msg = $"Network error reaching Zendesk: {ex.Message}";
-            _logger.LogError(ex, msg);
+            _logger.LogError(ex, "Network error reaching Zendesk: {Message}", ex.Message);
             return Fail(msg);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during Zendesk ticket creation.");
+            _logger.LogError(ex, "Unexpected error during Zendesk ticket creation: {Message}", ex.Message);
             return Fail($"Unexpected error: {ex.Message}");
         }
     }
