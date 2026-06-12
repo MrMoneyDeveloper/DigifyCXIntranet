@@ -10,7 +10,6 @@ using Microsoft.EntityFrameworkCore;
 using Quartz;
 
 var builder = WebApplication.CreateBuilder(args);
-
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
 
@@ -27,6 +26,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<CanteenDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<HrDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<PolicyDbContext>(ConfigureSqlServer);
+
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.Configure<AdminAccessOptions>(
@@ -65,9 +65,15 @@ builder.Services.AddHttpClient(nameof(HackerNewsCacheService));
 builder.Services.AddHttpClient(nameof(ZendeskPolicySyncService));
 builder.Services.AddHttpClient(nameof(ZendeskTicketService));
 
+// --- 1. REGISTER HTTP CLIENT FACTORY FOR YOUR SYNC WORKER ---
+builder.Services.AddHttpClient<UserRegistrySyncWorker>();
+
 builder.Services.AddHostedService<TechNewsRefreshHostedService>();
 builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
 builder.Services.AddHostedService<MonthlyPayrollHostedService>();
+
+// --- 2. REGISTER THE GOOGLE SHEET REGISTRY SYNC WORKER ---
+builder.Services.AddHostedService<UserRegistrySyncWorker>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("sqlserver");
@@ -163,6 +169,7 @@ builder.Services.AddQuartz(q =>
         .WithIdentity($"{nameof(LunchCanteenBatchJob)}-trigger")
         .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone)));
 });
+
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
 var app = builder.Build();
@@ -194,7 +201,6 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
         {
             return trimmed;
         }
-
         return trimmed[..maxLength];
     }
 
@@ -205,7 +211,6 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
         {
             return uri.ToString();
         }
-
         return $"https://news.ycombinator.com/item?id={id}";
     }
 
