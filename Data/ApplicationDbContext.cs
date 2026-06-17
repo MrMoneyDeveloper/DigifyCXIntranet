@@ -26,6 +26,7 @@ public class ApplicationDbContext : IdentityDbContext
     public DbSet<PolicyAcknowledgement> PolicyAcknowledgements => Set<PolicyAcknowledgement>();
     public DbSet<ZendeskSyncLog> ZendeskSyncLogs => Set<ZendeskSyncLog>();
     public DbSet<FinanceAuditLog> FinanceAuditLogs => Set<FinanceAuditLog>();
+    public DbSet<AccountActivationLog> AccountActivationLogs => Set<AccountActivationLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

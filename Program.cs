@@ -134,6 +134,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
+    // Account activation and password setup — always anonymous
+    options.Conventions.AllowAnonymousToPage("/Account/Activate");
+    options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
     if (!useWindowsAuth)
     {
         options.Conventions.AllowAnonymousToPage("/Account/Login");
