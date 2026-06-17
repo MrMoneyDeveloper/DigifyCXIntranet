@@ -2,6 +2,7 @@ using System.Security.Claims;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -51,7 +52,6 @@ public class ResetPasswordModel : PageModel
 
     public void OnGet()
     {
-        // Keep TempData alive so the page still knows the activating user
         TempData.Keep("ActivationUserId");
     }
 
@@ -74,7 +74,7 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        // Hash the new password and persist it directly — no UserManager needed
+        // Hash the new password and persist directly — no UserManager needed
         user.PasswordHash = _hasher.HashPassword(user, Input.Password);
         user.IsFirstTimeLogin = false;
         _db.Users.Update(user);
@@ -84,8 +84,12 @@ public class ResetPasswordModel : PageModel
         var claims = new List<Claim>
         {
             new(ClaimTypes.Name,      user.UserName ?? user.DisplayName),
-            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName) ? (user.UserName ?? string.Empty) : user.DisplayName),
-            new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(user.CustomRole)  ? AppRoles.Agent : user.CustomRole)
+            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName)
+                ? (user.UserName ?? string.Empty)
+                : user.DisplayName),
+            new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(user.CustomRole)
+                ? AppRoles.Agent
+                : user.CustomRole)
         };
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
