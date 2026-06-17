@@ -1,5 +1,9 @@
+using System.Security.Claims;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,18 +16,13 @@ namespace DigifyCXIntranet.Pages.Account;
 [AllowAnonymous]
 public class ResetPasswordModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
     private readonly ApplicationDbContext _db;
+    private readonly IPasswordHasher<ApplicationUser> _hasher;
 
-    public ResetPasswordModel(
-        UserManager<ApplicationUser> userManager,
-        SignInManager<ApplicationUser> signInManager,
-        ApplicationDbContext db)
+    public ResetPasswordModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
     {
-        _userManager = userManager;
-        _signInManager = signInManager;
         _db = db;
+        _hasher = hasher;
     }
 
     [BindProperty]
@@ -52,8 +51,8 @@ public class ResetPasswordModel : PageModel
 
     public void OnGet()
     {
-        // Keep TempData alive across the GET so the page can optionally pre-fill
-        TempData.Keep("ActivationUsername");
+        // Keep TempData alive so the page still knows the activating user
+        TempData.Keep("ActivationUserId");
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -62,11 +61,12 @@ public class ResetPasswordModel : PageModel
             return Page();
 
         // Find user by PersonalEmail recorded during activation
+        var normalised = Input.Email.Trim().ToLowerInvariant();
         var user = await _db.Users
             .OfType<ApplicationUser>()
             .FirstOrDefaultAsync(u =>
                 u.PersonalEmail != null &&
-                u.PersonalEmail.ToLower() == Input.Email.Trim().ToLower());
+                u.PersonalEmail.ToLower() == normalised);
 
         if (user == null)
         {
@@ -74,24 +74,24 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        // Generate a reset token and apply the new password
-        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
-        var result = await _userManager.ResetPasswordAsync(user, resetToken, Input.Password);
-
-        if (!result.Succeeded)
-        {
-            ErrorMessage = string.Join(" ", result.Errors.Select(e => e.Description));
-            return Page();
-        }
-
-        // Mark account as fully activated (no longer first-time)
+        // Hash the new password and persist it directly — no UserManager needed
+        user.PasswordHash = _hasher.HashPassword(user, Input.Password);
         user.IsFirstTimeLogin = false;
-        await _userManager.UpdateAsync(user);
+        _db.Users.Update(user);
+        await _db.SaveChangesAsync();
 
-        // Automatically sign the user in
-        await _signInManager.SignInAsync(user, isPersistent: false);
+        // Sign the user in via cookie auth — same mechanism as Login.cshtml.cs
+        var claims = new List<Claim>
+        {
+            new(ClaimTypes.Name,      user.UserName ?? user.DisplayName),
+            new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName) ? (user.UserName ?? string.Empty) : user.DisplayName),
+            new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(user.CustomRole)  ? AppRoles.Agent : user.CustomRole)
+        };
 
-        SuccessMessage = "Password set successfully! Signing you in…";
+        var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+
         return RedirectToPage("/Index");
     }
 }

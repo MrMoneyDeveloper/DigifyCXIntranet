@@ -1,5 +1,6 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -12,13 +13,13 @@ namespace DigifyCXIntranet.Pages.Account;
 [AllowAnonymous]
 public class ActivateModel : PageModel
 {
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ApplicationDbContext _db;
+    private readonly IPasswordHasher<ApplicationUser> _hasher;
 
-    public ActivateModel(UserManager<ApplicationUser> userManager, ApplicationDbContext db)
+    public ActivateModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
     {
-        _userManager = userManager;
         _db = db;
+        _hasher = hasher;
     }
 
     [BindProperty]
@@ -47,11 +48,11 @@ public class ActivateModel : PageModel
             return Page();
 
         // Find user by DisplayName (case-insensitive)
+        var normalised = Input.FullName.Trim().ToLowerInvariant();
         var user = await _db.Users
             .OfType<ApplicationUser>()
-            .FirstOrDefaultAsync(u =>
-                u.DisplayName != null &&
-                u.DisplayName.ToLower() == Input.FullName.Trim().ToLower());
+            .FirstOrDefaultAsync(u => u.DisplayName != null &&
+                u.DisplayName.ToLower() == normalised);
 
         if (user == null)
         {
@@ -67,8 +68,8 @@ public class ActivateModel : PageModel
         }
 
         // Email is empty — record it and proceed to password setup
-        user.PersonalEmail = Input.PersonalEmail.Trim().ToLower();
-        await _userManager.UpdateAsync(user);
+        user.PersonalEmail = Input.PersonalEmail.Trim().ToLowerInvariant();
+        _db.Users.Update(user);
 
         // Capture IP (respects reverse-proxy X-Forwarded-For header)
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
@@ -78,16 +79,16 @@ public class ActivateModel : PageModel
         // Write security audit log
         _db.AccountActivationLogs.Add(new AccountActivationLog
         {
-            UserId = user.Id,
+            UserId      = user.Id,
             DisplayName = user.DisplayName,
             PersonalEmail = user.PersonalEmail,
-            IpAddress = ip,
+            IpAddress   = ip,
             ActivatedUtc = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
 
-        // Pass the username securely to ResetPassword via TempData
-        TempData["ActivationUsername"] = user.UserName;
+        // Pass the user's ID securely to ResetPassword via TempData
+        TempData["ActivationUserId"] = user.Id;
         return RedirectToPage("/Account/ResetPassword");
     }
 }
