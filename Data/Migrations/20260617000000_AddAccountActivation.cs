@@ -11,13 +11,10 @@ namespace DigifyCXIntranet.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "PersonalEmail",
-                table: "AspNetUsers",
-                type: "nvarchar(256)",
-                maxLength: 256,
-                nullable: true);
+            // NOTE: PersonalEmail column already exists on AspNetUsers from a prior migration
+            // (20260612014505_AddCustomUserFields). Do NOT add it again.
 
+            // Create AccountActivationLogs table
             migrationBuilder.CreateTable(
                 name: "AccountActivationLogs",
                 columns: table => new
@@ -50,7 +47,7 @@ namespace DigifyCXIntranet.Data.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(name: "AccountActivationLogs");
-            migrationBuilder.DropColumn(name: "PersonalEmail", table: "AspNetUsers");
+            // PersonalEmail is NOT dropped here since it was added by a prior migration
         }
     }
 }
