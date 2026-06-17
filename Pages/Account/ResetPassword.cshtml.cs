@@ -1,7 +1,6 @@
 using System.Security.Claims;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -60,10 +59,9 @@ public class ResetPasswordModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        // Find user by PersonalEmail recorded during activation
+        // Query ApplicationUser directly — no .OfType<> needed
         var normalised = Input.Email.Trim().ToLowerInvariant();
         var user = await _db.Users
-            .OfType<ApplicationUser>()
             .FirstOrDefaultAsync(u =>
                 u.PersonalEmail != null &&
                 u.PersonalEmail.ToLower() == normalised);
@@ -74,7 +72,7 @@ public class ResetPasswordModel : PageModel
             return Page();
         }
 
-        // Hash the new password and persist directly — no UserManager needed
+        // Hash and save the new password directly — no UserManager needed
         user.PasswordHash = _hasher.HashPassword(user, Input.Password);
         user.IsFirstTimeLogin = false;
         _db.Users.Update(user);

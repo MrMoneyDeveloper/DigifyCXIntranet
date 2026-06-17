@@ -1,6 +1,5 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
-using DigifyCXIntranet.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -47,10 +46,10 @@ public class ActivateModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        // Find user by DisplayName (case-insensitive)
+        // Query ApplicationUser directly — no .OfType<> needed now that
+        // ApplicationDbContext inherits IdentityDbContext<ApplicationUser>
         var normalised = Input.FullName.Trim().ToLowerInvariant();
         var user = await _db.Users
-            .OfType<ApplicationUser>()
             .FirstOrDefaultAsync(u => u.DisplayName != null &&
                 u.DisplayName.ToLower() == normalised);
 
@@ -79,15 +78,14 @@ public class ActivateModel : PageModel
         // Write security audit log
         _db.AccountActivationLogs.Add(new AccountActivationLog
         {
-            UserId      = user.Id,
-            DisplayName = user.DisplayName,
+            UserId        = user.Id,
+            DisplayName   = user.DisplayName,
             PersonalEmail = user.PersonalEmail,
-            IpAddress   = ip,
-            ActivatedUtc = DateTime.UtcNow
+            IpAddress     = ip,
+            ActivatedUtc  = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
 
-        // Pass the user's ID securely to ResetPassword via TempData
         TempData["ActivationUserId"] = user.Id;
         return RedirectToPage("/Account/ResetPassword");
     }
