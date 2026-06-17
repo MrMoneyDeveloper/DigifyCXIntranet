@@ -1,11 +1,13 @@
 using DigifyCXIntranet.BackgroundJobs;
 using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Quartz;
 
@@ -26,6 +28,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<CanteenDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<HrDbContext>(ConfigureSqlServer);
 builder.Services.AddDbContext<PolicyDbContext>(ConfigureSqlServer);
+
+builder.Services.AddIdentityCore<ApplicationUser>(options =>
+{
+    options.Password.RequireDigit = true;
+    options.Password.RequiredLength = 8;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireNonAlphanumeric = false;
+})
+.AddEntityFrameworkStores<ApplicationDbContext>()
+.AddDefaultTokenProviders();
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -65,14 +77,11 @@ builder.Services.AddHttpClient(nameof(HackerNewsCacheService));
 builder.Services.AddHttpClient(nameof(ZendeskPolicySyncService));
 builder.Services.AddHttpClient(nameof(ZendeskTicketService));
 
-// --- 1. REGISTER HTTP CLIENT FACTORY FOR YOUR SYNC WORKER ---
 builder.Services.AddHttpClient<UserRegistrySyncWorker>();
 
 builder.Services.AddHostedService<TechNewsRefreshHostedService>();
 builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
 builder.Services.AddHostedService<MonthlyPayrollHostedService>();
-
-// --- 2. REGISTER THE GOOGLE SHEET REGISTRY SYNC WORKER ---
 builder.Services.AddHostedService<UserRegistrySyncWorker>();
 
 builder.Services.AddHealthChecks()
@@ -134,7 +143,6 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
-    // Account activation and password setup — always anonymous
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
     options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
     if (!useWindowsAuth)
@@ -200,20 +208,14 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
     static string SafeText(string value, int maxLength)
     {
         var trimmed = string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
-        if (trimmed.Length <= maxLength)
-        {
-            return trimmed;
-        }
-        return trimmed[..maxLength];
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength];
     }
 
     static string NormalizeUrl(string value, int id)
     {
         if (Uri.TryCreate(value, UriKind.Absolute, out var uri) &&
             (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
-        {
             return uri.ToString();
-        }
         return $"https://news.ycombinator.com/item?id={id}";
     }
 
@@ -236,16 +238,131 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 
 app.MapRazorPages();
 
+// ── Startup: DB validation, schema repair, seed, then user registry sync ──
 using (var scope = app.Services.CreateScope())
 {
-    var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+    var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
         .CreateLogger("DatabaseStartup");
-    await SqlServerStartupValidator.EnsureServerIsReachableAsync(connectionString, logger);
+
+    await SqlServerStartupValidator.EnsureServerIsReachableAsync(connectionString, startupLogger);
 
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await db.Database.MigrateAsync();
     await DatabaseSchemaRepair.EnsurePostMigrationSchemaAsync(db);
     await SeedData.InitializeAsync(db);
+
+    // ── Force immediate user registry sync from Google Sheet on every startup ──
+    var syncLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
+        .CreateLogger("UserRegistryStartupSync");
+    try
+    {
+        syncLogger.LogInformation("[UserRegistrySync] Starting startup sync from Google Sheet...");
+
+        const string sheetApiUrl =
+            "https://script.google.com/macros/s/AKfycbxrrhzqV_pFVYpUH-vv2i7EUA5x7i184HokCBVdUxNJVe49r6RBwxI24S2ZVauUo9A5Zg/exec";
+
+        var http = scope.ServiceProvider
+            .GetRequiredService<IHttpClientFactory>()
+            .CreateClient();
+
+        var sheetResponse = await http.GetAsync(sheetApiUrl);
+
+        if (!sheetResponse.IsSuccessStatusCode)
+        {
+            syncLogger.LogWarning("[UserRegistrySync] Sheet API returned {Code} — skipping startup seed.",
+                sheetResponse.StatusCode);
+        }
+        else
+        {
+            var content = await sheetResponse.Content.ReadAsStringAsync();
+
+            // Guard: if the response is HTML (e.g. a Google login redirect), skip
+            if (content.TrimStart().StartsWith("<"))
+            {
+                syncLogger.LogWarning("[UserRegistrySync] Sheet API returned HTML instead of JSON. " +
+                    "Ensure the Apps Script is deployed as 'Anyone' (no sign-in required).");
+            }
+            else
+            {
+                var externalUsers = System.Text.Json.JsonSerializer
+                    .Deserialize<List<ExternalUserDto>>(content);
+
+                if (externalUsers == null || externalUsers.Count == 0)
+                {
+                    syncLogger.LogInformation("[UserRegistrySync] No users returned from sheet.");
+                }
+                else
+                {
+                    var userManager = scope.ServiceProvider
+                        .GetRequiredService<UserManager<ApplicationUser>>();
+
+                    int created = 0, updated = 0, skipped = 0;
+
+                    foreach (var ext in externalUsers)
+                    {
+                        if (string.IsNullOrWhiteSpace(ext.fullName)) continue;
+
+                        var fullName = ext.fullName.Trim();
+                        var username = fullName.Replace(" ", ".").ToLower();
+                        var normalizedUsername = username.ToUpper();
+
+                        var existing = db.Users
+                            .OfType<ApplicationUser>()
+                            .FirstOrDefault(u => u.NormalizedUserName == normalizedUsername);
+
+                        if (existing != null)
+                        {
+                            // Keep DisplayName in sync in case name changed in sheet
+                            if (existing.DisplayName != fullName)
+                            {
+                                existing.DisplayName = fullName;
+                                updated++;
+                            }
+                            else
+                            {
+                                skipped++;
+                            }
+                            continue;
+                        }
+
+                        var newUser = new ApplicationUser
+                        {
+                            UserName = username,
+                            NormalizedUserName = normalizedUsername,
+                            Email = $"{username}@digifycx.internal",
+                            NormalizedEmail = $"{username}@digifycx.internal".ToUpper(),
+                            DisplayName = fullName,
+                            CustomRole = "Employee",
+                            IsFirstTimeLogin = true,
+                            PersonalEmail = null,
+                            EmailConfirmed = true,
+                            SecurityStamp = Guid.NewGuid().ToString()
+                        };
+
+                        var result = await userManager.CreateAsync(newUser);
+                        if (result.Succeeded)
+                        {
+                            created++;
+                        }
+                        else
+                        {
+                            syncLogger.LogWarning("[UserRegistrySync] Failed to create {Username}: {Errors}",
+                                username,
+                                string.Join(", ", result.Errors.Select(e => e.Description)));
+                        }
+                    }
+
+                    await db.SaveChangesAsync();
+                    syncLogger.LogInformation(
+                        "[UserRegistrySync] Startup sync complete. Created: {Created}, Updated: {Updated}, Unchanged: {Skipped}",
+                        created, updated, skipped);
+                }
+            }
+        }
+    }
+    catch (Exception ex)
+    {
+        syncLogger.LogError(ex, "[UserRegistrySync] Startup sync failed — app will continue without it.");
+    }
 }
 
 app.Run();

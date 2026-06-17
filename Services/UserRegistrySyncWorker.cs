@@ -1,5 +1,6 @@
 ﻿using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -17,84 +18,135 @@ public class UserRegistrySyncWorker : BackgroundService
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ILogger<UserRegistrySyncWorker> _logger;
 
-    // Your production-ready deployed macro URL
     private const string ApiUrl = "https://script.google.com/macros/s/AKfycbxrrhzqV_pFVYpUH-vv2i7EUA5x7i184HokCBVdUxNJVe49r6RBwxI24S2ZVauUo9A5Zg/exec";
 
-    public UserRegistrySyncWorker(IServiceProvider serviceProvider, IHttpClientFactory httpClientFactory)
+    // 🔧 TESTING: set to seconds. PRODUCTION: switch to FromHours(24)
+    private static readonly TimeSpan SyncInterval = TimeSpan.FromHours(24);
+
+    public UserRegistrySyncWorker(
+        IServiceProvider serviceProvider,
+        IHttpClientFactory httpClientFactory,
+        ILogger<UserRegistrySyncWorker> logger)
     {
         _serviceProvider = serviceProvider;
         _httpClientFactory = httpClientFactory;
+        _logger = logger;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Short initial delay on startup to ensure system services are fully ready
+        // Short initial delay to ensure EF migrations and startup services are ready
         await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
 
+        // ✅ Run IMMEDIATELY on startup, then loop on interval
         while (!stoppingToken.IsCancellationRequested)
         {
-            try
+            await RunSyncAsync(stoppingToken);
+            await Task.Delay(SyncInterval, stoppingToken);
+        }
+    }
+
+    private async Task RunSyncAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            _logger.LogInformation("[UserRegistrySync] Starting sync from Google Sheet...");
+
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+
+            var client = _httpClientFactory.CreateClient();
+            var response = await client.GetAsync(ApiUrl, stoppingToken);
+
+            if (!response.IsSuccessStatusCode)
             {
-                using var scope = _serviceProvider.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                _logger.LogWarning("[UserRegistrySync] Sheet API returned {StatusCode}", response.StatusCode);
+                return;
+            }
 
-                var client = _httpClientFactory.CreateClient();
-                var response = await client.GetAsync(ApiUrl, stoppingToken);
+            var content = await response.Content.ReadAsStringAsync(stoppingToken);
+            using JsonDocument doc = JsonDocument.Parse(content);
 
-                if (response.IsSuccessStatusCode)
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                _logger.LogWarning("[UserRegistrySync] Unexpected response format.");
+                return;
+            }
+
+            var externalUsers = JsonSerializer.Deserialize<List<ExternalUserDto>>(content);
+            if (externalUsers == null || externalUsers.Count == 0)
+            {
+                _logger.LogInformation("[UserRegistrySync] No employees returned from sheet.");
+                return;
+            }
+
+            int created = 0;
+            int skipped = 0;
+
+            foreach (var extUser in externalUsers)
+            {
+                if (string.IsNullOrWhiteSpace(extUser.fullName)) continue;
+
+                var fullName = extUser.fullName.Trim();
+                var generatedUsername = fullName.Replace(" ", ".").ToLower();
+
+                // Check by NormalizedUserName
+                var existingUser = dbContext.Users
+                    .OfType<ApplicationUser>()
+                    .FirstOrDefault(u => u.NormalizedUserName == generatedUsername.ToUpper());
+
+                if (existingUser != null)
                 {
-                    var content = await response.Content.ReadAsStringAsync(stoppingToken);
-
-                    // Parse safely using JsonDocument to handle the array payload smoothly
-                    using JsonDocument doc = JsonDocument.Parse(content);
-                    JsonElement root = doc.RootElement;
-
-                    List<ExternalUserDto> externalUsers = new List<ExternalUserDto>();
-
-                    if (root.ValueKind == JsonValueKind.Array)
+                    // ✅ Ensure DisplayName is always up to date
+                    if (existingUser.DisplayName != fullName)
                     {
-                        externalUsers = JsonSerializer.Deserialize<List<ExternalUserDto>>(content);
+                        existingUser.DisplayName = fullName;
                     }
+                    skipped++;
+                    continue;
+                }
 
-                    if (externalUsers != null && externalUsers.Count > 0)
-                    {
-                        foreach (var extUser in externalUsers)
-                        {
-                            if (string.IsNullOrWhiteSpace(extUser.fullName)) continue;
+                // Create new user via UserManager so Identity fields are set correctly
+                var newUser = new ApplicationUser
+                {
+                    UserName = generatedUsername,
+                    NormalizedUserName = generatedUsername.ToUpper(),
+                    Email = $"{generatedUsername}@digifycx.internal",
+                    NormalizedEmail = $"{generatedUsername}@digifycx.internal".ToUpper(),
+                    DisplayName = fullName,
+                    CustomRole = "Employee",
+                    IsFirstTimeLogin = true,
+                    PersonalEmail = null,   // ← blank until employee activates
+                    EmailConfirmed = true,
+                    SecurityStamp = Guid.NewGuid().ToString()
+                };
 
-                            // Standardize format to first.last
-                            var generatedUsername = extUser.fullName.Replace(" ", ".").ToLower();
+                // No password set — employee sets it on first activation
+                var result = await userManager.CreateAsync(newUser);
 
-                            // Prevent duplicate creation loops
-                            var existingUser = dbContext.Users.FirstOrDefault(u => u.NormalizedUserName == generatedUsername.ToUpper());
-
-                            if (existingUser == null)
-                            {
-                                var newUser = new ApplicationUser
-                                {
-                                    UserName = generatedUsername,
-                                    NormalizedUserName = generatedUsername.ToUpper(),
-                                    DisplayName = extUser.fullName,
-                                    CustomRole = "Employee",
-                                    IsFirstTimeLogin = true,
-                                    PasswordHash = "AQAAAAIAAYagAAAAEOf12WelcomePlaceholderHashMatch=="
-                                };
-
-                                dbContext.Users.Add(newUser);
-                            }
-                        }
-                        await dbContext.SaveChangesAsync(stoppingToken);
-                    }
+                if (result.Succeeded)
+                {
+                    created++;
+                    _logger.LogInformation("[UserRegistrySync] Created user: {Username}", generatedUsername);
+                }
+                else
+                {
+                    _logger.LogWarning("[UserRegistrySync] Failed to create {Username}: {Errors}",
+                        generatedUsername,
+                        string.Join(", ", result.Errors.Select(e => e.Description)));
                 }
             }
-            catch (Exception ex)
-            {
-                // Core loop safety net: logs can be added here if needed
-            }
 
-            // 🕒 PRODUCTION PARAMETER: Wait exactly 24 hours before checking the registry sheet again
-            await Task.Delay(TimeSpan.FromHours(24), stoppingToken);
+            await dbContext.SaveChangesAsync(stoppingToken);
+            _logger.LogInformation("[UserRegistrySync] Sync complete. Created: {Created}, Already existed: {Skipped}",
+                created, skipped);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[UserRegistrySync] Sync failed with exception.");
         }
     }
 }

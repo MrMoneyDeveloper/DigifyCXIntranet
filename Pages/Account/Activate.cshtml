@@ -24,8 +24,9 @@
     {
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-400">@Model.ErrorMessage</div>
+            <div class="alert alert-error">@Model.ErrorMessage</div>
         }
+        <!-- DEBUG: @Model.DebugInfo -->
 
         <form method="post" class="space-y-5">
             @Html.AntiForgeryToken()

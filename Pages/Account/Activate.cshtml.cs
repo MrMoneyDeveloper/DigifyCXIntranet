@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Text.RegularExpressions;
 
 namespace DigifyCXIntranet.Pages.Account;
 
@@ -13,18 +14,19 @@ namespace DigifyCXIntranet.Pages.Account;
 public class ActivateModel : PageModel
 {
     private readonly ApplicationDbContext _db;
-    private readonly IPasswordHasher<ApplicationUser> _hasher;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public ActivateModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
+    public ActivateModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
     {
         _db = db;
-        _hasher = hasher;
+        _userManager = userManager;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
+    public string? DebugInfo { get; set; }   // only shown in dev; remove when done
     public bool AlreadyActivated { get; set; }
 
     public class InputModel
@@ -39,19 +41,38 @@ public class ActivateModel : PageModel
         public string PersonalEmail { get; set; } = string.Empty;
     }
 
+    // Normalise: lowercase, collapse all whitespace variants to single space, trim
+    private static string Normalise(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        var s = value
+            .Replace("\u00a0", " ")   // non-breaking space
+            .Replace("\u200b", "")    // zero-width space
+            .Replace("\u200c", "")    // zero-width non-joiner
+            .Replace("\t", " ");
+        s = Regex.Replace(s, @"\s+", " ").Trim().ToLower();
+        return s;
+    }
+
     public void OnGet() { }
 
     public async Task<IActionResult> OnPostAsync()
     {
         if (!ModelState.IsValid)
+        {
+            ErrorMessage = "Please fill in all required fields correctly.";
             return Page();
+        }
 
-        // Query ApplicationUser directly — no .OfType<> needed now that
-        // ApplicationDbContext inherits IdentityDbContext<ApplicationUser>
-        var normalised = Input.FullName.Trim().ToLowerInvariant();
+        var normalizedInput = Input.FullName.Trim().ToLower();
+        var derivedUsername = normalizedInput.Replace(" ", ".");
+
+        // Match by DisplayName OR by username derived from the name (firstname.lastname)
         var user = await _db.Users
-            .FirstOrDefaultAsync(u => u.DisplayName != null &&
-                u.DisplayName.ToLower() == normalised);
+            .OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u =>
+                (u.DisplayName != null && u.DisplayName.ToLower() == normalizedInput) ||
+                (u.UserName != null && u.UserName.ToLower() == derivedUsername));
 
         if (user == null)
         {
@@ -59,34 +80,30 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        // Personal email already set — account already activated
         if (!string.IsNullOrWhiteSpace(user.PersonalEmail))
         {
             AlreadyActivated = true;
             return Page();
         }
 
-        // Email is empty — record it and proceed to password setup
-        user.PersonalEmail = Input.PersonalEmail.Trim().ToLowerInvariant();
-        _db.Users.Update(user);
+        user.PersonalEmail = Input.PersonalEmail.Trim().ToLower();
+        await _userManager.UpdateAsync(user);
 
-        // Capture IP (respects reverse-proxy X-Forwarded-For header)
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
             ip = forwardedFor.ToString().Split(',')[0].Trim();
 
-        // Write security audit log
         _db.AccountActivationLogs.Add(new AccountActivationLog
         {
-            UserId        = user.Id,
-            DisplayName   = user.DisplayName,
+            UserId = user.Id,
+            DisplayName = user.DisplayName ?? user.UserName ?? string.Empty,
             PersonalEmail = user.PersonalEmail,
-            IpAddress     = ip,
-            ActivatedUtc  = DateTime.UtcNow
+            IpAddress = ip,
+            ActivatedUtc = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
 
-        TempData["ActivationUserId"] = user.Id;
+        TempData["ActivationUsername"] = user.UserName;
         return RedirectToPage("/Account/ResetPassword");
     }
 }
