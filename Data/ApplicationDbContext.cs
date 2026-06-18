@@ -27,6 +27,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<ZendeskSyncLog> ZendeskSyncLogs => Set<ZendeskSyncLog>();
     public DbSet<FinanceAuditLog> FinanceAuditLogs => Set<FinanceAuditLog>();
     public DbSet<AccountActivationLog> AccountActivationLogs => Set<AccountActivationLog>();
+    public DbSet<ForgotPasswordRequest> ForgotPasswordRequests => Set<ForgotPasswordRequest>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
