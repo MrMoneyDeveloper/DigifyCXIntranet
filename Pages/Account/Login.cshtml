@@ -20,7 +20,10 @@
             <span asp-validation-for="Input.Username" class="text-xs font-medium text-rose-400 mt-1 block"></span>
         </div>
         <div>
-            <label asp-for="Input.Password" class="mb-1.5 block text-sm font-semibold text-slate-300"></label>
+            <div class="mb-1.5 flex items-center justify-between">
+                <label asp-for="Input.Password" class="block text-sm font-semibold text-slate-300"></label>
+                <a href="/Account/ForgotPassword" class="text-xs text-slate-500 hover:text-cyan-400 transition">Forgot password?</a>
+            </div>
             <input asp-for="Input.Password" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition" />
             <span asp-validation-for="Input.Password" class="text-xs font-medium text-rose-400 mt-1 block"></span>
         </div>

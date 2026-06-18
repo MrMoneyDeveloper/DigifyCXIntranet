@@ -90,6 +90,27 @@ END;
 
 IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'IX_ZendeskSyncLogs_StartedUtc' AND [object_id] = OBJECT_ID(N'ZendeskSyncLogs'))
     CREATE INDEX [IX_ZendeskSyncLogs_StartedUtc] ON [ZendeskSyncLogs] ([StartedUtc]);
+
+-- -------------------------------------------------------
+-- ForgotPasswordRequests — audit log for IT-support tickets
+-- -------------------------------------------------------
+IF OBJECT_ID('ForgotPasswordRequests', 'U') IS NULL
+BEGIN
+    CREATE TABLE [ForgotPasswordRequests] (
+        [Id]               int NOT NULL IDENTITY,
+        [FullName]         nvarchar(120) NOT NULL,
+        [Description]      nvarchar(500) NOT NULL,
+        [IpAddress]        nvarchar(45)  NOT NULL,
+        [SubmittedUtc]     datetime2     NOT NULL,
+        [ZendeskTicketId]  bigint NULL,
+        [ZendeskTicketUrl] nvarchar(500) NOT NULL CONSTRAINT [DF_ForgotPasswordRequests_ZendeskTicketUrl] DEFAULT N'',
+        [Succeeded]        bit NOT NULL,
+        CONSTRAINT [PK_ForgotPasswordRequests] PRIMARY KEY ([Id])
+    );
+END;
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE [name] = N'IX_ForgotPasswordRequests_SubmittedUtc' AND [object_id] = OBJECT_ID(N'ForgotPasswordRequests'))
+    CREATE INDEX [IX_ForgotPasswordRequests_SubmittedUtc] ON [ForgotPasswordRequests] ([SubmittedUtc]);
 """;
 
         return db.Database.ExecuteSqlRawAsync(sql, cancellationToken);

@@ -8,10 +8,8 @@ using Microsoft.Extensions.Options;
 namespace DigifyCXIntranet.Services;
 
 /// <summary>
-/// Creates Zendesk HR tickets for internal job applications and employee
-/// referrals.  All ticket-routing IDs and custom-field values are
-/// hard-coded so tickets always land in the correct HR group and form
-/// regardless of appsettings configuration.
+/// Creates Zendesk tickets for HR workflows (internal applications, referrals)
+/// and IT-support workflows (forgotten password).
 /// </summary>
 public class ZendeskTicketService : IZendeskTicketService
 {
@@ -28,11 +26,6 @@ public class ZendeskTicketService : IZendeskTicketService
     private const long   FieldHrQueryType          = 22729769116956L;
     private const long   FieldEmployeeFullName     = 22729924058012L;
     private const long   FieldEmployeeId           = 22729955119004L;
-    // NOTE: FieldManagerEmail (22971445823900) is intentionally NOT sent.
-    // The CXI form uses cxi_hr_general which does not expose the Manager
-    // Email conditional field. POSTing any value to a hidden conditional
-    // field causes Zendesk to return HTTP 422. Manager email is captured
-    // in the ticket body text instead.
     private const long   FieldRequestingOnBehalfOf = 24644803197724L;
 
     private const string ValDepartment  = "cxi_dept_hr";
@@ -98,12 +91,6 @@ Notes:
 
     // ------------------------------------------------------------------
     // Referral — requester = referrer (employee), NOT the external candidate.
-    //
-    // Using the candidate's external email as the Zendesk requester causes
-    // the ticket to fail because Zendesk cannot resolve an unknown external
-    // address against the HR form's agent-facing fields.
-    // Instead we treat the referring employee as the requester (exactly like
-    // an internal application) and capture all candidate details in the body.
     // ------------------------------------------------------------------
     public Task<ZendeskTicketResult> CreateReferralTicketAsync(
         JobPosting job,
@@ -134,9 +121,6 @@ Notes:
 {(string.IsNullOrWhiteSpace(notes) ? "(none)" : notes)}
 """;
 
-        // Use referrerName/referrerEmail as the Zendesk requester — mirrors
-        // the internal application flow so the ticket is always owned by a
-        // known agent/employee identity.
         return CreateHrTicketCoreAsync(
             subject, body,
             requesterName:    referrerName,
@@ -150,7 +134,106 @@ Notes:
     }
 
     // ------------------------------------------------------------------
-    // Core — builds and POSTs the ticket, surfaces detailed errors
+    // Forgotten password — IT-support ticket
+    // ------------------------------------------------------------------
+    public async Task<ZendeskTicketResult> CreateForgotPasswordTicketAsync(
+        string fullName,
+        string ipAddress,
+        DateTime submittedUtc,
+        CancellationToken cancellationToken = default)
+    {
+        if (!IsConfigured(out var configError))
+            return Fail(configError);
+
+        // Format the timestamp in South African time (SAST = UTC+2) for readability.
+        var sastZone     = TimeZoneInfo.FindSystemTimeZoneById("Africa/Johannesburg");
+        var sastTime     = TimeZoneInfo.ConvertTimeFromUtc(submittedUtc, sastZone);
+        var timestampStr = sastTime.ToString("yyyy-MM-dd HH:mm:ss") + " SAST";
+
+        var subject = $"Forgotten Password – {fullName}";
+        var autoDescription = $"User {fullName} has submitted a forgotten password request via the DigifyCX Intranet login page.";
+
+        var body = $"""
+Forgotten password request submitted via DigifyCX Intranet.
+
+Username  : {fullName}
+IP Address: {ipAddress}
+Timestamp : {timestampStr}
+
+{autoDescription}
+
+Please locate the device matching the IP address above on the company floor and assist the employee with a password reset.
+""";
+
+        try
+        {
+            // Simple ticket payload — no HR form, no custom fields beyond tags.
+            // Uses the configured IT-support email as the requester so the ticket
+            // lands in the correct Zendesk queue.
+            var payload = new
+            {
+                ticket = new
+                {
+                    subject,
+                    requester = new
+                    {
+                        name  = fullName,
+                        email = _options.Email    // authenticated agent submits on behalf of user
+                    },
+                    comment = new { body },
+                    tags    = new[] { "digifycx_intranet", "digifycx_intranet_forgot_password" }
+                }
+            };
+
+            using var request = BuildRequest(HttpMethod.Post, "/api/v2/tickets.json");
+            request.Content   = new StringContent(
+                JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+
+            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+            cts.CancelAfter(TimeSpan.FromSeconds(Math.Clamp(_options.TimeoutSeconds, 5, 90)));
+
+            using var response     = await _httpClient.SendAsync(request, cts.Token);
+            var       responseBody = await response.Content.ReadAsStringAsync(cts.Token);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
+                _logger.LogWarning(
+                    "Zendesk forgot-password ticket creation failed. Status={Status} User={User} Error={Error}",
+                    (int)response.StatusCode, fullName, errorMsg);
+                return Fail(errorMsg);
+            }
+
+            using var doc = JsonDocument.Parse(responseBody);
+            var ticketId  = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
+            var ticketUrl = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";
+
+            _logger.LogInformation(
+                "Zendesk forgot-password ticket #{TicketId} created for user {User} from IP {IP}.",
+                ticketId, fullName, ipAddress);
+
+            return new ZendeskTicketResult(true, ticketId, ticketUrl, "Ticket created.");
+        }
+        catch (TaskCanceledException)
+        {
+            const string msg = "Zendesk request timed out. The ticket may not have been created.";
+            _logger.LogWarning(msg);
+            return Fail(msg);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "Network error reaching Zendesk: {Message}", ex.Message);
+            return Fail($"Network error reaching Zendesk: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during Zendesk forgot-password ticket creation: {Message}", ex.Message);
+            return Fail($"Unexpected error: {ex.Message}");
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Core — builds and POSTs an HR ticket, surfaces detailed errors
     // ------------------------------------------------------------------
     private async Task<ZendeskTicketResult> CreateHrTicketCoreAsync(
         string subject,
@@ -169,12 +252,10 @@ Notes:
 
         try
         {
-            // 1. Upload CV / resume
             var uploads = new List<string>();
             if (attachment is { Length: > 0 })
                 uploads.Add(await UploadAsync(attachment, cancellationToken));
 
-            // 2. Custom fields
             var customFields = new List<object>
             {
                 new { id = FieldRequesterEmail,       value = requesterEmail },
@@ -189,7 +270,6 @@ Notes:
             if (!string.IsNullOrWhiteSpace(employeeId))
                 customFields.Add(new { id = FieldEmployeeId, value = employeeId.Trim() });
 
-            // 3. Ticket payload
             var payload = new
             {
                 ticket = new
@@ -208,7 +288,6 @@ Notes:
                 }
             };
 
-            // 4. POST
             using var request = BuildRequest(HttpMethod.Post, "/api/v2/tickets.json");
             request.Content   = new StringContent(
                 JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
@@ -219,7 +298,6 @@ Notes:
             using var response     = await _httpClient.SendAsync(request, cts.Token);
             var       responseBody = await response.Content.ReadAsStringAsync(cts.Token);
 
-            // 5. Surface full error details
             if (!response.IsSuccessStatusCode)
             {
                 var errorMsg = BuildDetailedErrorMessage((int)response.StatusCode, response.ReasonPhrase, responseBody);
@@ -229,7 +307,6 @@ Notes:
                 return Fail(errorMsg);
             }
 
-            // 6. Parse the created ticket ID
             using var doc = JsonDocument.Parse(responseBody);
             var ticketId  = doc.RootElement.GetProperty("ticket").GetProperty("id").GetInt64();
             var ticketUrl = $"{_options.BaseUrl.TrimEnd('/')}/agent/tickets/{ticketId}";

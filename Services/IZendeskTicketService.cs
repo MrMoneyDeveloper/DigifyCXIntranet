@@ -24,4 +24,16 @@ public interface IZendeskTicketService
         string notes,
         IFormFile? resumeFile,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates a Zendesk IT-support ticket for a forgotten-password request.
+    /// The ticket body automatically includes the username, IP address, and
+    /// submission timestamp so IT can locate the correct device on the floor.
+    /// The ticket is tagged with <c>digifycx_intranet_forgot_password</c>.
+    /// </summary>
+    Task<ZendeskTicketResult> CreateForgotPasswordTicketAsync(
+        string fullName,
+        string ipAddress,
+        DateTime submittedUtc,
+        CancellationToken cancellationToken = default);
 }
