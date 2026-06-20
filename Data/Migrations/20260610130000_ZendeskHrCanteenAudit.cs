@@ -1,10 +1,13 @@
 using System;
+using DigifyCXIntranet.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
 namespace DigifyCXIntranet.Data.Migrations
 {
+    [DbContext(typeof(ApplicationDbContext))]
     [Migration("20260610130000_ZendeskHrCanteenAudit")]
     public partial class ZendeskHrCanteenAudit : Migration
     {
