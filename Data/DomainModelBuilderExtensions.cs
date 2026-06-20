@@ -11,9 +11,15 @@ public static class DomainModelBuilderExtensions
             .Property(x => x.TotalAmount)
             .HasPrecision(18, 2);
 
+        builder.Entity<CanteenOrder>()
+            .HasIndex(x => new { x.EmployeeUsername, x.OrderTimeUtc });
+
         builder.Entity<MenuItem>()
             .Property(x => x.Price)
             .HasPrecision(18, 2);
+
+        builder.Entity<MenuItem>()
+            .HasIndex(x => new { x.IsDeleted, x.IsActive, x.MealSlot, x.DisplayOrder });
 
         builder.Entity<CanteenBatchRun>()
             .HasIndex(x => x.RunKey)
@@ -35,6 +41,9 @@ public static class DomainModelBuilderExtensions
             .HasForeignKey(e => e.ReferralInviteId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.Entity<JobPosting>()
+            .HasIndex(x => new { x.IsDeleted, x.IsActive, x.ClosingDate });
+
         builder.Entity<ReferralInvite>()
             .HasIndex(x => x.Token)
             .IsUnique();
@@ -48,5 +57,8 @@ public static class DomainModelBuilderExtensions
 
         builder.Entity<ZendeskSyncLog>()
             .HasIndex(x => x.StartedUtc);
+
+        builder.Entity<ZendeskPolicyArticle>()
+            .HasIndex(x => new { x.SectionName, x.Title });
     }
 }

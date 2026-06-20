@@ -19,6 +19,7 @@ public class AuditModel : PageModel
     public async Task OnGetAsync()
     {
         Items = await _db.FinanceAuditLogs
+            .AsNoTracking()
             .OrderByDescending(x => x.TimestampUtc)
             .Take(500)
             .ToListAsync();

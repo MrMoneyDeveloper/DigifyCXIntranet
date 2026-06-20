@@ -23,6 +23,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         var query = _db.ZendeskPolicyArticles
+            .AsNoTracking()
             .Where(x => x.IsPublished)
             .OrderByDescending(x => x.UpdatedAtUtc)
             .AsQueryable();

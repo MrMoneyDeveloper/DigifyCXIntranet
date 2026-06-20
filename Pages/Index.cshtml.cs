@@ -48,6 +48,7 @@ public class IndexModel : PageModel
         RoleName = _adminAccessService.GetPrimaryRole(User);
 
         Announcements = await _db.Announcements
+            .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted && (x.ExpirationDate == null || x.ExpirationDate >= DateTime.UtcNow.Date))
             .OrderByDescending(x => x.IsPinned)
             .ThenByDescending(x => x.CreatedDateUtc)
@@ -56,6 +57,7 @@ public class IndexModel : PageModel
 
         var recentCutoff = DateTime.UtcNow.AddDays(-Math.Clamp(_homePageOptions.RecentJobDays, 1, 365));
         JobPostings = await _hrDb.JobPostings
+            .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted && x.CreatedDateUtc >= recentCutoff)
             .OrderByDescending(x => x.CreatedDateUtc)
             .ThenBy(x => x.ClosingDate)
@@ -63,6 +65,7 @@ public class IndexModel : PageModel
             .ToListAsync();
 
         Policies = await _policyDb.ZendeskPolicyArticles
+            .AsNoTracking()
             .Where(x => x.IsPublished)
             .OrderByDescending(x => x.UpdatedAtUtc)
             .Take(5)
@@ -71,6 +74,7 @@ public class IndexModel : PageModel
         var username = UserNameHelper.GetShortName(User);
         var today = DateTime.UtcNow;
         CurrentMonthCanteenTotal = await _canteenDb.CanteenOrders
+            .AsNoTracking()
             .Where(x => x.EmployeeUsername == username && x.OrderTimeUtc.Year == today.Year && x.OrderTimeUtc.Month == today.Month)
             .SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
     }

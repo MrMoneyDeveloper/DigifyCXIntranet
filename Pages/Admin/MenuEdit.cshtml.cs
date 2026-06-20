@@ -29,7 +29,7 @@ public class MenuEditModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        var entity = await _db.MenuItems.FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
+        var entity = await _db.MenuItems.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted);
         if (entity is null)
         {
             return NotFound();

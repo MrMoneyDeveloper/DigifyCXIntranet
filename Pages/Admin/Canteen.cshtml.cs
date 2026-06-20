@@ -1,5 +1,6 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +32,7 @@ public class CanteenModel : PageModel
         var periodEnd = periodStart.AddMonths(1);
 
         Orders = await _db.CanteenOrders
+            .AsNoTracking()
             .Where(x => x.OrderTimeUtc >= periodStart && x.OrderTimeUtc < periodEnd)
             .OrderBy(x => x.EmployeeUsername)
             .ThenByDescending(x => x.OrderTimeUtc)
@@ -48,6 +50,7 @@ public class CanteenModel : PageModel
             .ToList();
 
         BatchRuns = await _db.CanteenBatchRuns
+            .AsNoTracking()
             .OrderByDescending(x => x.TriggeredUtc)
             .Take(20)
             .ToListAsync();
@@ -56,7 +59,7 @@ public class CanteenModel : PageModel
 
     public async Task<IActionResult> OnGetDownloadBatchArtifactAsync(int id)
     {
-        var run = await _db.CanteenBatchRuns.FirstOrDefaultAsync(x => x.Id == id);
+        var run = await _db.CanteenBatchRuns.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
         if (run is null ||
             string.IsNullOrWhiteSpace(run.ArtifactPath) ||
             !run.ArtifactPath.EndsWith(".xlsx", StringComparison.OrdinalIgnoreCase) ||
@@ -69,6 +72,7 @@ public class CanteenModel : PageModel
         var fileName = string.IsNullOrWhiteSpace(run.AttachmentFileName)
             ? Path.GetFileName(run.ArtifactPath)
             : run.AttachmentFileName;
+        fileName = SafeFileNames.Normalize(fileName, "canteen-batch.xlsx");
         return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
     }
 

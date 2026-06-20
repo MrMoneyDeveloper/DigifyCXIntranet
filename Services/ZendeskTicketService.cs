@@ -85,7 +85,7 @@ Notes:
             employeeId:       employeeId,
             onBehalfOfEmail:  employeeEmail,
             attachment:       resumeFile,
-            tags:             ["digifycx_intranet", "hr_internal_application"],
+            tags:             new[] { "digifycx_intranet", "hr_internal_application" },
             cancellationToken: cancellationToken);
     }
 
@@ -129,7 +129,7 @@ Notes:
             employeeId:       string.Empty,
             onBehalfOfEmail:  referrerEmail,
             attachment:       resumeFile,
-            tags:             ["digifycx_intranet", "hr_referral"],
+            tags:             new[] { "digifycx_intranet", "hr_referral" },
             cancellationToken: cancellationToken);
     }
 
@@ -389,7 +389,7 @@ Please locate the device matching the IP address above on the company floor and 
     {
         using var request = BuildRequest(
             HttpMethod.Post,
-            $"/api/v2/uploads.json?filename={Uri.EscapeDataString(file.FileName)}");
+            $"/api/v2/uploads.json?filename={Uri.EscapeDataString(SafeFileNames.Normalize(file.FileName, "attachment.bin"))}");
 
         await using var stream = file.OpenReadStream();
         request.Content = new StreamContent(stream);
@@ -422,6 +422,13 @@ Please locate the device matching the IP address above on the company floor and 
             message = "Zendesk is not configured on this server (BaseUrl / Email / ApiToken missing in appsettings). Contact your system administrator.";
             return false;
         }
+
+        if (!Uri.TryCreate(_options.BaseUrl, UriKind.Absolute, out var baseUri) || baseUri.Scheme != Uri.UriSchemeHttps)
+        {
+            message = "Zendesk BaseUrl must be an absolute HTTPS URL.";
+            return false;
+        }
+
         message = string.Empty;
         return true;
     }

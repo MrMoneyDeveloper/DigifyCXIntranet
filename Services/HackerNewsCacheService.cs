@@ -44,28 +44,12 @@ public class HackerNewsCacheService : ITechNewsCacheService
             var topIds = await httpClient.GetFromJsonAsync<List<int>>(topUrl, cts.Token) ?? new List<int>();
             var ids = topIds.Take(Math.Clamp(_options.TopCount, 3, 30)).ToList();
 
-            var results = new List<TechNewsFeedItem>();
-            foreach (var id in ids)
-            {
-                var itemUrl = $"{_options.BaseUrl.TrimEnd('/')}/item/{id}.json";
-                var json = await httpClient.GetStringAsync(itemUrl, cts.Token);
-                using var doc = JsonDocument.Parse(json);
-                var root = doc.RootElement;
-
-                if (!root.TryGetProperty("title", out var titleElement))
-                {
-                    continue;
-                }
-
-                results.Add(new TechNewsFeedItem
-                {
-                    Id = id,
-                    Title = titleElement.GetString() ?? "Untitled",
-                    Url = root.TryGetProperty("url", out var urlElement) ? urlElement.GetString() ?? string.Empty : string.Empty,
-                    By = root.TryGetProperty("by", out var byElement) ? byElement.GetString() ?? string.Empty : string.Empty,
-                    TimeUnix = root.TryGetProperty("time", out var timeElement) ? timeElement.GetInt64() : 0
-                });
-            }
+            using var limiter = new SemaphoreSlim(Math.Clamp(_options.MaxConcurrentRequests, 1, 8));
+            var itemTasks = ids.Select(id => GetItemAsync(httpClient, id, limiter, cts.Token));
+            var results = (await Task.WhenAll(itemTasks))
+                .Where(item => item is not null)
+                .Cast<TechNewsFeedItem>()
+                .ToList();
 
             lock (_sync)
             {
@@ -76,6 +60,40 @@ public class HackerNewsCacheService : ITechNewsCacheService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to refresh Hacker News cache. Serving previous cached payload.");
+        }
+    }
+
+    private async Task<TechNewsFeedItem?> GetItemAsync(
+        HttpClient httpClient,
+        int id,
+        SemaphoreSlim limiter,
+        CancellationToken cancellationToken)
+    {
+        await limiter.WaitAsync(cancellationToken);
+        try
+        {
+            var itemUrl = $"{_options.BaseUrl.TrimEnd('/')}/item/{id}.json";
+            var json = await httpClient.GetStringAsync(itemUrl, cancellationToken);
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (!root.TryGetProperty("title", out var titleElement))
+            {
+                return null;
+            }
+
+            return new TechNewsFeedItem
+            {
+                Id = id,
+                Title = titleElement.GetString() ?? "Untitled",
+                Url = root.TryGetProperty("url", out var urlElement) ? urlElement.GetString() ?? string.Empty : string.Empty,
+                By = root.TryGetProperty("by", out var byElement) ? byElement.GetString() ?? string.Empty : string.Empty,
+                TimeUnix = root.TryGetProperty("time", out var timeElement) ? timeElement.GetInt64() : 0
+            };
+        }
+        finally
+        {
+            limiter.Release();
         }
     }
 }

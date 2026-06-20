@@ -1,16 +1,10 @@
-﻿using DigifyCXIntranet.Data;
-using DigifyCXIntranet.Models;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net.Http;
 using System.Text.Json;
-using System.Threading;
-using System.Threading.Tasks;
+using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Services;
 
@@ -19,32 +13,35 @@ public class UserRegistrySyncWorker : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UserRegistrySyncWorker> _logger;
-
-    private const string ApiUrl = "https://script.google.com/macros/s/AKfycbxrrhzqV_pFVYpUH-vv2i7EUA5x7i184HokCBVdUxNJVe49r6RBwxI24S2ZVauUo9A5Zg/exec";
-
-    // 🔧 TESTING: set to seconds. PRODUCTION: switch to FromHours(24)
-    private static readonly TimeSpan SyncInterval = TimeSpan.FromHours(24);
+    private readonly IOptionsMonitor<UserRegistrySyncOptions> _options;
 
     public UserRegistrySyncWorker(
         IServiceProvider serviceProvider,
         IHttpClientFactory httpClientFactory,
-        ILogger<UserRegistrySyncWorker> logger)
+        ILogger<UserRegistrySyncWorker> logger,
+        IOptionsMonitor<UserRegistrySyncOptions> options)
     {
         _serviceProvider = serviceProvider;
         _httpClientFactory = httpClientFactory;
         _logger = logger;
+        _options = options;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Short initial delay to ensure EF migrations and startup services are ready
-        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+        var options = _options.CurrentValue;
+        if (!options.Enabled)
+        {
+            _logger.LogInformation("[UserRegistrySync] Sync worker is disabled by configuration.");
+            return;
+        }
 
-        // ✅ Run IMMEDIATELY on startup, then loop on interval
+        await Task.Delay(TimeSpan.FromSeconds(options.InitialDelaySeconds), stoppingToken);
+
         while (!stoppingToken.IsCancellationRequested)
         {
             await RunSyncAsync(stoppingToken);
-            await Task.Delay(SyncInterval, stoppingToken);
+            await Task.Delay(TimeSpan.FromHours(_options.CurrentValue.SyncIntervalHours), stoppingToken);
         }
     }
 
@@ -57,9 +54,10 @@ public class UserRegistrySyncWorker : BackgroundService
             using var scope = _serviceProvider.CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var options = _options.CurrentValue;
 
-            var client = _httpClientFactory.CreateClient();
-            var response = await client.GetAsync(ApiUrl, stoppingToken);
+            var client = _httpClientFactory.CreateClient(nameof(UserRegistrySyncWorker));
+            var response = await client.GetAsync(options.SheetApiUrl, stoppingToken);
 
             if (!response.IsSuccessStatusCode)
             {
@@ -68,7 +66,7 @@ public class UserRegistrySyncWorker : BackgroundService
             }
 
             var content = await response.Content.ReadAsStringAsync(stoppingToken);
-            using JsonDocument doc = JsonDocument.Parse(content);
+            using var doc = JsonDocument.Parse(content);
 
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
             {
@@ -83,71 +81,89 @@ public class UserRegistrySyncWorker : BackgroundService
                 return;
             }
 
-            int created = 0;
-            int skipped = 0;
+            var normalizedNames = externalUsers
+                .Where(x => !string.IsNullOrWhiteSpace(x.fullName))
+                .Select(x => NormalizeUsername(x.fullName))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            var existingUsers = await dbContext.Users
+                .OfType<ApplicationUser>()
+                .Where(user => user.NormalizedUserName != null && normalizedNames.Contains(user.NormalizedUserName))
+                .ToDictionaryAsync(user => user.NormalizedUserName!, StringComparer.Ordinal, stoppingToken);
+
+            var created = 0;
+            var updated = 0;
+            var skipped = 0;
 
             foreach (var extUser in externalUsers)
             {
-                if (string.IsNullOrWhiteSpace(extUser.fullName)) continue;
+                if (string.IsNullOrWhiteSpace(extUser.fullName))
+                {
+                    continue;
+                }
 
                 var fullName = extUser.fullName.Trim();
-                var generatedUsername = fullName.Replace(" ", ".").ToLower();
+                var generatedUsername = fullName.Replace(" ", ".").ToLowerInvariant();
+                var normalizedUsername = NormalizeUsername(fullName);
 
-                // Check by NormalizedUserName
-                var existingUser = dbContext.Users
-                    .OfType<ApplicationUser>()
-                    .FirstOrDefault(u => u.NormalizedUserName == generatedUsername.ToUpper());
-
-                if (existingUser != null)
+                if (existingUsers.TryGetValue(normalizedUsername, out var existingUser))
                 {
-                    // ✅ Ensure DisplayName is always up to date
                     if (existingUser.DisplayName != fullName)
                     {
                         existingUser.DisplayName = fullName;
+                        updated++;
                     }
+
                     skipped++;
                     continue;
                 }
 
-                // Create new user via UserManager so Identity fields are set correctly
                 var newUser = new ApplicationUser
                 {
                     UserName = generatedUsername,
-                    NormalizedUserName = generatedUsername.ToUpper(),
+                    NormalizedUserName = normalizedUsername,
                     Email = $"{generatedUsername}@digifycx.internal",
-                    NormalizedEmail = $"{generatedUsername}@digifycx.internal".ToUpper(),
+                    NormalizedEmail = $"{generatedUsername}@digifycx.internal".ToUpperInvariant(),
                     DisplayName = fullName,
                     CustomRole = "Employee",
                     IsFirstTimeLogin = true,
-                    PersonalEmail = null,   // ← blank until employee activates
+                    PersonalEmail = null,
                     EmailConfirmed = true,
                     SecurityStamp = Guid.NewGuid().ToString()
                 };
 
-                // No password set — employee sets it on first activation
                 var result = await userManager.CreateAsync(newUser);
-
                 if (result.Succeeded)
                 {
                     created++;
+                    existingUsers[normalizedUsername] = newUser;
                     _logger.LogInformation("[UserRegistrySync] Created user: {Username}", generatedUsername);
+                    continue;
                 }
-                else
-                {
-                    _logger.LogWarning("[UserRegistrySync] Failed to create {Username}: {Errors}",
-                        generatedUsername,
-                        string.Join(", ", result.Errors.Select(e => e.Description)));
-                }
+
+                _logger.LogWarning("[UserRegistrySync] Failed to create {Username}: {Errors}",
+                    generatedUsername,
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
             }
 
             await dbContext.SaveChangesAsync(stoppingToken);
-            _logger.LogInformation("[UserRegistrySync] Sync complete. Created: {Created}, Already existed: {Skipped}",
-                created, skipped);
+            _logger.LogInformation("[UserRegistrySync] Sync complete. Created: {Created}, Updated: {Updated}, Already existed: {Skipped}",
+                created, updated, skipped);
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            _logger.LogInformation("[UserRegistrySync] Sync worker is stopping.");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "[UserRegistrySync] Sync failed with exception.");
         }
+    }
+
+    private static string NormalizeUsername(string fullName)
+    {
+        return fullName.Trim().Replace(" ", ".").ToUpperInvariant();
     }
 }
 

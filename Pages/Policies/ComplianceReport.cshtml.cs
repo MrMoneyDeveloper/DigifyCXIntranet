@@ -38,6 +38,7 @@ public class ComplianceReportModel : PageModel
     public async Task OnGetAsync()
     {
         PolicyOptions = await _db.ZendeskPolicyArticles
+            .AsNoTracking()
             .Where(x => x.IsPublished)
             .OrderBy(x => x.Title)
             .Select(x => new SelectListItem
@@ -73,7 +74,7 @@ public class ComplianceReportModel : PageModel
 
     private IQueryable<PolicyAcknowledgement> BuildFilteredQuery()
     {
-        var query = _db.PolicyAcknowledgements.AsQueryable();
+        var query = _db.PolicyAcknowledgements.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(Employee))
         {
             query = query.Where(x => x.EmployeeDomainName.Contains(Employee));

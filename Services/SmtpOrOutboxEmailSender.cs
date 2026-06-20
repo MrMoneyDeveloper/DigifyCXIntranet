@@ -104,9 +104,7 @@ public class SmtpOrOutboxEmailSender : IEmailSender
         for (var i = 0; i < message.Attachments.Count; i++)
         {
             var attachment = message.Attachments[i];
-            var safeName = string.IsNullOrWhiteSpace(attachment.FileName)
-                ? $"attachment_{i + 1}.bin"
-                : attachment.FileName;
+            var safeName = SafeFileNames.Normalize(attachment.FileName, $"attachment_{i + 1}.bin");
             var attachmentPath = Path.Combine(emailFolder, safeName);
             await File.WriteAllBytesAsync(attachmentPath, attachment.Bytes, cancellationToken);
             if (string.IsNullOrWhiteSpace(firstAttachmentPath))

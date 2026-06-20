@@ -118,6 +118,7 @@ public class MenuModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.MenuItems
+            .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderBy(x => x.MealSlot)
             .ThenBy(x => x.DisplayOrder)

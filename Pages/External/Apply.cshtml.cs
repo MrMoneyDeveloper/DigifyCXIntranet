@@ -10,8 +10,6 @@ namespace DigifyCXIntranet.Pages.External;
 
 public class ApplyModel : PageModel
 {
-    private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
-
     private readonly HrDbContext _db;
     private readonly IZendeskTicketService _zendeskTicketService;
     private readonly IFinanceAuditService _auditService;
@@ -48,22 +46,13 @@ public class ApplyModel : PageModel
             return Page();
         }
 
-        if (ResumeFile is null || ResumeFile.Length <= 0)
+        try
         {
-            ModelState.AddModelError(nameof(ResumeFile), "Resume file is required.");
-            return Page();
+            await FileUploadValidator.ValidateAsync(ResumeFile, FileUploadPolicies.RequiredResume);
         }
-
-        if (ResumeFile.Length > 5 * 1024 * 1024)
+        catch (InvalidOperationException ex)
         {
-            ModelState.AddModelError(nameof(ResumeFile), "Resume file must be 5MB or less.");
-            return Page();
-        }
-
-        var ext = Path.GetExtension(ResumeFile.FileName).ToLowerInvariant();
-        if (!AllowedResumeExtensions.Contains(ext))
-        {
-            ModelState.AddModelError(nameof(ResumeFile), "Only PDF and DOCX files are allowed.");
+            ModelState.AddModelError(nameof(ResumeFile), ex.Message);
             return Page();
         }
 
@@ -115,6 +104,7 @@ public class ApplyModel : PageModel
         TokenValid = false;
 
         var invite = await _db.ReferralInvites
+            .AsNoTracking()
             .Include(x => x.JobPosting)
             .FirstOrDefaultAsync(x => x.Token == token);
         if (invite is null || invite.ExpiresUtc < DateTime.UtcNow || invite.IsConsumed)

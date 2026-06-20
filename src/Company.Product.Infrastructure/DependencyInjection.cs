@@ -16,6 +16,7 @@ public static class DependencyInjection
     {
         services.AddOptions<DatabaseOptions>()
             .Bind(configuration.GetSection(DatabaseOptions.SectionName))
+            .ValidateDataAnnotations()
             .ValidateOnStart();
 
         services.AddSingleton<IClock, SystemClock>();

@@ -7,9 +7,12 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Quartz;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
@@ -61,6 +64,43 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.AddOptions<TechNewsOptions>()
+    .Bind(builder.Configuration.GetSection(TechNewsOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => Uri.TryCreate(options.BaseUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps,
+        "TechNews:BaseUrl must be an absolute HTTPS URL.")
+    .ValidateOnStart();
+builder.Services.AddOptions<UserRegistrySyncOptions>()
+    .Bind(builder.Configuration.GetSection(UserRegistrySyncOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => !options.Enabled || Uri.TryCreate(options.SheetApiUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps,
+        "UserRegistrySync:SheetApiUrl must be an absolute HTTPS URL when sync is enabled.")
+    .ValidateOnStart();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 2;
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var key = context.Connection.RemoteIpAddress?.ToString()
+            ?? context.User.Identity?.Name
+            ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 240,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+});
 
 builder.Services.AddSingleton<IAdminAccessService, ConfigurationAdminAccessService>();
 builder.Services.AddTransient<IClaimsTransformation, ConfigurationRoleClaimsTransformation>();
@@ -73,11 +113,26 @@ builder.Services.AddScoped<IFinanceAuditService, FinanceAuditService>();
 builder.Services.AddScoped<IEmailSender, SmtpOrOutboxEmailSender>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
-builder.Services.AddHttpClient(nameof(HackerNewsCacheService));
-builder.Services.AddHttpClient(nameof(ZendeskPolicySyncService));
-builder.Services.AddHttpClient(nameof(ZendeskTicketService));
-
-builder.Services.AddHttpClient<UserRegistrySyncWorker>();
+builder.Services.AddHttpClient(nameof(HackerNewsCacheService), (serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<TechNewsOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 60));
+});
+builder.Services.AddHttpClient(nameof(ZendeskPolicySyncService), (serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<ZendeskSyncOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 90));
+});
+builder.Services.AddHttpClient(nameof(ZendeskTicketService), (serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<ZendeskSyncOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 90));
+});
+builder.Services.AddHttpClient(nameof(UserRegistrySyncWorker), (serviceProvider, client) =>
+{
+    var options = serviceProvider.GetRequiredService<IOptions<UserRegistrySyncOptions>>().Value;
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 120));
+});
 
 builder.Services.AddHostedService<TechNewsRefreshHostedService>();
 builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
@@ -104,6 +159,11 @@ else
             options.AccessDeniedPath = "/Account/AccessDenied";
             options.SlidingExpiration = true;
             options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
         });
 }
 
@@ -144,6 +204,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
+    options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
     if (!useWindowsAuth)
     {
@@ -184,6 +245,9 @@ builder.Services.AddQuartz(q =>
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
 var app = builder.Build();
+SqlServerConnectionSecurity.Validate(connectionString, app.Environment, app.Logger);
+
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
@@ -195,9 +259,11 @@ else
     app.UseHsts();
 }
 
+app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -238,7 +304,6 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 
 app.MapRazorPages();
 
-// ── Startup: DB validation, schema repair, seed, then user registry sync ──
 using (var scope = app.Services.CreateScope())
 {
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
@@ -249,120 +314,6 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await DatabaseSchemaRepair.EnsurePostMigrationSchemaAsync(db);
     await SeedData.InitializeAsync(db);
-
-    // ── Force immediate user registry sync from Google Sheet on every startup ──
-    var syncLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
-        .CreateLogger("UserRegistryStartupSync");
-    try
-    {
-        syncLogger.LogInformation("[UserRegistrySync] Starting startup sync from Google Sheet...");
-
-        const string sheetApiUrl =
-            "https://script.google.com/macros/s/AKfycbxrrhzqV_pFVYpUH-vv2i7EUA5x7i184HokCBVdUxNJVe49r6RBwxI24S2ZVauUo9A5Zg/exec";
-
-        var http = scope.ServiceProvider
-            .GetRequiredService<IHttpClientFactory>()
-            .CreateClient();
-
-        var sheetResponse = await http.GetAsync(sheetApiUrl);
-
-        if (!sheetResponse.IsSuccessStatusCode)
-        {
-            syncLogger.LogWarning("[UserRegistrySync] Sheet API returned {Code} — skipping startup seed.",
-                sheetResponse.StatusCode);
-        }
-        else
-        {
-            var content = await sheetResponse.Content.ReadAsStringAsync();
-
-            // Guard: if the response is HTML (e.g. a Google login redirect), skip
-            if (content.TrimStart().StartsWith("<"))
-            {
-                syncLogger.LogWarning("[UserRegistrySync] Sheet API returned HTML instead of JSON. " +
-                    "Ensure the Apps Script is deployed as 'Anyone' (no sign-in required).");
-            }
-            else
-            {
-                var externalUsers = System.Text.Json.JsonSerializer
-                    .Deserialize<List<ExternalUserDto>>(content);
-
-                if (externalUsers == null || externalUsers.Count == 0)
-                {
-                    syncLogger.LogInformation("[UserRegistrySync] No users returned from sheet.");
-                }
-                else
-                {
-                    var userManager = scope.ServiceProvider
-                        .GetRequiredService<UserManager<ApplicationUser>>();
-
-                    int created = 0, updated = 0, skipped = 0;
-
-                    foreach (var ext in externalUsers)
-                    {
-                        if (string.IsNullOrWhiteSpace(ext.fullName)) continue;
-
-                        var fullName = ext.fullName.Trim();
-                        var username = fullName.Replace(" ", ".").ToLower();
-                        var normalizedUsername = username.ToUpper();
-
-                        var existing = db.Users
-                            .OfType<ApplicationUser>()
-                            .FirstOrDefault(u => u.NormalizedUserName == normalizedUsername);
-
-                        if (existing != null)
-                        {
-                            // Keep DisplayName in sync in case name changed in sheet
-                            if (existing.DisplayName != fullName)
-                            {
-                                existing.DisplayName = fullName;
-                                updated++;
-                            }
-                            else
-                            {
-                                skipped++;
-                            }
-                            continue;
-                        }
-
-                        var newUser = new ApplicationUser
-                        {
-                            UserName = username,
-                            NormalizedUserName = normalizedUsername,
-                            Email = $"{username}@digifycx.internal",
-                            NormalizedEmail = $"{username}@digifycx.internal".ToUpper(),
-                            DisplayName = fullName,
-                            CustomRole = "Employee",
-                            IsFirstTimeLogin = true,
-                            PersonalEmail = null,
-                            EmailConfirmed = true,
-                            SecurityStamp = Guid.NewGuid().ToString()
-                        };
-
-                        var result = await userManager.CreateAsync(newUser);
-                        if (result.Succeeded)
-                        {
-                            created++;
-                        }
-                        else
-                        {
-                            syncLogger.LogWarning("[UserRegistrySync] Failed to create {Username}: {Errors}",
-                                username,
-                                string.Join(", ", result.Errors.Select(e => e.Description)));
-                        }
-                    }
-
-                    await db.SaveChangesAsync();
-                    syncLogger.LogInformation(
-                        "[UserRegistrySync] Startup sync complete. Created: {Created}, Updated: {Updated}, Unchanged: {Skipped}",
-                        created, updated, skipped);
-                }
-            }
-        }
-    }
-    catch (Exception ex)
-    {
-        syncLogger.LogError(ex, "[UserRegistrySync] Startup sync failed — app will continue without it.");
-    }
 }
 
 app.Run();

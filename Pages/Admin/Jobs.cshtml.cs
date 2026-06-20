@@ -117,6 +117,7 @@ public class JobsModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.JobPostings
+            .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.ClosingDate)
             .ToListAsync();

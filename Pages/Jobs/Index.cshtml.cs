@@ -11,8 +11,6 @@ namespace DigifyCXIntranet.Pages.Jobs;
 
 public class IndexModel : PageModel
 {
-    private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
-
     private readonly HrDbContext _db;
     private readonly IZendeskTicketService _zendeskTicketService;
     private readonly IFinanceAuditService _auditService;
@@ -55,7 +53,7 @@ public class IndexModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        var job = await _db.JobPostings.FirstOrDefaultAsync(
+        var job = await _db.JobPostings.AsNoTracking().FirstOrDefaultAsync(
             x => x.Id == Referral.JobPostingId && x.IsActive && !x.IsDeleted);
         if (job is null)
         {
@@ -69,20 +67,14 @@ public class IndexModel : PageModel
             return Page();
         }
 
-        // Validate optional resume file
-        if (ReferralResumeFile is { Length: > 0 })
+        try
         {
-            if (ReferralResumeFile.Length > 5 * 1024 * 1024)
-            {
-                ModelState.AddModelError(nameof(ReferralResumeFile), "Resume file must be 5 MB or less.");
-                return Page();
-            }
-            var ext = Path.GetExtension(ReferralResumeFile.FileName).ToLowerInvariant();
-            if (!AllowedResumeExtensions.Contains(ext))
-            {
-                ModelState.AddModelError(nameof(ReferralResumeFile), "Only PDF and DOCX files are allowed.");
-                return Page();
-            }
+            await FileUploadValidator.ValidateAsync(ReferralResumeFile, FileUploadPolicies.OptionalResume);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError(nameof(ReferralResumeFile), ex.Message);
+            return Page();
         }
 
         var referrerName  = UserNameHelper.GetShortName(User);
@@ -156,6 +148,7 @@ public class IndexModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.JobPostings
+            .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted)
             .OrderBy(x => x.ClosingDate)
             .ToListAsync();

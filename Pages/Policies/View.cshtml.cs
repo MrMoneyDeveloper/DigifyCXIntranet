@@ -42,7 +42,7 @@ public class ViewModel : PageModel
         }
 
         var employee = UserNameHelper.GetShortName(User);
-        var existing = await _db.PolicyAcknowledgements.FirstOrDefaultAsync(x =>
+        var existing = await _db.PolicyAcknowledgements.AsNoTracking().FirstOrDefaultAsync(x =>
             x.EmployeeDomainName == employee &&
             x.PolicyArticleId == Item.ZendeskArticleId &&
             x.PolicyVersion == Item.VersionLabel);
@@ -65,14 +65,14 @@ public class ViewModel : PageModel
 
     private async Task LoadAsync(int id)
     {
-        Item = await _db.ZendeskPolicyArticles.FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
+        Item = await _db.ZendeskPolicyArticles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
         if (Item is null)
         {
             return;
         }
 
         var employee = UserNameHelper.GetShortName(User);
-        AlreadyAcknowledged = await _db.PolicyAcknowledgements.AnyAsync(x =>
+        AlreadyAcknowledged = await _db.PolicyAcknowledgements.AsNoTracking().AnyAsync(x =>
             x.EmployeeDomainName == employee &&
             x.PolicyArticleId == Item.ZendeskArticleId &&
             x.PolicyVersion == Item.VersionLabel);

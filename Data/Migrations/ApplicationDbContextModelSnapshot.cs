@@ -281,6 +281,8 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasIndex("MenuItemId");
 
+                    b.HasIndex("EmployeeUsername", "OrderTimeUtc");
+
                     b.ToTable("CanteenOrders");
                 });
 
@@ -415,6 +417,44 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.ToTable("FinanceAuditLogs");
                 });
 
+            modelBuilder.Entity("DigifyCXIntranet.Models.ForgotPasswordRequest", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("IpAddress")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("SubmittedUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("Succeeded")
+                        .HasColumnType("bit");
+
+                    b.Property<long?>("ZendeskTicketId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ZendeskTicketUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ForgotPasswordRequests");
+                });
+
             modelBuilder.Entity("DigifyCXIntranet.Models.InternalJobApplication", b =>
                 {
                     b.Property<int>("Id")
@@ -530,6 +570,8 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsDeleted", "IsActive", "ClosingDate");
+
                     b.ToTable("JobPostings");
                 });
 
@@ -578,6 +620,8 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IsDeleted", "IsActive", "MealSlot", "DisplayOrder");
 
                     b.ToTable("MenuItems");
                 });
@@ -836,6 +880,8 @@ namespace DigifyCXIntranet.Data.Migrations
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("SectionName", "Title");
 
                     b.ToTable("ZendeskPolicyArticles");
                 });

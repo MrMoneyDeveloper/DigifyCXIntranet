@@ -33,6 +33,7 @@ public class IndexModel : PageModel
     public async Task<IActionResult> OnPostSubmitAsync()
     {
         var menuItem = await _db.MenuItems
+            .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted && x.Id == SelectedMenuItemId)
             .FirstOrDefaultAsync();
 
@@ -67,18 +68,21 @@ public class IndexModel : PageModel
         var username = UserNameHelper.GetShortName(User);
 
         MenuItems = await _db.MenuItems
+            .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted)
             .OrderBy(x => x.MealSlot)
             .ThenBy(x => x.DisplayOrder)
             .ToListAsync();
 
         MyOrders = await _db.CanteenOrders
+            .AsNoTracking()
             .Where(x => x.EmployeeUsername == username)
             .OrderByDescending(x => x.OrderTimeUtc)
             .Take(50)
             .ToListAsync();
 
         MonthlyTallies = await _db.CanteenOrders
+            .AsNoTracking()
             .Where(x => x.EmployeeUsername == username)
             .GroupBy(x => new { x.OrderTimeUtc.Year, x.OrderTimeUtc.Month })
             .Select(x => new MonthlyTallyItem

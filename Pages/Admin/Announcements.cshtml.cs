@@ -84,6 +84,7 @@ public class AnnouncementsModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.Announcements
+            .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.PublishDateUtc)
             .ToListAsync();

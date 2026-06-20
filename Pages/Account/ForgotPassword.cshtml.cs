@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace DigifyCXIntranet.Pages.Account;
 
-[IgnoreAntiforgeryToken(Order = 1001)]
 public class ForgotPasswordModel : PageModel
 {
     private readonly IZendeskTicketService _zendesk;

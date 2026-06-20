@@ -63,6 +63,7 @@ public class FaqModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.FaqItems
+            .AsNoTracking()
             .OrderBy(x => x.Category)
             .ThenBy(x => x.DisplayOrder)
             .ToListAsync();

@@ -29,6 +29,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<AccountActivationLog> AccountActivationLogs => Set<AccountActivationLog>();
     public DbSet<ForgotPasswordRequest> ForgotPasswordRequests => Set<ForgotPasswordRequest>();
 
+    public override int SaveChanges()
+    {
+        EntityValidation.Validate(ChangeTracker);
+        return base.SaveChanges();
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        EntityValidation.Validate(ChangeTracker);
+        return base.SaveChangesAsync(cancellationToken);
+    }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

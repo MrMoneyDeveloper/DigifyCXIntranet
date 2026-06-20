@@ -12,7 +12,10 @@ using Company.Product.Api.Authorization;
 using Company.Product.Api.Middleware;
 using Company.Product.Api.Options;
 using Company.Product.Infrastructure.Persistence;
+using Company.Product.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -42,6 +45,45 @@ builder.Services.AddControllers()
     });
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 2;
+});
+
+var allowedOrigins = builder.Configuration
+    .GetSection("Security:Cors:AllowedOrigins")
+    .Get<string[]>() ?? ["https://intranet.company.local"];
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("DefaultCors", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+            .WithMethods("GET", "POST", "PUT", "DELETE")
+            .WithHeaders("Authorization", "Content-Type", CorrelationIdMiddleware.HeaderName);
+    });
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+    {
+        var key = context.Connection.RemoteIpAddress?.ToString()
+            ?? context.User.Identity?.Name
+            ?? "anonymous";
+
+        return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 120,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+});
+
 builder.Services.AddSwaggerGen(options =>
 {
     options.SwaggerDoc("v1", new OpenApiInfo
@@ -110,14 +152,28 @@ builder.Services.AddAuthorization(options =>
 });
 
 var app = builder.Build();
+var databaseOptions = app.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value;
+var configuredConnectionString = app.Configuration.GetConnectionString(databaseOptions.ConnectionStringName);
+if (string.IsNullOrWhiteSpace(configuredConnectionString))
+{
+    throw new InvalidOperationException($"Connection string '{databaseOptions.ConnectionStringName}' was not found.");
+}
+
+SqlServerConnectionSecurity.Validate(configuredConnectionString, app.Environment.IsDevelopment(), app.Logger);
+
+app.UseForwardedHeaders();
 
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
-var runMigrations = app.Services.GetRequiredService<IOptions<DatabaseOptions>>().Value.RunMigrationsOnStartup;
+var runMigrations = databaseOptions.RunMigrationsOnStartup;
 if (runMigrations)
 {
     using var scope = app.Services.CreateScope();
@@ -127,9 +183,12 @@ if (runMigrations)
 
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
+app.UseMiddleware<SecurityHeadersMiddleware>();
 
 app.UseHttpsRedirection();
 app.UseRouting();
+app.UseCors("DefaultCors");
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

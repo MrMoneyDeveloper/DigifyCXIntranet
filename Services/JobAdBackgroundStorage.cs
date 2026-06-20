@@ -4,22 +4,12 @@ namespace DigifyCXIntranet.Services;
 
 public static class JobAdBackgroundStorage
 {
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".jpg",
-        ".jpeg",
-        ".png",
-        ".webp"
-    };
-
     public static async Task<string> SaveAsync(IFormFile file, string webRootPath)
     {
-        var extension = Path.GetExtension(file.FileName);
-        if (string.IsNullOrWhiteSpace(extension) || !AllowedExtensions.Contains(extension))
-        {
-            throw new InvalidOperationException("Only .jpg, .jpeg, .png and .webp files are allowed.");
-        }
+        await FileUploadValidator.ValidateAsync(file, FileUploadPolicies.RequiredImage);
 
+        var safeName = SafeFileNames.Normalize(file.FileName, "jobad.jpg");
+        var extension = Path.GetExtension(safeName);
         var folder = Path.Combine(webRootPath, "uploads", "job-ads");
         Directory.CreateDirectory(folder);
 

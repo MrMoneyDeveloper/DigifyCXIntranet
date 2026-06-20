@@ -46,12 +46,14 @@ public class PoliciesModel : PageModel
     private async Task LoadAsync()
     {
         Items = await _db.ZendeskPolicyArticles
+            .AsNoTracking()
             .OrderBy(x => x.CategoryName)
             .ThenBy(x => x.SectionName)
             .ThenByDescending(x => x.UpdatedAtUtc)
             .ToListAsync();
 
         RecentSyncLogs = await _db.ZendeskSyncLogs
+            .AsNoTracking()
             .OrderByDescending(x => x.StartedUtc)
             .Take(5)
             .ToListAsync();

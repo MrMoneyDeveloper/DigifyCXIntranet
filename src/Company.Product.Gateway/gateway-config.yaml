@@ -20,8 +20,16 @@ policies:
   cors:
     allowedOrigins: ["https://intranet.company.local"]
     allowedMethods: [GET, POST, PUT, DELETE]
-    allowedHeaders: [Authorization, Content-Type, X-Correlation-Id]
+    allowedHeaders: [Authorization, Content-Type, X-Correlation-ID]
   tls:
     minVersion: TLS1.2
+    upstreamHttpsOnly: true
+  securityHeaders:
+    xContentTypeOptions: nosniff
+    xFrameOptions: DENY
+    referrerPolicy: strict-origin-when-cross-origin
+    hsts:
+      maxAgeSeconds: 31536000
+      includeSubDomains: true
   logging:
     includeCorrelationId: true

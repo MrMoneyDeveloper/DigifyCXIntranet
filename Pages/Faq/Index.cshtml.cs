@@ -19,6 +19,7 @@ public class IndexModel : PageModel
     public async Task OnGetAsync()
     {
         Items = await _db.FaqItems
+            .AsNoTracking()
             .Where(x => x.IsActive)
             .OrderBy(x => x.Category)
             .ThenBy(x => x.DisplayOrder)

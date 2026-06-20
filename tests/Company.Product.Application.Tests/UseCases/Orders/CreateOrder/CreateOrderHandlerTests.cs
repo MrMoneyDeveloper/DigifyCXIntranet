@@ -14,7 +14,7 @@ public sealed class CreateOrderHandlerTests
         var repository = new InMemoryOrderRepository();
         var unitOfWork = new FakeUnitOfWork();
         var clock = new FakeClock(new DateTime(2026, 5, 28, 10, 0, 0, DateTimeKind.Utc));
-        var handler = new CreateOrderHandler(repository, unitOfWork, clock);
+        var handler = new CreateOrderHandler(repository, unitOfWork, clock, new CreateOrderCommandValidator());
 
         var command = new CreateOrderCommand(
             Guid.NewGuid(),
@@ -31,7 +31,7 @@ public sealed class CreateOrderHandlerTests
     [Fact]
     public async Task HandleAsync_RejectsEmptyCustomerId()
     {
-        var handler = new CreateOrderHandler(new InMemoryOrderRepository(), new FakeUnitOfWork(), new FakeClock(DateTime.UtcNow));
+        var handler = new CreateOrderHandler(new InMemoryOrderRepository(), new FakeUnitOfWork(), new FakeClock(DateTime.UtcNow), new CreateOrderCommandValidator());
 
         var command = new CreateOrderCommand(Guid.Empty, [new CreateOrderItemInput("SKU", "Keyboard", 100m, 1)]);
 

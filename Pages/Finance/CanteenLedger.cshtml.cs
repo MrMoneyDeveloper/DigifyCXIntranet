@@ -72,7 +72,7 @@ public class CanteenLedgerModel : PageModel
 
     private IQueryable<CanteenOrder> BuildFilteredQuery()
     {
-        var query = _db.CanteenOrders.AsQueryable();
+        var query = _db.CanteenOrders.AsNoTracking();
         if (!string.IsNullOrWhiteSpace(Employee))
         {
             query = query.Where(x => x.EmployeeUsername.Contains(Employee.Trim()));

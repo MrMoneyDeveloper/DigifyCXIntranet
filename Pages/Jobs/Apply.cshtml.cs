@@ -11,8 +11,6 @@ namespace DigifyCXIntranet.Pages.Jobs;
 
 public class ApplyModel : PageModel
 {
-    private static readonly string[] AllowedResumeExtensions = [".pdf", ".docx"];
-
     private readonly HrDbContext _db;
     private readonly IZendeskTicketService _zendeskTicketService;
     private readonly IFinanceAuditService _auditService;
@@ -41,7 +39,7 @@ public class ApplyModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(int id)
     {
-        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
+        Job = await _db.JobPostings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
         if (Job is null) return NotFound();
 
         Input.JobPostingId  = id;
@@ -52,25 +50,18 @@ public class ApplyModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        Job = await _db.JobPostings.FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive && !x.IsDeleted);
+        Job = await _db.JobPostings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive && !x.IsDeleted);
         if (Job is null) return NotFound();
 
         if (!ModelState.IsValid) return Page();
 
-        if (ResumeFile is null || ResumeFile.Length <= 0)
+        try
         {
-            ModelState.AddModelError(nameof(ResumeFile), "Resume file is required.");
-            return Page();
+            await FileUploadValidator.ValidateAsync(ResumeFile, FileUploadPolicies.RequiredResume);
         }
-        if (ResumeFile.Length > 5 * 1024 * 1024)
+        catch (InvalidOperationException ex)
         {
-            ModelState.AddModelError(nameof(ResumeFile), "Resume file must be 5 MB or less.");
-            return Page();
-        }
-        var ext = Path.GetExtension(ResumeFile.FileName).ToLowerInvariant();
-        if (!AllowedResumeExtensions.Contains(ext))
-        {
-            ModelState.AddModelError(nameof(ResumeFile), "Only PDF and DOCX files are allowed.");
+            ModelState.AddModelError(nameof(ResumeFile), ex.Message);
             return Page();
         }
 

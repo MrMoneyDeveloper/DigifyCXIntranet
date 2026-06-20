@@ -95,6 +95,7 @@ public class LoginModel : PageModel
 
         // ── 2. Fall through to database for real employee accounts ──
         var dbUser = await _db.Users
+            .AsNoTracking()
             .FirstOrDefaultAsync(u =>
                 u.UserName != null &&
                 u.UserName.ToLower() == inputUsername.ToLower());
