@@ -10,13 +10,31 @@
         <p class="mt-2 text-sm text-slate-400">Sign in to access the DigifyCX Intranet.</p>
     </div>
 
+    @* Validation summary for generic errors (account not found, not activated, etc.) *@
     <div asp-validation-summary="ModelOnly" class="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-400"></div>
+
+    @* ── Prominent Forgot Password banner shown only on wrong-password errors ── *@
+    @if (Model.ShowForgotPasswordPrompt)
+    {
+        <div class="mb-5 rounded-xl border border-amber-500/25 bg-amber-500/10 px-4 py-4 text-sm">
+            <p class="font-bold text-amber-300 mb-1">&#128274; Incorrect Password</p>
+            <p class="text-amber-200/80 mb-3">
+                The password you entered doesn&rsquo;t match our records.
+                If you&rsquo;ve forgotten your password, IT support can help.
+            </p>
+            <a href="/Account/ForgotPassword"
+               class="inline-flex items-center justify-center rounded-lg bg-amber-500 px-4 py-2 text-xs font-bold text-slate-900 hover:bg-amber-400 transition-all duration-200">
+                Request a Password Reset &rarr;
+            </a>
+        </div>
+    }
 
     <form method="post" class="space-y-5">
         <input type="hidden" name="returnUrl" value="@Model.ReturnUrl" />
         <div>
             <label asp-for="Input.Username" class="mb-1.5 block text-sm font-semibold text-slate-300"></label>
-            <input asp-for="Input.Username" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition" />
+            <input asp-for="Input.Username"
+                   class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition" />
             <span asp-validation-for="Input.Username" class="text-xs font-medium text-rose-400 mt-1 block"></span>
         </div>
         <div>
@@ -24,11 +42,13 @@
                 <label asp-for="Input.Password" class="block text-sm font-semibold text-slate-300"></label>
                 <a href="/Account/ForgotPassword" class="text-xs text-slate-500 hover:text-cyan-400 transition">Forgot password?</a>
             </div>
-            <input asp-for="Input.Password" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition" />
+            <input asp-for="Input.Password"
+                   class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition" />
             <span asp-validation-for="Input.Password" class="text-xs font-medium text-rose-400 mt-1 block"></span>
         </div>
         <div class="pt-2">
-            <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all duration-200">
+            <button type="submit"
+                    class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all duration-200">
                 Sign In
             </button>
         </div>

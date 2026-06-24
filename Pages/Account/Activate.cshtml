@@ -7,16 +7,19 @@
 <section class="mx-auto max-w-md bg-[#1e2336] rounded-2xl p-8 border border-slate-700 shadow-2xl relative overflow-hidden mt-8">
     <div class="mb-8 text-center">
         <h1 class="text-3xl font-extrabold text-white tracking-tight">Activate Your Account</h1>
-        <p class="mt-2 text-sm text-slate-400">Enter your full name as registered by HR and your personal email address to get started.</p>
+        <p class="mt-2 text-sm text-slate-400">
+            Enter your full name as registered by HR and the default password shared with new employees.
+        </p>
     </div>
 
     @if (Model.AlreadyActivated)
     {
         <div class="mb-6 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-400">
             <p class="font-bold text-emerald-300 mb-1">&#10003; Account Already Activated</p>
-            <p>Your personal email is already on record. You can log in using your intranet credentials.</p>
+            <p>Your account has already been activated. Please log in using your personal password.</p>
         </div>
-        <a href="/Account/Login" class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 transition-all duration-200">
+        <a href="/Account/Login"
+           class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 transition-all duration-200">
             Go to Login
         </a>
     }
@@ -24,9 +27,10 @@
     {
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
         {
-            <div class="alert alert-error">@Model.ErrorMessage</div>
+            <div class="mb-5 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm font-medium text-rose-400">
+                @Model.ErrorMessage
+            </div>
         }
-        <!-- DEBUG: @Model.DebugInfo -->
 
         <form method="post" class="space-y-5">
             @Html.AntiForgeryToken()
@@ -38,14 +42,17 @@
                 <span asp-validation-for="Input.FullName" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
             <div>
-                <label asp-for="Input.PersonalEmail" class="mb-1.5 block text-sm font-semibold text-slate-300">Personal Email Address</label>
-                <input asp-for="Input.PersonalEmail"
+                <label asp-for="Input.DefaultPassword" class="mb-1.5 block text-sm font-semibold text-slate-300">Default Password</label>
+                <input asp-for="Input.DefaultPassword"
+                       type="password"
                        class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-                       placeholder="you@gmail.com" autocomplete="email" />
-                <span asp-validation-for="Input.PersonalEmail" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                       placeholder="Shared default password" autocomplete="current-password" />
+                <p class="mt-1 text-xs text-slate-500">This is the shared password provided to all new employees. Ask your manager if you don&rsquo;t have it.</p>
+                <span asp-validation-for="Input.DefaultPassword" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
             <div class="pt-2">
-                <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all duration-200">
+                <button type="submit"
+                        class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all duration-200">
                     Continue &rarr;
                 </button>
             </div>

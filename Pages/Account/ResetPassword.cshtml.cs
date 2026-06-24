@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
@@ -9,7 +10,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
 
 namespace DigifyCXIntranet.Pages.Account;
 
@@ -21,37 +21,47 @@ public class ResetPasswordModel : PageModel
 
     public ResetPasswordModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
     {
-        _db = db;
+        _db     = db;
         _hasher = hasher;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
-    public string? ErrorMessage { get; set; }
+    public string? ErrorMessage  { get; set; }
     public string? SuccessMessage { get; set; }
+
+    /// <summary>
+    /// The username passed from Activate via TempData — used to identify which
+    /// account is being set up without requiring the user to re-enter their name.
+    /// </summary>
+    public string? ActivationUsername { get; private set; }
 
     public class InputModel
     {
-        [Required(ErrorMessage = "Personal email is required.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [Display(Name = "Personal Email")]
-        public string Email { get; set; } = string.Empty;
-
         [Required(ErrorMessage = "Password is required.")]
         [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
+        [DataType(DataType.Password)]
         [Display(Name = "New Password")]
         public string Password { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Please confirm your password.")]
         [Compare("Password", ErrorMessage = "Passwords do not match.")]
+        [DataType(DataType.Password)]
         [Display(Name = "Confirm Password")]
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
     public void OnGet()
     {
-        TempData.Keep("ActivationUserId");
+        // Keep TempData alive across the GET so the POST can still read it
+        ActivationUsername = TempData.Peek("ActivationUsername") as string;
+
+        if (string.IsNullOrWhiteSpace(ActivationUsername))
+        {
+            // No activation context — redirect back to Activate
+            RedirectToPage("/Account/Activate");
+        }
     }
 
     public async Task<IActionResult> OnPostAsync()
@@ -59,31 +69,38 @@ public class ResetPasswordModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        // Query ApplicationUser directly — no .OfType<> needed
-        var normalised = Input.Email.Trim().ToLowerInvariant();
-        var user = await _db.Users
-            .FirstOrDefaultAsync(u =>
-                u.PersonalEmail != null &&
-                u.PersonalEmail.ToLower() == normalised);
-
-        if (user == null)
+        // Read the username set by Activate.cshtml.cs
+        var username = TempData["ActivationUsername"] as string;
+        if (string.IsNullOrWhiteSpace(username))
         {
-            ErrorMessage = "No account was found with that personal email. Please go back and activate your account first.";
+            ErrorMessage = "Your activation session has expired. Please start the activation process again.";
             return Page();
         }
 
-        // Hash and save the new password directly — no UserManager needed
-        user.PasswordHash = _hasher.HashPassword(user, Input.Password);
+        // Look up the user by their system username (set by the sync worker)
+        var user = await _db.Users
+            .OfType<ApplicationUser>()
+            .FirstOrDefaultAsync(u => u.UserName != null &&
+                                      u.UserName.ToLower() == username.ToLower());
+
+        if (user == null)
+        {
+            ErrorMessage = "Account not found. Please contact IT support.";
+            return Page();
+        }
+
+        // Hash and save the new password
+        user.PasswordHash    = _hasher.HashPassword(user, Input.Password);
         user.IsFirstTimeLogin = false;
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
 
-        // Sign the user in via cookie auth — same mechanism as Login.cshtml.cs
+        // Auto sign-in the user after setting their password
         var claims = new List<Claim>
         {
-            new(ClaimTypes.Name,      user.UserName ?? user.DisplayName),
+            new(ClaimTypes.Name,      user.UserName ?? user.DisplayName ?? username),
             new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName)
-                ? (user.UserName ?? string.Empty)
+                ? (user.UserName ?? username)
                 : user.DisplayName),
             new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(user.CustomRole)
                 ? AppRoles.Agent

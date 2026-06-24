@@ -28,9 +28,9 @@ public class LoginModel : PageModel
         IPasswordHasher<ApplicationUser> hasher)
     {
         _authModeOptions = authModeOptions.Value;
-        _environment = environment;
-        _db = db;
-        _hasher = hasher;
+        _environment     = environment;
+        _db              = db;
+        _hasher          = hasher;
     }
 
     [BindProperty]
@@ -44,6 +44,12 @@ public class LoginModel : PageModel
     public bool ShowDemoCredentials => _environment.IsDevelopment();
 
     public string ReturnUrl { get; private set; } = "/Index";
+
+    /// <summary>
+    /// Set to true when the user's credentials were rejected due to a wrong password
+    /// so the view can show the prominent Forgot Password call-to-action.
+    /// </summary>
+    public bool ShowForgotPasswordPrompt { get; private set; }
 
     public void OnGet(string? returnUrl = null)
     {
@@ -60,7 +66,7 @@ public class LoginModel : PageModel
         var inputUsername = Input.Username.Trim();
         var inputPassword = Input.Password;
 
-        // ── 1. Check hardcoded dev credentials first (admin, moham, finance, etc.) ──
+        // ── 1. Hardcoded dev credentials ──────────────────────────────────
         var devUser = _authModeOptions.DevelopmentUsers.FirstOrDefault(
             x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase));
 
@@ -68,11 +74,12 @@ public class LoginModel : PageModel
         {
             if (devUser.Password != inputPassword)
             {
+                // Wrong password for a dev user — show the generic error (no forgot-password
+                // prompt for hardcoded dev accounts, they don't use Zendesk).
                 ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 return Page();
             }
 
-            // Dev user matched — sign in via cookie claim (unchanged from original)
             var devClaims = new List<Claim>
             {
                 new(ClaimTypes.Name,      devUser.Username.Trim()),
@@ -93,7 +100,7 @@ public class LoginModel : PageModel
                 : RedirectToPage("/Index");
         }
 
-        // ── 2. Fall through to database for real employee accounts ──
+        // ── 2. Database employee accounts ─────────────────────────────────
         var dbUser = await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u =>
@@ -106,14 +113,6 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Employee must have completed account activation (PersonalEmail set + PasswordHash set)
-        if (string.IsNullOrWhiteSpace(dbUser.PersonalEmail))
-        {
-            ModelState.AddModelError(string.Empty,
-                "Your account has not been activated yet. Please visit the Activate Account page first.");
-            return Page();
-        }
-
         if (string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
             dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
         {
@@ -122,16 +121,16 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Verify the password hash
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            ModelState.AddModelError(string.Empty, "Invalid username or password.");
+            // ── Wrong password: flag the view to show the Forgot Password prompt ──
+            ShowForgotPasswordPrompt = true;
+            ModelState.AddModelError(string.Empty, "Incorrect password.");
             return Page();
         }
 
-        // Sign the employee in via cookie auth — same structure as dev users above
-        var role = string.IsNullOrWhiteSpace(dbUser.CustomRole) ? AppRoles.Agent : dbUser.CustomRole;
+        var role        = string.IsNullOrWhiteSpace(dbUser.CustomRole) ? AppRoles.Agent : dbUser.CustomRole;
         var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
             ? (dbUser.UserName ?? inputUsername)
             : dbUser.DisplayName;
