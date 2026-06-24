@@ -32,13 +32,19 @@
             </div>
         }
 
-        <form method="post" class="space-y-5">
+        <form method="post" class="space-y-5" autocomplete="off">
             @Html.AntiForgeryToken()
+            <%-- Hidden honeypot fields trick browsers into targeting these instead of the real inputs --%>
+            <input type="text" name="__trap_name" style="display:none" tabindex="-1" autocomplete="username" aria-hidden="true" />
+            <input type="password" name="__trap_pass" style="display:none" tabindex="-1" autocomplete="current-password" aria-hidden="true" />
             <div>
                 <label asp-for="Input.FullName" class="mb-1.5 block text-sm font-semibold text-slate-300">Full Name</label>
                 <input asp-for="Input.FullName"
                        class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-                       placeholder="e.g. Farhaan Mohamed" autocomplete="name" />
+                       placeholder="e.g. Farhaan Mohamed"
+                       autocomplete="off"
+                       data-lpignore="true"
+                       data-form-type="other" />
                 <span asp-validation-for="Input.FullName" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
             <div>
@@ -46,7 +52,10 @@
                 <input asp-for="Input.DefaultPassword"
                        type="password"
                        class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-                       placeholder="Shared default password" autocomplete="current-password" />
+                       placeholder="Shared default password"
+                       autocomplete="new-password"
+                       data-lpignore="true"
+                       data-form-type="other" />
                 <p class="mt-1 text-xs text-slate-500">This is the shared password provided to all new employees. Ask your manager if you don&rsquo;t have it.</p>
                 <span asp-validation-for="Input.DefaultPassword" class="text-xs font-medium text-rose-400 mt-1 block"></span>
             </div>
