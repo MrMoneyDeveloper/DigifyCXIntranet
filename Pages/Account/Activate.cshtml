@@ -34,7 +34,7 @@
 
         <form method="post" class="space-y-5" autocomplete="off">
             @Html.AntiForgeryToken()
-            <%-- Hidden honeypot fields trick browsers into targeting these instead of the real inputs --%>
+            @* Honeypot fields: browsers autofill these hidden inputs instead of the real ones *@
             <input type="text" name="__trap_name" style="display:none" tabindex="-1" autocomplete="username" aria-hidden="true" />
             <input type="password" name="__trap_pass" style="display:none" tabindex="-1" autocomplete="current-password" aria-hidden="true" />
             <div>
