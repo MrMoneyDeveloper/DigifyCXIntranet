@@ -13,197 +13,200 @@ namespace DigifyCXIntranet.Data.Migrations
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<bool>(
-                name: "IsDeleted",
-                table: "MenuItems",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            // Guard each IsDeleted column — the column may already exist on databases
+            // that had it added manually or via a prior partial run.
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'MenuItems') AND name = 'IsDeleted'
+                )
+                    ALTER TABLE [MenuItems] ADD [IsDeleted] bit NOT NULL DEFAULT CAST(0 AS bit);
+            ");
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsDeleted",
-                table: "JobPostings",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'JobPostings') AND name = 'IsDeleted'
+                )
+                    ALTER TABLE [JobPostings] ADD [IsDeleted] bit NOT NULL DEFAULT CAST(0 AS bit);
+            ");
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsDeleted",
-                table: "Announcements",
-                type: "bit",
-                nullable: false,
-                defaultValue: false);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'Announcements') AND name = 'IsDeleted'
+                )
+                    ALTER TABLE [Announcements] ADD [IsDeleted] bit NOT NULL DEFAULT CAST(0 AS bit);
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "CandidateName",
-                table: "ReferralInvites",
-                type: "nvarchar(150)",
-                maxLength: 150,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'CandidateName'
+                )
+                    ALTER TABLE [ReferralInvites] ADD [CandidateName] nvarchar(150) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "CandidatePhone",
-                table: "ReferralInvites",
-                type: "nvarchar(60)",
-                maxLength: 60,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'CandidatePhone'
+                )
+                    ALTER TABLE [ReferralInvites] ADD [CandidatePhone] nvarchar(60) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "Notes",
-                table: "ReferralInvites",
-                type: "nvarchar(2000)",
-                maxLength: 2000,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'Notes'
+                )
+                    ALTER TABLE [ReferralInvites] ADD [Notes] nvarchar(2000) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ReferrerEmployeeEmail",
-                table: "ReferralInvites",
-                type: "nvarchar(120)",
-                maxLength: 120,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'ReferrerEmployeeEmail'
+                )
+                    ALTER TABLE [ReferralInvites] ADD [ReferrerEmployeeEmail] nvarchar(120) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<long>(
-                name: "ZendeskTicketId",
-                table: "ReferralInvites",
-                type: "bigint",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'ZendeskTicketId'
+                )
+                    ALTER TABLE [ReferralInvites] ADD [ZendeskTicketId] bigint NULL;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "CandidatePhone",
-                table: "ExternalApplications",
-                type: "nvarchar(60)",
-                maxLength: 60,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'CandidatePhone'
+                )
+                    ALTER TABLE [ExternalApplications] ADD [CandidatePhone] nvarchar(60) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<long>(
-                name: "ZendeskTicketId",
-                table: "ExternalApplications",
-                type: "bigint",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'ZendeskTicketId'
+                )
+                    ALTER TABLE [ExternalApplications] ADD [ZendeskTicketId] bigint NULL;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ZendeskTicketUrl",
-                table: "ExternalApplications",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'ZendeskTicketUrl'
+                )
+                    ALTER TABLE [ExternalApplications] ADD [ZendeskTicketUrl] nvarchar(500) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<long>(
-                name: "ZendeskTicketId",
-                table: "InternalJobApplications",
-                type: "bigint",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'InternalJobApplications') AND name = 'ZendeskTicketId'
+                )
+                    ALTER TABLE [InternalJobApplications] ADD [ZendeskTicketId] bigint NULL;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "ZendeskTicketUrl",
-                table: "InternalJobApplications",
-                type: "nvarchar(500)",
-                maxLength: 500,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'InternalJobApplications') AND name = 'ZendeskTicketUrl'
+                )
+                    ALTER TABLE [InternalJobApplications] ADD [ZendeskTicketUrl] nvarchar(500) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<long>(
-                name: "CategoryId",
-                table: "ZendeskPolicyArticles",
-                type: "bigint",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'CategoryId'
+                )
+                    ALTER TABLE [ZendeskPolicyArticles] ADD [CategoryId] bigint NULL;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "CategoryName",
-                table: "ZendeskPolicyArticles",
-                type: "nvarchar(220)",
-                maxLength: 220,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'CategoryName'
+                )
+                    ALTER TABLE [ZendeskPolicyArticles] ADD [CategoryName] nvarchar(220) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.AddColumn<long>(
-                name: "SectionId",
-                table: "ZendeskPolicyArticles",
-                type: "bigint",
-                nullable: true);
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'SectionId'
+                )
+                    ALTER TABLE [ZendeskPolicyArticles] ADD [SectionId] bigint NULL;
+            ");
 
-            migrationBuilder.AddColumn<string>(
-                name: "SectionName",
-                table: "ZendeskPolicyArticles",
-                type: "nvarchar(220)",
-                maxLength: 220,
-                nullable: false,
-                defaultValue: "");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.columns
+                    WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'SectionName'
+                )
+                    ALTER TABLE [ZendeskPolicyArticles] ADD [SectionName] nvarchar(220) NOT NULL DEFAULT N'';
+            ");
 
-            migrationBuilder.CreateTable(
-                name: "FinanceAuditLogs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Actor = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    Entity = table.Column<string>(type: "nvarchar(120)", maxLength: 120, nullable: false),
-                    TimestampUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Detail = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_FinanceAuditLogs", x => x.Id);
-                });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'FinanceAuditLogs')
+                BEGIN
+                    CREATE TABLE [FinanceAuditLogs] (
+                        [Id]           int           NOT NULL IDENTITY(1,1),
+                        [Actor]        nvarchar(120) NOT NULL,
+                        [Action]       nvarchar(120) NOT NULL,
+                        [Entity]       nvarchar(120) NOT NULL,
+                        [TimestampUtc] datetime2     NOT NULL,
+                        [Detail]       nvarchar(4000) NOT NULL,
+                        CONSTRAINT [PK_FinanceAuditLogs] PRIMARY KEY ([Id])
+                    );
+                    CREATE INDEX [IX_FinanceAuditLogs_TimestampUtc] ON [FinanceAuditLogs] ([TimestampUtc]);
+                END
+            ");
 
-            migrationBuilder.CreateTable(
-                name: "ZendeskSyncLogs",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Operation = table.Column<string>(type: "nvarchar(80)", maxLength: 80, nullable: false),
-                    StartedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CompletedUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Succeeded = table.Column<bool>(type: "bit", nullable: false),
-                    ItemsProcessed = table.Column<int>(type: "int", nullable: false),
-                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ZendeskSyncLogs", x => x.Id);
-                });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_FinanceAuditLogs_TimestampUtc",
-                table: "FinanceAuditLogs",
-                column: "TimestampUtc");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ZendeskSyncLogs_StartedUtc",
-                table: "ZendeskSyncLogs",
-                column: "StartedUtc");
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ZendeskSyncLogs')
+                BEGIN
+                    CREATE TABLE [ZendeskSyncLogs] (
+                        [Id]             int           NOT NULL IDENTITY(1,1),
+                        [Operation]      nvarchar(80)  NOT NULL,
+                        [StartedUtc]     datetime2     NOT NULL,
+                        [CompletedUtc]   datetime2     NULL,
+                        [Succeeded]      bit           NOT NULL,
+                        [ItemsProcessed] int           NOT NULL,
+                        [Message]        nvarchar(1000) NOT NULL,
+                        CONSTRAINT [PK_ZendeskSyncLogs] PRIMARY KEY ([Id])
+                    );
+                    CREATE INDEX [IX_ZendeskSyncLogs_StartedUtc] ON [ZendeskSyncLogs] ([StartedUtc]);
+                END
+            ");
         }
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(name: "FinanceAuditLogs");
-            migrationBuilder.DropTable(name: "ZendeskSyncLogs");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'FinanceAuditLogs') DROP TABLE [FinanceAuditLogs];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ZendeskSyncLogs') DROP TABLE [ZendeskSyncLogs];");
 
-            migrationBuilder.DropColumn(name: "IsDeleted", table: "MenuItems");
-            migrationBuilder.DropColumn(name: "IsDeleted", table: "JobPostings");
-            migrationBuilder.DropColumn(name: "IsDeleted", table: "Announcements");
-            migrationBuilder.DropColumn(name: "CandidateName", table: "ReferralInvites");
-            migrationBuilder.DropColumn(name: "CandidatePhone", table: "ReferralInvites");
-            migrationBuilder.DropColumn(name: "Notes", table: "ReferralInvites");
-            migrationBuilder.DropColumn(name: "ReferrerEmployeeEmail", table: "ReferralInvites");
-            migrationBuilder.DropColumn(name: "ZendeskTicketId", table: "ReferralInvites");
-            migrationBuilder.DropColumn(name: "CandidatePhone", table: "ExternalApplications");
-            migrationBuilder.DropColumn(name: "ZendeskTicketId", table: "ExternalApplications");
-            migrationBuilder.DropColumn(name: "ZendeskTicketUrl", table: "ExternalApplications");
-            migrationBuilder.DropColumn(name: "ZendeskTicketId", table: "InternalJobApplications");
-            migrationBuilder.DropColumn(name: "ZendeskTicketUrl", table: "InternalJobApplications");
-            migrationBuilder.DropColumn(name: "CategoryId", table: "ZendeskPolicyArticles");
-            migrationBuilder.DropColumn(name: "CategoryName", table: "ZendeskPolicyArticles");
-            migrationBuilder.DropColumn(name: "SectionId", table: "ZendeskPolicyArticles");
-            migrationBuilder.DropColumn(name: "SectionName", table: "ZendeskPolicyArticles");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'MenuItems') AND name = 'IsDeleted') ALTER TABLE [MenuItems] DROP COLUMN [IsDeleted];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'JobPostings') AND name = 'IsDeleted') ALTER TABLE [JobPostings] DROP COLUMN [IsDeleted];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'Announcements') AND name = 'IsDeleted') ALTER TABLE [Announcements] DROP COLUMN [IsDeleted];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'CandidateName') ALTER TABLE [ReferralInvites] DROP COLUMN [CandidateName];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'CandidatePhone') ALTER TABLE [ReferralInvites] DROP COLUMN [CandidatePhone];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'Notes') ALTER TABLE [ReferralInvites] DROP COLUMN [Notes];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'ReferrerEmployeeEmail') ALTER TABLE [ReferralInvites] DROP COLUMN [ReferrerEmployeeEmail];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ReferralInvites') AND name = 'ZendeskTicketId') ALTER TABLE [ReferralInvites] DROP COLUMN [ZendeskTicketId];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'CandidatePhone') ALTER TABLE [ExternalApplications] DROP COLUMN [CandidatePhone];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'ZendeskTicketId') ALTER TABLE [ExternalApplications] DROP COLUMN [ZendeskTicketId];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ExternalApplications') AND name = 'ZendeskTicketUrl') ALTER TABLE [ExternalApplications] DROP COLUMN [ZendeskTicketUrl];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'InternalJobApplications') AND name = 'ZendeskTicketId') ALTER TABLE [InternalJobApplications] DROP COLUMN [ZendeskTicketId];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'InternalJobApplications') AND name = 'ZendeskTicketUrl') ALTER TABLE [InternalJobApplications] DROP COLUMN [ZendeskTicketUrl];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'CategoryId') ALTER TABLE [ZendeskPolicyArticles] DROP COLUMN [CategoryId];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'CategoryName') ALTER TABLE [ZendeskPolicyArticles] DROP COLUMN [CategoryName];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'SectionId') ALTER TABLE [ZendeskPolicyArticles] DROP COLUMN [SectionId];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID(N'ZendeskPolicyArticles') AND name = 'SectionName') ALTER TABLE [ZendeskPolicyArticles] DROP COLUMN [SectionName];");
         }
     }
 }
