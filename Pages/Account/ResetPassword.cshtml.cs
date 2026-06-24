@@ -18,11 +18,16 @@ public class ResetPasswordModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<ApplicationUser> _hasher;
+    private readonly ILogger<ResetPasswordModel> _logger;
 
-    public ResetPasswordModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
+    public ResetPasswordModel(
+        ApplicationDbContext db,
+        IPasswordHasher<ApplicationUser> hasher,
+        ILogger<ResetPasswordModel> logger)
     {
         _db     = db;
         _hasher = hasher;
+        _logger = logger;
     }
 
     [BindProperty]
@@ -69,8 +74,12 @@ public class ResetPasswordModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
-        // Read the username set by Activate.cshtml.cs
-        var username = TempData["ActivationUsername"] as string;
+        // Read the username and activation context set by Activate.cshtml.cs
+        var username    = TempData["ActivationUsername"] as string;
+        var ip          = TempData["ActivationIp"]      as string ?? "unknown";
+        var displayName = TempData["ActivationDisplay"] as string ?? string.Empty;
+        var userId      = TempData["ActivationUserId"]  as string ?? string.Empty;
+
         if (string.IsNullOrWhiteSpace(username))
         {
             ErrorMessage = "Your activation session has expired. Please start the activation process again.";
@@ -94,6 +103,25 @@ public class ResetPasswordModel : PageModel
         user.IsFirstTimeLogin = false;
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
+
+        // ── Write the activation log now that the password is confirmed saved ──
+        try
+        {
+            _db.AccountActivationLogs.Add(new AccountActivationLog
+            {
+                UserId        = user.Id,
+                DisplayName   = user.DisplayName ?? user.UserName ?? string.Empty,
+                PersonalEmail = string.Empty,
+                IpAddress     = ip,
+                ActivatedUtc  = DateTime.UtcNow
+            });
+            await _db.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            // Log the error but do not block the user — activation already succeeded
+            _logger.LogError(ex, "[Activation] Failed to write activation log for {User}", user.UserName);
+        }
 
         // Auto sign-in the user after setting their password
         var claims = new List<Claim>

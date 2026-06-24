@@ -108,31 +108,32 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        // ── 4. Check if already activated (password already set) ──────────
-        if (!string.IsNullOrWhiteSpace(user.PasswordHash) &&
-            !user.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
+        // ── 4. Check if already activated ────────────────────────────────
+        // A user is considered fully activated when they have a real password hash
+        // (not the placeholder) AND IsFirstTimeLogin is false.
+        // This handles the broken half-state where a prior test run left
+        // IsFirstTimeLogin=0 but still has the placeholder hash.
+        var hasRealPassword = !string.IsNullOrWhiteSpace(user.PasswordHash) &&
+                              !user.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome");
+
+        if (hasRealPassword && !user.IsFirstTimeLogin)
         {
             AlreadyActivated = true;
             return Page();
         }
 
-        // ── 5. Record IP + timestamp, then redirect to Set Password ───────
+        // ── 5. Capture IP address and pass everything to ResetPassword ────
+        // The log is written in ResetPassword.OnPostAsync after the password
+        // is successfully saved — that is the true completion point.
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
             ip = forwardedFor.ToString().Split(',')[0].Trim();
 
-        _db.AccountActivationLogs.Add(new AccountActivationLog
-        {
-            UserId       = user.Id,
-            DisplayName  = user.DisplayName ?? user.UserName ?? string.Empty,
-            PersonalEmail = string.Empty,   // no longer collected at activation step
-            IpAddress    = ip,
-            ActivatedUtc = DateTime.UtcNow
-        });
-        await _db.SaveChangesAsync();
-
-        // Pass the username to the Set Password page via TempData
         TempData["ActivationUsername"] = user.UserName;
+        TempData["ActivationIp"]       = ip;
+        TempData["ActivationDisplay"]  = user.DisplayName ?? user.UserName ?? string.Empty;
+        TempData["ActivationUserId"]   = user.Id;
+
         return RedirectToPage("/Account/ResetPassword");
     }
 
