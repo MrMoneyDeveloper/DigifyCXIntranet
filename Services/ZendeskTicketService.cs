@@ -150,7 +150,7 @@ Notes:
         var sastTime     = TimeZoneInfo.ConvertTimeFromUtc(submittedUtc, sastZone);
         var timestampStr = sastTime.ToString("yyyy-MM-dd HH:mm:ss") + " SAST";
 
-        var subject = $"Forgotten Password – {fullName}";
+        var subject = $"Forgotten Password \u2013 {fullName}";
         var autoDescription = $"User {fullName} has submitted a forgotten password request via the DigifyCX Intranet login page.";
 
         var body = $"""
@@ -167,9 +167,9 @@ Please locate the device matching the IP address above on the company floor and 
 
         try
         {
-            // Simple ticket payload — no HR form, no custom fields beyond tags.
-            // Uses the configured IT-support email as the requester so the ticket
-            // lands in the correct Zendesk queue.
+            // FieldEmployeeFullName is populated so the Zendesk webhook macro can
+            // read {{ticket.ticket_field_22729924058012}} and pass the exact name
+            // back to the ZendeskWebhookController for the DB lookup.
             var payload = new
             {
                 ticket = new
@@ -181,7 +181,11 @@ Please locate the device matching the IP address above on the company floor and 
                         email = _options.Email    // authenticated agent submits on behalf of user
                     },
                     comment = new { body },
-                    tags    = new[] { "digifycx_intranet", "digifycx_intranet_forgot_password" }
+                    custom_fields = new[]
+                    {
+                        new { id = FieldEmployeeFullName, value = fullName }
+                    },
+                    tags = new[] { "digifycx_intranet", "digifycx_intranet_forgot_password" }
                 }
             };
 
