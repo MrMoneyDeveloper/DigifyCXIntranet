@@ -64,6 +64,11 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+
+// ── Zendesk inbound webhook (password reset trigger from IT) ──────────────
+builder.Services.Configure<ZendeskWebhookOptions>(
+    builder.Configuration.GetSection("ZendeskWebhook"));
+
 builder.Services.AddOptions<TechNewsOptions>()
     .Bind(builder.Configuration.GetSection(TechNewsOptions.SectionName))
     .ValidateDataAnnotations()
@@ -141,6 +146,9 @@ builder.Services.AddHostedService<UserRegistrySyncWorker>();
 
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("sqlserver");
+
+// ── API controllers (used by Zendesk webhook) ─────────────────────────────
+builder.Services.AddControllers();
 
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
@@ -303,6 +311,9 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 });
 
 app.MapRazorPages();
+
+// ── Map API controllers (Zendesk webhook lives here) ──────────────────────
+app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {
