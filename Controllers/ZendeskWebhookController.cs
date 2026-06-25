@@ -1,6 +1,8 @@
+using Azure.Core;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -8,15 +10,6 @@ using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Controllers;
 
-/// <summary>
-/// Receives a webhook POST from Zendesk when IT approves a password-reset ticket.
-/// The endpoint resets the employee back to the first-time-login state so they
-/// can go through /Account/Activate exactly as a new employee would.
-/// 
-/// Security: every request must include the header
-///   X-Zendesk-Webhook-Secret: <value from ZendeskWebhook:Secret in config>
-/// Zendesk sends this automatically when you configure the webhook.
-/// </summary>
 [ApiController]
 [Route("api/zendesk")]
 public class ZendeskWebhookController : ControllerBase
@@ -26,8 +19,6 @@ public class ZendeskWebhookController : ControllerBase
     private readonly ZendeskWebhookOptions _options;
     private readonly ILogger<ZendeskWebhookController> _logger;
 
-    // The placeholder hash that marks an account as "not yet activated".
-    // Must match the value used during initial user sync.
     private const string PlaceholderHash =
         "AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder";
 
@@ -37,21 +28,24 @@ public class ZendeskWebhookController : ControllerBase
         IOptions<ZendeskWebhookOptions> options,
         ILogger<ZendeskWebhookController> logger)
     {
-        _db      = db;
-        _hasher  = hasher;
+        _db = db;
+        _hasher = hasher;
         _options = options.Value;
-        _logger  = logger;
+        _logger = logger;
     }
 
-    // ── POST api/zendesk/reset-password ──────────────────────────────────
-    // Zendesk sends:
-    //   Header : X-Zendesk-Webhook-Secret: <secret>
-    //   Body   : { "display_name": "Wendy Moodley", "ticket_id": "12345" }
     [HttpPost("reset-password")]
+    [AllowAnonymous]
     public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
     {
+        // ── DEBUG: log every incoming header so we can see exactly what Zendesk sends ──
+        var allHeaders = string.Join(" | ", Request.Headers.Select(h => $"{h.Key}={h.Value}"));
+        _logger.LogWarning("[ZendeskWebhook] Incoming headers: {Headers}", allHeaders);
+        _logger.LogWarning("[ZendeskWebhook] Expected secret value: '{Secret}'", _options.Secret);
+        // ── END DEBUG ──
+
         // ── 1. Validate the shared secret ────────────────────────────────
-        if (!Request.Headers.TryGetValue("X-Zendesk-Webhook-Secret", out var incomingSecret) ||
+        if (!Request.Headers.TryGetValue("DigifyCX_Reset_Password_Secret", out var incomingSecret) ||
             !string.Equals(incomingSecret, _options.Secret, StringComparison.Ordinal))
         {
             _logger.LogWarning("[ZendeskWebhook] Rejected request — invalid or missing secret.");
@@ -79,12 +73,11 @@ public class ZendeskWebhookController : ControllerBase
             _logger.LogWarning(
                 "[ZendeskWebhook] Reset requested for '{Name}' (ticket #{Ticket}) but no matching user found.",
                 request.DisplayName, request.TicketId);
-            // Return 200 so Zendesk doesn't retry — this is a data issue, not a server error
             return Ok(new { status = "not_found", message = $"No employee found with name '{request.DisplayName}'." });
         }
 
         // ── 4. Reset back to first-time-login state ──────────────────────
-        user.PasswordHash     = PlaceholderHash;
+        user.PasswordHash = PlaceholderHash;
         user.IsFirstTimeLogin = true;
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
@@ -97,14 +90,11 @@ public class ZendeskWebhookController : ControllerBase
     }
 }
 
-/// <summary>Payload sent by Zendesk when the trigger fires.</summary>
 public sealed class ResetPasswordRequest
 {
-    /// <summary>The employee's full display name — must match DisplayName in AspNetUsers.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("display_name")]
     public string DisplayName { get; set; } = string.Empty;
 
-    /// <summary>The Zendesk ticket ID — used only for logging/audit purposes.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("ticket_id")]
     public string TicketId { get; set; } = string.Empty;
 }
