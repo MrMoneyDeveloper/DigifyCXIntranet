@@ -64,6 +64,8 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.Configure<ActivationOptions>(
+    builder.Configuration.GetSection(ActivationOptions.SectionName));
 builder.Services.AddOptions<TechNewsOptions>()
     .Bind(builder.Configuration.GetSection(TechNewsOptions.SectionName))
     .ValidateDataAnnotations()
@@ -211,6 +213,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AllowAnonymousToPage("/Account/Login");
         options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
         options.Conventions.AllowAnonymousToPage("/Account/Logout");
+        options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     }
 });
 

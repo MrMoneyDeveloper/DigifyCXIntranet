@@ -42,13 +42,13 @@ public class UserRegistrySyncWorker : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             // ── Wait until the configured target time-of-day (UTC) ────────────
-            var delayMs = ComputeDelayUntilNextRun(_options.CurrentValue);
-            if (delayMs > 0)
+            var delay = ComputeDelayUntilNextRun(_options.CurrentValue);
+            if (delay > TimeSpan.Zero)
             {
                 _logger.LogInformation(
                     "[UserRegistrySync] Next sync in {Minutes:F0} minutes (target UTC time: {Target}).",
-                    delayMs / 60_000.0, _options.CurrentValue.SyncTimeUtc);
-                await Task.Delay(delayMs, stoppingToken);
+                    delay.TotalMinutes, _options.CurrentValue.SyncTimeUtc);
+                await Task.Delay(delay, stoppingToken);
             }
 
             await RunSyncAsync(stoppingToken);
@@ -64,23 +64,16 @@ public class UserRegistrySyncWorker : BackgroundService
     // Computes milliseconds to wait until the next SyncTimeUtc window.
     // Returns 0 if SyncTimeUtc is not set (run immediately).
     // ------------------------------------------------------------------
-    private static long ComputeDelayUntilNextRun(UserRegistrySyncOptions opts)
+    private static TimeSpan ComputeDelayUntilNextRun(UserRegistrySyncOptions opts)
     {
-        if (string.IsNullOrWhiteSpace(opts.SyncTimeUtc))
-            return 0;
+        if (string.IsNullOrWhiteSpace(opts.SyncTimeUtc)) return TimeSpan.Zero;
+        if (!TimeSpan.TryParse(opts.SyncTimeUtc, out var targetTime)) return TimeSpan.Zero;
 
-        if (!TimeSpan.TryParse(opts.SyncTimeUtc, out var targetTime))
-            return 0;
-
-        var now        = DateTime.UtcNow;
+        var now = DateTime.UtcNow;
         var targetToday = now.Date.Add(targetTime);
+        var next = targetToday <= now ? targetToday.AddDays(1) : targetToday;
 
-        // If the target time has already passed today, schedule for tomorrow
-        var next = targetToday <= now
-            ? targetToday.AddDays(1)
-            : targetToday;
-
-        return (long)(next - now).TotalMilliseconds;
+        return next - now;
     }
 
     // ------------------------------------------------------------------
