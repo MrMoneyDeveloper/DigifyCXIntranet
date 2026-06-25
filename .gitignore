@@ -3,11 +3,9 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-# ASP.NET Core secrets and production config — NEVER commit these
+# ASP.NET Core environment-specific config — NEVER commit these
+appsettings.Development.json
 appsettings.Production.json
-appsettings.*.json
-!appsettings.json
-!appsettings.Development.json
 
 # User-specific files
 *.rsuser
@@ -41,8 +39,6 @@ bld/
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
-# Uncomment if you have tasks that create the project's static files in wwwroot
-#wwwroot/
 
 # Visual Studio 2017 auto generated files
 Generated\ Files/
@@ -234,10 +230,6 @@ ClientBin/
 *.publishsettings
 orleans.codegen.cs
 
-#*.snk
-
-#bower_components/
-
 # RIA/Silverlight projects
 Generated_Code/
 
@@ -303,10 +295,6 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-
-# Cake
-# tools/**
-# !tools/packages.config
 
 # Tabs Studio
 *.tss
