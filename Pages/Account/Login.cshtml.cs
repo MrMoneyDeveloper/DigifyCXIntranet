@@ -51,6 +51,13 @@ public class LoginModel : PageModel
     /// </summary>
     public bool ShowForgotPasswordPrompt { get; private set; }
 
+    /// <summary>
+    /// The username that was submitted, carried into the view so the amber banner
+    /// can build a pre-filled link to /Account/ForgotPassword.
+    /// Only populated when ShowForgotPasswordPrompt is true.
+    /// </summary>
+    public string FailedUsername { get; private set; } = string.Empty;
+
     public void OnGet(string? returnUrl = null)
     {
         ReturnUrl = string.IsNullOrWhiteSpace(returnUrl) ? "/Index" : returnUrl;
@@ -124,8 +131,10 @@ public class LoginModel : PageModel
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            // ── Wrong password: flag the view to show the Forgot Password prompt ──
+            // Wrong password: flag the view to show the Forgot Password prompt
+            // and carry the username so the banner link can pre-fill the name.
             ShowForgotPasswordPrompt = true;
+            FailedUsername           = inputUsername;
             ModelState.AddModelError(string.Empty, "Incorrect password.");
             return Page();
         }
