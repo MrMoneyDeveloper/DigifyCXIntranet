@@ -39,7 +39,7 @@ public class IndexModel : PageModel
     public decimal CurrentMonthCanteenTotal { get; private set; }
     public List<Announcement> Announcements { get; private set; } = new();
     public List<JobPosting> JobPostings { get; private set; } = new();
-    public List<ZendeskPolicyArticle> Policies { get; private set; } = new();
+    public int PolicyCount { get; private set; }
 
     public async Task OnGetAsync()
     {
@@ -64,12 +64,10 @@ public class IndexModel : PageModel
             .Take(5)
             .ToListAsync();
 
-        Policies = await _policyDb.ZendeskPolicyArticles
+        PolicyCount = await _policyDb.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
-            .OrderByDescending(x => x.UpdatedAtUtc)
-            .Take(5)
-            .ToListAsync();
+            .CountAsync();
 
         var username = UserNameHelper.GetShortName(User);
         var today = DateTime.UtcNow;
