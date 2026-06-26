@@ -122,6 +122,23 @@ UPDATE [AspNetUsers]
 SET    [Email]           = NULL,
        [NormalizedEmail] = NULL
 WHERE  [Email] LIKE N'%@digifycx.internal';
+
+-- -------------------------------------------------------
+-- Normalise legacy seeded users that were created before
+-- the sync worker existed. Those users had:
+--   EmailConfirmed = 0  (Identity blocks login)
+--   PasswordHash   = placeholder string (not a real hash)
+-- Bring them in line with the current pattern:
+--   EmailConfirmed = 1  (account is valid)
+--   PasswordHash   = NULL (awaiting first activation)
+-- Only touches accounts that still carry the placeholder —
+-- users who have already activated are left completely alone.
+-- -------------------------------------------------------
+UPDATE [AspNetUsers]
+SET    [EmailConfirmed] = 1,
+       [PasswordHash]   = NULL
+WHERE  [PasswordHash]   = N'AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder'
+  AND  [EmailConfirmed] = 0;
 """;
 
         return db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
