@@ -26,4 +26,11 @@ public class ZendeskSyncOptions
     public long EmployeeIdFieldId { get; set; }
     public long ManagerEmailFieldId { get; set; }
     public long RequestingOnBehalfOfFieldId { get; set; }
+
+    /// <summary>
+    /// Zendesk section IDs whose articles should be synced to the intranet.
+    /// When empty, all articles are synced (no filtering).
+    /// Add the Policies section ID here, plus any future signed-in-only sections.
+    /// </summary>
+    public List<long> AllowedSectionIds { get; set; } = new();
 }
