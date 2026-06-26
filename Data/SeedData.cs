@@ -162,7 +162,7 @@ public static class SeedData
             return;
         }
 
-        var users = new[] { "agent1", "moham", "finance", "admin" };
+        var users = new[] { "employee", "moham", "finance", "admin" };
         var orderTime = DateTime.UtcNow.AddDays(-5);
         foreach (var username in users)
         {

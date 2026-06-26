@@ -7,4 +7,6 @@ public static class AppPolicies
     public const string HrOperations = "HrOperations";
     public const string CanteenOperations = "CanteenOperations";
     public const string SystemOperations = "SystemOperations";
+    public const string AnnouncementManagement = "AnnouncementManagement";
+    public const string UserManagement = "UserManagement";
 }

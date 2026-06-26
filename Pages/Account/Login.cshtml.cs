@@ -93,9 +93,7 @@ public class LoginModel : PageModel
                 new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(devUser.DisplayName)
                     ? devUser.Username
                     : devUser.DisplayName),
-                new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(devUser.Role)
-                    ? AppRoles.Agent
-                    : devUser.Role.Trim())
+                new(ClaimTypes.Role, NormalizeRole(devUser.Role))
             };
 
             var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -139,7 +137,7 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        var role        = string.IsNullOrWhiteSpace(dbUser.CustomRole) ? AppRoles.Agent : dbUser.CustomRole;
+        var role        = NormalizeRole(dbUser.CustomRole);
         var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
             ? (dbUser.UserName ?? inputUsername)
             : dbUser.DisplayName;
@@ -169,5 +167,23 @@ public class LoginModel : PageModel
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return AppRoles.Employee;
+        }
+
+        var candidate = role.Trim();
+        return candidate is AppRoles.Employee
+            or AppRoles.FinanceAdmin
+            or AppRoles.HrAdmin
+            or AppRoles.CanteenAdmin
+            or AppRoles.SystemAdmin
+            or AppRoles.SuperAdmin
+            ? candidate
+            : AppRoles.Employee;
     }
 }

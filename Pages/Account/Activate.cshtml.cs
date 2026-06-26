@@ -17,7 +17,6 @@ namespace DigifyCXIntranet.Pages.Account;
 public class ActivateModel : PageModel
 {
     private readonly ApplicationDbContext _db;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ActivationOptions _activationOptions;
     private readonly ILogger<ActivateModel> _logger;
@@ -30,7 +29,6 @@ public class ActivateModel : PageModel
         ILogger<ActivateModel> logger)
     {
         _db = db;
-        _userManager = userManager;
         _httpClientFactory = httpClientFactory;
         _activationOptions = activationOptions.Value;
         _logger = logger;
@@ -54,7 +52,6 @@ public class ActivateModel : PageModel
         public string DefaultPassword { get; set; } = string.Empty;
     }
 
-    // Normalise: lowercase, collapse whitespace, trim
     private static string Normalise(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return string.Empty;
@@ -63,11 +60,13 @@ public class ActivateModel : PageModel
             .Replace("\u200b", "")
             .Replace("\u200c", "")
             .Replace("\t", " ");
-        s = Regex.Replace(s, @"\s+", " ").Trim().ToLower();
+        s = Regex.Replace(s, @"\s+", " ").Trim().ToLowerInvariant();
         return s;
     }
 
-    public void OnGet() { }
+    public void OnGet()
+    {
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -77,25 +76,15 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        // ── 1. Validate default password ─────────────────────────────────
         if (!string.Equals(Input.DefaultPassword, _activationOptions.DefaultPassword, StringComparison.Ordinal))
         {
-            ErrorMessage = "The default password you entered is incorrect. Please check with your manager or HR.";
+            ErrorMessage = "The default password you entered is incorrect. Please check with your manager, HR, or a System Admin.";
             return Page();
         }
 
         var normalizedInput = Normalise(Input.FullName);
         var derivedUsername = normalizedInput.Replace(" ", ".");
 
-        // ── 2. Validate name exists in Google Sheet (Apps Script) ─────────
-        var nameExistsInSheet = await CheckNameInSheetAsync(Input.FullName.Trim());
-        if (!nameExistsInSheet)
-        {
-            ErrorMessage = "Your name was not found in the active employee list. Please contact HR if you believe this is an error.";
-            return Page();
-        }
-
-        // ── 3. Find the user in the local DB ──────────────────────────────
         var user = await _db.Users
             .OfType<ApplicationUser>()
             .FirstOrDefaultAsync(u =>
@@ -104,15 +93,17 @@ public class ActivateModel : PageModel
 
         if (user == null)
         {
+            var nameExistsInSheet = await CheckNameInSheetAsync(Input.FullName.Trim());
+            if (!nameExistsInSheet)
+            {
+                ErrorMessage = "Your name was not found in the employee registry or the system-admin user list. Please contact HR or IT support.";
+                return Page();
+            }
+
             ErrorMessage = "No employee record was found matching that name. Please check the spelling or contact HR.";
             return Page();
         }
 
-        // ── 4. Check if already activated ────────────────────────────────
-        // A user is considered fully activated when they have a real password hash
-        // (not the placeholder) AND IsFirstTimeLogin is false.
-        // This handles the broken half-state where a prior test run left
-        // IsFirstTimeLogin=0 but still has the placeholder hash.
         var hasRealPassword = !string.IsNullOrWhiteSpace(user.PasswordHash) &&
                               !user.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome");
 
@@ -122,64 +113,64 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        // ── 5. Capture IP address and pass everything to ResetPassword ────
-        // The log is written in ResetPassword.OnPostAsync after the password
-        // is successfully saved — that is the true completion point.
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
+        {
             ip = forwardedFor.ToString().Split(',')[0].Trim();
+        }
 
         TempData["ActivationUsername"] = user.UserName;
-        TempData["ActivationIp"]       = ip;
-        TempData["ActivationDisplay"]  = user.DisplayName ?? user.UserName ?? string.Empty;
-        TempData["ActivationUserId"]   = user.Id;
+        TempData["ActivationIp"] = ip;
+        TempData["ActivationDisplay"] = user.DisplayName ?? user.UserName ?? string.Empty;
+        TempData["ActivationUserId"] = user.Id;
 
         return RedirectToPage("/Account/ResetPassword");
     }
 
-    // ── Calls the Apps Script endpoint and checks whether fullName is present ──
     private async Task<bool> CheckNameInSheetAsync(string fullName)
     {
         if (string.IsNullOrWhiteSpace(_activationOptions.SheetApiUrl))
         {
-            _logger.LogWarning("[Activation] SheetApiUrl is not configured — skipping Google Sheet validation.");
-            return true;   // fail-open so activation is not blocked if URL is missing
+            _logger.LogWarning("[Activation] SheetApiUrl is not configured; skipping Google Sheet validation.");
+            return true;
         }
 
         try
         {
             using var client = _httpClientFactory.CreateClient();
-            using var cts    = new CancellationTokenSource(
+            using var cts = new CancellationTokenSource(
                 TimeSpan.FromSeconds(Math.Clamp(_activationOptions.SheetTimeoutSeconds, 5, 60)));
 
             var response = await client.GetAsync(_activationOptions.SheetApiUrl, cts.Token);
             if (!response.IsSuccessStatusCode)
             {
-                _logger.LogWarning("[Activation] Sheet API returned {Status} — failing open.", response.StatusCode);
+                _logger.LogWarning("[Activation] Sheet API returned {Status}; failing open.", response.StatusCode);
                 return true;
             }
 
-            var content  = await response.Content.ReadAsStringAsync(cts.Token);
+            var content = await response.Content.ReadAsStringAsync(cts.Token);
             using var doc = JsonDocument.Parse(content);
 
             if (doc.RootElement.ValueKind != JsonValueKind.Array)
-                return true;   // unexpected format — fail open
+            {
+                return true;
+            }
 
             var normalizedTarget = Normalise(fullName);
 
             foreach (var element in doc.RootElement.EnumerateArray())
             {
-                // The Apps Script returns objects with a "fullName" property
                 if (element.TryGetProperty("fullName", out var nameProp))
                 {
                     if (string.Equals(Normalise(nameProp.GetString()), normalizedTarget, StringComparison.Ordinal))
+                    {
                         return true;
+                    }
                 }
-                // Fallback: element might be a plain string
-                else if (element.ValueKind == JsonValueKind.String)
+                else if (element.ValueKind == JsonValueKind.String &&
+                         string.Equals(Normalise(element.GetString()), normalizedTarget, StringComparison.Ordinal))
                 {
-                    if (string.Equals(Normalise(element.GetString()), normalizedTarget, StringComparison.Ordinal))
-                        return true;
+                    return true;
                 }
             }
 
@@ -187,8 +178,8 @@ public class ActivateModel : PageModel
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Activation] Failed to reach Google Sheet API — failing open.");
-            return true;   // fail-open: don't block activation on a network hiccup
+            _logger.LogError(ex, "[Activation] Failed to reach Google Sheet API; failing open.");
+            return true;
         }
     }
 }

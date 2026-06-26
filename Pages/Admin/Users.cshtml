@@ -1,0 +1,104 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="admin-page-header">
+    <a asp-page="/Admin/Index" class="admin-back-button" title="Back to Dashboard" aria-label="Back to Dashboard">
+        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+    </a>
+    <div>
+        <h1>Manage Users</h1>
+        <p>Add users to the system-admin managed activation table.</p>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+{
+    <div class="admin-alert admin-alert-success">@Model.SuccessMessage</div>
+}
+
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+{
+    <div class="admin-alert admin-alert-error">@Model.ErrorMessage</div>
+}
+
+<div class="admin-two-column">
+    <section class="admin-panel">
+        <div class="admin-panel-header">
+            <h2>Add User</h2>
+        </div>
+        <form method="post" asp-page-handler="Create" class="admin-form">
+            <div asp-validation-summary="ModelOnly" class="text-sm text-rose-600 font-semibold"></div>
+            <div>
+                <label asp-for="NewUser.FullName"></label>
+                <input asp-for="NewUser.FullName" placeholder="e.g. Lerato Mokoena" />
+                <span asp-validation-for="NewUser.FullName"></span>
+            </div>
+            <div>
+                <label asp-for="NewUser.Email"></label>
+                <input asp-for="NewUser.Email" type="email" placeholder="name@digifycx.com" />
+                <span asp-validation-for="NewUser.Email"></span>
+            </div>
+            <div>
+                <label asp-for="NewUser.Role"></label>
+                <select asp-for="NewUser.Role">
+                    @foreach (var role in Model.AssignableRoles)
+                    {
+                        <option value="@role.Value">@role.Label</option>
+                    }
+                </select>
+                <span asp-validation-for="NewUser.Role"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Add User</button>
+        </form>
+    </section>
+
+    <section class="admin-panel">
+        <div class="admin-panel-header">
+            <h2>Set By System Admins</h2>
+            <span>@Model.Users.Count Total</span>
+        </div>
+
+        <div class="admin-table-wrap">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model.Users)
+                    {
+                        <tr>
+                            <td>
+                                <strong>@user.DisplayName</strong>
+                                <small>@user.Username</small>
+                            </td>
+                            <td>@user.Email</td>
+                            <td><span class="admin-chip">@user.Role</span></td>
+                            <td>
+                                @if (user.IsFirstTimeLogin || !user.HasPassword)
+                                {
+                                    <span class="status-pill pending">Awaiting activation</span>
+                                }
+                                else
+                                {
+                                    <span class="status-pill active">Activated</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -130,9 +130,7 @@ public class ResetPasswordModel : PageModel
             new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(user.DisplayName)
                 ? (user.UserName ?? username)
                 : user.DisplayName),
-            new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(user.CustomRole)
-                ? AppRoles.Agent
-                : user.CustomRole)
+            new(ClaimTypes.Role,      NormalizeRole(user.CustomRole))
         };
 
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -140,5 +138,23 @@ public class ResetPasswordModel : PageModel
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
         return RedirectToPage("/Index");
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return AppRoles.Employee;
+        }
+
+        var candidate = role.Trim();
+        return candidate is AppRoles.Employee
+            or AppRoles.FinanceAdmin
+            or AppRoles.HrAdmin
+            or AppRoles.CanteenAdmin
+            or AppRoles.SystemAdmin
+            or AppRoles.SuperAdmin
+            ? candidate
+            : AppRoles.Employee;
     }
 }

@@ -195,6 +195,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole(AppRoles.CanteenAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
     options.AddPolicy(AppPolicies.SystemOperations, policy =>
         policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.AnnouncementManagement, policy =>
+        policy.RequireRole(AppRoles.HrAdmin));
+    options.AddPolicy(AppPolicies.UserManagement, policy =>
+        policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
 });
 
 builder.Services.AddRazorPages(options =>
@@ -207,10 +211,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/JobEdit", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/Policies", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/PolicyEdit", AppPolicies.HrOperations);
-    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.SystemOperations);
-    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.AnnouncementManagement);
+    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.AnnouncementManagement);
     options.Conventions.AuthorizePage("/Admin/Faq", AppPolicies.SystemOperations);
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Users", AppPolicies.UserManagement);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     options.Conventions.AllowAnonymousToPage("/Account/Activate");

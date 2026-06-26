@@ -38,6 +38,8 @@ public class IndexModel : PageModel
     public bool CanManageCanteen { get; private set; }
     public bool CanManageHr { get; private set; }
     public bool CanManageSystem { get; private set; }
+    public bool CanManageAnnouncements { get; private set; }
+    public bool CanManageUsers { get; private set; }
     public bool CanViewFinance { get; private set; }
 
     public async Task OnGetAsync()
@@ -45,6 +47,8 @@ public class IndexModel : PageModel
         CanManageCanteen = (await _authorizationService.AuthorizeAsync(User, AppPolicies.CanteenOperations)).Succeeded;
         CanManageHr = (await _authorizationService.AuthorizeAsync(User, AppPolicies.HrOperations)).Succeeded;
         CanManageSystem = (await _authorizationService.AuthorizeAsync(User, AppPolicies.SystemOperations)).Succeeded;
+        CanManageAnnouncements = (await _authorizationService.AuthorizeAsync(User, AppPolicies.AnnouncementManagement)).Succeeded;
+        CanManageUsers = (await _authorizationService.AuthorizeAsync(User, AppPolicies.UserManagement)).Succeeded;
         CanViewFinance = (await _authorizationService.AuthorizeAsync(User, AppPolicies.FinanceLedger)).Succeeded;
 
         PolicyCount = await _policyDb.ZendeskPolicyArticles.CountAsync();
