@@ -41,7 +41,7 @@ public class UserRegistrySyncWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            // ── Wait until the configured target time-of-day (UTC) ────────────
+            // ── Wait until the configured target time-of-day (UTC) ────
             var delay = ComputeDelayUntilNextRun(_options.CurrentValue);
             if (delay > TimeSpan.Zero)
             {
@@ -151,8 +151,8 @@ public class UserRegistrySyncWorker : BackgroundService
                 {
                     UserName           = generatedUsername,
                     NormalizedUserName = normalizedUsername,
-                    Email              = $"{generatedUsername}@digifycx.internal",
-                    NormalizedEmail    = $"{generatedUsername}@digifycx.internal".ToUpperInvariant(),
+                    Email              = null,
+                    NormalizedEmail    = null,
                     DisplayName        = fullName,
                     CustomRole         = "Employee",
                     IsFirstTimeLogin   = true,
@@ -176,7 +176,7 @@ public class UserRegistrySyncWorker : BackgroundService
                 }
             }
 
-            // ── DELETION: remove DB accounts no longer in the sheet ───────────
+            // ── DELETION: remove DB accounts no longer in the sheet ───────
             var deleted = 0;
             if (options.DeleteRemovedUsers)
             {
