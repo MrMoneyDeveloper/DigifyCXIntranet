@@ -10,6 +10,15 @@ namespace DigifyCXIntranet.Services;
 
 public class UserRegistrySyncWorker : BackgroundService
 {
+    // ── Labels that appear as section headers in the Google Sheet ────────
+    // These are never real users and must always be excluded.
+    private static readonly HashSet<string> _skippedLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Employee Name",
+        "Trainee Name",
+        "trainee.name",   // normalised form that was already landing in the DB
+    };
+
     private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UserRegistrySyncWorker> _logger;
@@ -77,6 +86,13 @@ public class UserRegistrySyncWorker : BackgroundService
     }
 
     // ------------------------------------------------------------------
+    // Returns true when a sheet value is a section-header label and
+    // should never be treated as a real user.
+    // ------------------------------------------------------------------
+    private static bool IsSkippedLabel(string fullName)
+        => _skippedLabels.Contains(fullName.Trim());
+
+    // ------------------------------------------------------------------
     // Core sync: create new users from sheet, delete users absent from sheet.
     // ------------------------------------------------------------------
     private async Task RunSyncAsync(CancellationToken stoppingToken)
@@ -115,9 +131,10 @@ public class UserRegistrySyncWorker : BackgroundService
                 return;
             }
 
-            // Build the canonical normalised-name set from the sheet
+            // Build the canonical normalised-name set from the sheet,
+            // excluding any header/label rows.
             var sheetNormalisedNames = externalUsers
-                .Where(x => !string.IsNullOrWhiteSpace(x.fullName))
+                .Where(x => !string.IsNullOrWhiteSpace(x.fullName) && !IsSkippedLabel(x.fullName))
                 .Select(x => NormalizeUsername(x.fullName))
                 .ToHashSet(StringComparer.Ordinal);
 
@@ -132,6 +149,13 @@ public class UserRegistrySyncWorker : BackgroundService
             foreach (var extUser in externalUsers)
             {
                 if (string.IsNullOrWhiteSpace(extUser.fullName)) continue;
+
+                // Skip section-header labels (e.g. "Employee Name", "Trainee Name")
+                if (IsSkippedLabel(extUser.fullName))
+                {
+                    _logger.LogDebug("[UserRegistrySync] Skipping label row: '{Label}'", extUser.fullName);
+                    continue;
+                }
 
                 var fullName           = extUser.fullName.Trim();
                 var generatedUsername  = fullName.Replace(" ", ".").ToLowerInvariant();
