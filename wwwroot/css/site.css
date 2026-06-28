@@ -317,7 +317,22 @@ body {
     display: grid;
     gap: 0.55rem;
     max-height: 18.5rem;
-    overflow: hidden;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(92, 195, 190, 0.45) transparent;
+}
+
+.tech-feed-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.tech-feed-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.tech-feed-list::-webkit-scrollbar-thumb {
+    background: rgba(92, 195, 190, 0.45);
+    border-radius: 999px;
 }
 
 .tech-feed-item {
