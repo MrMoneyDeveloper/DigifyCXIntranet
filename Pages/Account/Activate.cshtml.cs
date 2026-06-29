@@ -85,8 +85,14 @@ public class ActivateModel : PageModel
         var normalizedInput = Normalise(Input.FullName);
         var derivedUsername = normalizedInput.Replace(" ", ".");
 
+        // AsNoTracking() is required here because the Zendesk webhook resets
+        // IsFirstTimeLogin via raw SQL (ExecuteSqlRawAsync), which bypasses
+        // EF's change tracker. Without AsNoTracking(), EF may return a stale
+        // in-memory entity where IsFirstTimeLogin is still false, incorrectly
+        // blocking re-activation after a password reset ticket is approved.
         var user = await _db.Users
             .OfType<ApplicationUser>()
+            .AsNoTracking()
             .FirstOrDefaultAsync(u =>
                 (u.DisplayName != null && u.DisplayName.ToLower() == normalizedInput) ||
                 (u.UserName != null && u.UserName.ToLower() == derivedUsername));
