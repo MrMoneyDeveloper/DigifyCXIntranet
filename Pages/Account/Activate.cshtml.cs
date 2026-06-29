@@ -104,10 +104,14 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        var hasRealPassword = !string.IsNullOrWhiteSpace(user.PasswordHash) &&
-                              !user.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome");
-
-        if (hasRealPassword && !user.IsFirstTimeLogin)
+        // ── Already-activated guard ─────────────────────────────────────
+        // IsFirstTimeLogin is the single source of truth.
+        // The Zendesk webhook resets it to true when an employee raises a
+        // forgot-password ticket, which allows them to re-activate here
+        // without any other user data (profile, canteen orders, etc.) being
+        // affected. If IsFirstTimeLogin is false the employee has already
+        // set their own password and the account is considered active.
+        if (!user.IsFirstTimeLogin)
         {
             AlreadyActivated = true;
             return Page();

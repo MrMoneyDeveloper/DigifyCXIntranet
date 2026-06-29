@@ -19,6 +19,12 @@ public class UserRegistrySyncWorker : BackgroundService
         "trainee.name",   // normalised form that was already landing in the DB
     };
 
+    // Placeholder hash written to every new sync-managed account.
+    // The Zendesk webhook resets to this same value, and Activate.cshtml.cs
+    // uses IsFirstTimeLogin (not this hash) as the activation gate.
+    private const string PlaceholderHash =
+        "AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder";
+
     private readonly IServiceProvider _serviceProvider;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UserRegistrySyncWorker> _logger;
@@ -163,7 +169,17 @@ public class UserRegistrySyncWorker : BackgroundService
 
                 if (existingUsers.TryGetValue(normalizedUsername, out var existingUser))
                 {
-                    if (existingUser.DisplayName != fullName)
+                    // Backfill the placeholder hash for any existing user that still
+                    // has NULL — these were created before this fix was applied.
+                    if (string.IsNullOrWhiteSpace(existingUser.PasswordHash))
+                    {
+                        existingUser.PasswordHash = PlaceholderHash;
+                        updated++;
+                        _logger.LogInformation(
+                            "[UserRegistrySync] Backfilled placeholder hash for existing user: {Username}",
+                            existingUser.UserName);
+                    }
+                    else if (existingUser.DisplayName != fullName)
                     {
                         existingUser.DisplayName = fullName;
                         updated++;
@@ -182,7 +198,10 @@ public class UserRegistrySyncWorker : BackgroundService
                     IsFirstTimeLogin   = true,
                     PersonalEmail      = null,
                     EmailConfirmed     = true,
-                    SecurityStamp      = Guid.NewGuid().ToString()
+                    SecurityStamp      = Guid.NewGuid().ToString(),
+                    // Always write the placeholder so the account is never stuck
+                    // in a NULL hash state that would break the activation flow.
+                    PasswordHash       = PlaceholderHash
                 };
 
                 var result = await userManager.CreateAsync(newUser);
@@ -204,10 +223,6 @@ public class UserRegistrySyncWorker : BackgroundService
             var deleted = 0;
             if (options.DeleteRemovedUsers)
             {
-                // Only consider accounts created by the sync worker (no PersonalEmail
-                // set means never manually created / is a sync-managed account).
-                // We never delete dev/hardcoded accounts (they have no NormalizedUserName
-                // matching sheet names anyway).
                 var usersToDelete = existingUsers.Values
                     .Where(u => !sheetNormalisedNames.Contains(u.NormalizedUserName ?? string.Empty))
                     .ToList();
