@@ -1,4 +1,3 @@
-using Azure.Core;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
@@ -15,7 +14,6 @@ namespace DigifyCXIntranet.Controllers;
 public class ZendeskWebhookController : ControllerBase
 {
     private readonly ApplicationDbContext _db;
-    private readonly IPasswordHasher<ApplicationUser> _hasher;
     private readonly ZendeskWebhookOptions _options;
     private readonly ILogger<ZendeskWebhookController> _logger;
 
@@ -24,12 +22,10 @@ public class ZendeskWebhookController : ControllerBase
 
     public ZendeskWebhookController(
         ApplicationDbContext db,
-        IPasswordHasher<ApplicationUser> hasher,
         IOptions<ZendeskWebhookOptions> options,
         ILogger<ZendeskWebhookController> logger)
     {
         _db = db;
-        _hasher = hasher;
         _options = options.Value;
         _logger = logger;
     }
@@ -77,10 +73,14 @@ public class ZendeskWebhookController : ControllerBase
         }
 
         // ── 4. Reset back to first-time-login state ──────────────────────
-        user.PasswordHash = PlaceholderHash;
-        user.IsFirstTimeLogin = true;
-        _db.Users.Update(user);
-        await _db.SaveChangesAsync();
+        // Use a targeted raw SQL UPDATE instead of EF's Update() to ensure
+        // only these three columns are written. This prevents a stale
+        // EF-tracked entity from overwriting other user fields and
+        // guarantees the reset state survives an immediate app restart.
+        var newSecurityStamp = Guid.NewGuid().ToString();
+        await _db.Database.ExecuteSqlRawAsync(
+            "UPDATE [AspNetUsers] SET [PasswordHash] = {0}, [IsFirstTimeLogin] = 1, [SecurityStamp] = {1} WHERE [Id] = {2}",
+            PlaceholderHash, newSecurityStamp, user.Id);
 
         _logger.LogInformation(
             "[ZendeskWebhook] Password reset for '{Name}' (UserId: {Id}) via Zendesk ticket #{Ticket}.",

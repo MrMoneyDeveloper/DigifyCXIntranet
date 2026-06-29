@@ -131,14 +131,17 @@ WHERE  [Email] LIKE N'%@digifycx.internal';
 -- Bring them in line with the current pattern:
 --   EmailConfirmed = 1  (account is valid)
 --   PasswordHash   = NULL (awaiting first activation)
--- Only touches accounts that still carry the placeholder —
--- users who have already activated are left completely alone.
+--
+-- IMPORTANT: only touches rows where IsFirstTimeLogin = 0.
+-- Rows where IsFirstTimeLogin = 1 are intentionally in
+-- forgot-password reset state (placed there by the Zendesk
+-- webhook) and must NOT be clobbered on startup.
 -- -------------------------------------------------------
 UPDATE [AspNetUsers]
 SET    [EmailConfirmed] = 1,
        [PasswordHash]   = NULL
 WHERE  [PasswordHash]   = N'AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder'
-  AND  [EmailConfirmed] = 0;
+  AND  [IsFirstTimeLogin] = 0;
 """;
 
         return db.Database.ExecuteSqlRawAsync(sql, cancellationToken);
