@@ -52,8 +52,11 @@ public class LoginModel : PageModel
     public bool ShowForgotPasswordPrompt { get; private set; }
 
     /// <summary>
-    /// The username that was submitted, carried into the view so the amber banner
+    /// The display name that was looked up, carried into the view so the amber banner
     /// can build a pre-filled link to /Account/ForgotPassword.
+    /// Using DisplayName (e.g. "Wendy Moodley") instead of the raw username
+    /// (e.g. "wendy.moodley") ensures the Zendesk webhook can match the
+    /// employee record in the database.
     /// Only populated when ShowForgotPasswordPrompt is true.
     /// </summary>
     public string FailedUsername { get; private set; } = string.Empty;
@@ -129,10 +132,14 @@ public class LoginModel : PageModel
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            // Wrong password: flag the view to show the Forgot Password prompt
-            // and carry the username so the banner link can pre-fill the name.
+            // Wrong password: flag the view to show the Forgot Password prompt.
+            // Pass DisplayName (e.g. "Wendy Moodley") — NOT the raw username
+            // (e.g. "wendy.moodley") — so the ForgotPassword page pre-fills
+            // the full name that the Zendesk webhook needs to match the DB record.
             ShowForgotPasswordPrompt = true;
-            FailedUsername           = inputUsername;
+            FailedUsername = !string.IsNullOrWhiteSpace(dbUser.DisplayName)
+                ? dbUser.DisplayName.Trim()
+                : inputUsername;
             ModelState.AddModelError(string.Empty, "Incorrect password.");
             return Page();
         }
