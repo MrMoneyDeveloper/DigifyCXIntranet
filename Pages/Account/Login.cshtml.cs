@@ -28,9 +28,9 @@ public class LoginModel : PageModel
         IPasswordHasher<ApplicationUser> hasher)
     {
         _authModeOptions = authModeOptions.Value;
-        _environment = environment;
-        _db = db;
-        _hasher = hasher;
+        _environment     = environment;
+        _db              = db;
+        _hasher          = hasher;
     }
 
     [BindProperty]
@@ -44,6 +44,22 @@ public class LoginModel : PageModel
     public bool ShowDemoCredentials => _environment.IsDevelopment();
 
     public string ReturnUrl { get; private set; } = "/Index";
+
+    /// <summary>
+    /// Set to true when the user's credentials were rejected due to a wrong password
+    /// so the view can show the prominent Forgot Password call-to-action.
+    /// </summary>
+    public bool ShowForgotPasswordPrompt { get; private set; }
+
+    /// <summary>
+    /// The display name that was looked up, carried into the view so the amber banner
+    /// can build a pre-filled link to /Account/ForgotPassword.
+    /// Using DisplayName (e.g. "Wendy Moodley") instead of the raw username
+    /// (e.g. "wendy.moodley") ensures the Zendesk webhook can match the
+    /// employee record in the database.
+    /// Only populated when ShowForgotPasswordPrompt is true.
+    /// </summary>
+    public string FailedUsername { get; private set; } = string.Empty;
 
     public void OnGet(string? returnUrl = null)
     {
@@ -60,7 +76,7 @@ public class LoginModel : PageModel
         var inputUsername = Input.Username.Trim();
         var inputPassword = Input.Password;
 
-        // ── 1. Check hardcoded dev credentials first (admin, moham, finance, etc.) ──
+        // ── 1. Hardcoded dev credentials ──────────────────────────────────
         var devUser = _authModeOptions.DevelopmentUsers.FirstOrDefault(
             x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase));
 
@@ -68,20 +84,19 @@ public class LoginModel : PageModel
         {
             if (devUser.Password != inputPassword)
             {
+                // Wrong password for a dev user — show the generic error (no forgot-password
+                // prompt for hardcoded dev accounts, they don't use Zendesk).
                 ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 return Page();
             }
 
-            // Dev user matched — sign in via cookie claim (unchanged from original)
             var devClaims = new List<Claim>
             {
                 new(ClaimTypes.Name,      devUser.Username.Trim()),
                 new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(devUser.DisplayName)
                     ? devUser.Username
                     : devUser.DisplayName),
-                new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(devUser.Role)
-                    ? AppRoles.Agent
-                    : devUser.Role.Trim())
+                new(ClaimTypes.Role, NormalizeRole(devUser.Role))
             };
 
             var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -93,7 +108,7 @@ public class LoginModel : PageModel
                 : RedirectToPage("/Index");
         }
 
-        // ── 2. Fall through to database for real employee accounts ──
+        // ── 2. Database employee accounts ─────────────────────────────────
         var dbUser = await _db.Users
             .AsNoTracking()
             .FirstOrDefaultAsync(u =>
@@ -106,14 +121,6 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Employee must have completed account activation (PersonalEmail set + PasswordHash set)
-        if (string.IsNullOrWhiteSpace(dbUser.PersonalEmail))
-        {
-            ModelState.AddModelError(string.Empty,
-                "Your account has not been activated yet. Please visit the Activate Account page first.");
-            return Page();
-        }
-
         if (string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
             dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
         {
@@ -122,16 +129,22 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        // Verify the password hash
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            ModelState.AddModelError(string.Empty, "Invalid username or password.");
+            // Wrong password: flag the view to show the Forgot Password prompt.
+            // Pass DisplayName (e.g. "Wendy Moodley") — NOT the raw username
+            // (e.g. "wendy.moodley") — so the ForgotPassword page pre-fills
+            // the full name that the Zendesk webhook needs to match the DB record.
+            ShowForgotPasswordPrompt = true;
+            FailedUsername = !string.IsNullOrWhiteSpace(dbUser.DisplayName)
+                ? dbUser.DisplayName.Trim()
+                : inputUsername;
+            ModelState.AddModelError(string.Empty, "Incorrect password.");
             return Page();
         }
 
-        // Sign the employee in via cookie auth — same structure as dev users above
-        var role = string.IsNullOrWhiteSpace(dbUser.CustomRole) ? AppRoles.Agent : dbUser.CustomRole;
+        var role        = NormalizeRole(dbUser.CustomRole);
         var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
             ? (dbUser.UserName ?? inputUsername)
             : dbUser.DisplayName;
@@ -161,5 +174,23 @@ public class LoginModel : PageModel
         [Required]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
+    }
+
+    private static string NormalizeRole(string? role)
+    {
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return AppRoles.Employee;
+        }
+
+        var candidate = role.Trim();
+        return candidate is AppRoles.Employee
+            or AppRoles.FinanceAdmin
+            or AppRoles.HrAdmin
+            or AppRoles.CanteenAdmin
+            or AppRoles.SystemAdmin
+            or AppRoles.SuperAdmin
+            ? candidate
+            : AppRoles.Employee;
     }
 }

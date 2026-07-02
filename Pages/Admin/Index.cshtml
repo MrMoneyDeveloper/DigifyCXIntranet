@@ -36,7 +36,14 @@
     }
     @if (Model.CanManageSystem)
     {
-        <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
         <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
+    }
+    @if (Model.CanManageAnnouncements)
+    {
+        <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
+    }
+    @if (Model.CanManageUsers)
+    {
+        <a asp-page="/Admin/Users" class="btn btn-primary">Manage Users</a>
     }
 </div>

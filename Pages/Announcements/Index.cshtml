@@ -4,7 +4,7 @@
     ViewData["Title"] = "Announcements";
 }
 
-<div class="portal-grid">
+<div>
     <section class="portal-panel">
         <div class="page-kicker mb-3">What's New</div>
         <h1 class="page-title">Business notices & <span>announcements</span></h1>
@@ -37,65 +37,4 @@
             }
         }
     </section>
-
-    <aside class="soft-card">
-        <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-            <div>
-                <h2 class="section-title mb-1">Live Tech Feed</h2>
-                <small id="technews-updated" class="text-muted"></small>
-            </div>
-        </div>
-        <div id="technews-loading" class="text-muted small">Loading...</div>
-        <div id="technews-error" class="text-warning small d-none">Unable to load feed right now.</div>
-        <div id="technews-list" class="d-flex flex-column gap-2"></div>
-    </aside>
 </div>
-
-@section Scripts {
-<script>
-    (async function () {
-        const loading = document.getElementById("technews-loading");
-        const error = document.getElementById("technews-error");
-        const list = document.getElementById("technews-list");
-        const updated = document.getElementById("technews-updated");
-
-        try {
-            const response = await fetch('/api/technews', { method: 'GET' });
-            if (!response.ok) throw new Error('Feed failed');
-            const data = await response.json();
-            loading.classList.add('d-none');
-
-            if (data.lastUpdatedUtc) {
-                const dt = new Date(data.lastUpdatedUtc);
-                updated.textContent = `Updated ${dt.toLocaleString()}`;
-            }
-
-            (data.items || []).forEach(item => {
-                const link = item.url && item.url.length > 0
-                    ? item.url
-                    : `https://news.ycombinator.com/item?id=${item.id}`;
-                const card = document.createElement('a');
-                card.href = link;
-                card.target = "_blank";
-                card.rel = "noreferrer noopener";
-                card.className = "list-card";
-
-                const title = document.createElement('div');
-                title.className = "list-card-title";
-                title.textContent = item.title || "Untitled";
-
-                const by = document.createElement('div');
-                by.className = "list-card-meta";
-                by.textContent = `by ${item.by || "unknown"}`;
-
-                card.appendChild(title);
-                card.appendChild(by);
-                list.appendChild(card);
-            });
-        } catch {
-            loading.classList.add('d-none');
-            error.classList.remove('d-none');
-        }
-    })();
-</script>
-}

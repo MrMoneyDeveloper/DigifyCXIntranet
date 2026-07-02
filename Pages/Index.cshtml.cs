@@ -40,6 +40,7 @@ public class IndexModel : PageModel
     public List<Announcement> Announcements { get; private set; } = new();
     public List<JobPosting> JobPostings { get; private set; } = new();
     public List<ZendeskPolicyArticle> Policies { get; private set; } = new();
+    public int PolicyCount { get; private set; }
 
     public async Task OnGetAsync()
     {
@@ -64,12 +65,19 @@ public class IndexModel : PageModel
             .Take(5)
             .ToListAsync();
 
+        // Fetch top 5 for the homepage panel display
         Policies = await _policyDb.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
             .OrderByDescending(x => x.UpdatedAtUtc)
             .Take(5)
             .ToListAsync();
+
+        // Separate accurate count — not capped by Take(5)
+        PolicyCount = await _policyDb.ZendeskPolicyArticles
+            .AsNoTracking()
+            .Where(x => x.IsPublished)
+            .CountAsync();
 
         var username = UserNameHelper.GetShortName(User);
         var today = DateTime.UtcNow;

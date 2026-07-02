@@ -64,6 +64,13 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.Configure<ActivationOptions>(
+    builder.Configuration.GetSection(ActivationOptions.SectionName));
+
+// ── Zendesk inbound webhook (password reset trigger from IT) ──────────────
+builder.Services.Configure<ZendeskWebhookOptions>(
+    builder.Configuration.GetSection("ZendeskWebhook"));
+
 builder.Services.AddOptions<TechNewsOptions>()
     .Bind(builder.Configuration.GetSection(TechNewsOptions.SectionName))
     .ValidateDataAnnotations()
@@ -142,6 +149,9 @@ builder.Services.AddHostedService<UserRegistrySyncWorker>();
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("sqlserver");
 
+// ── API controllers (used by Zendesk webhook) ─────────────────────────────
+builder.Services.AddControllers();
+
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
 
@@ -185,6 +195,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole(AppRoles.CanteenAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
     options.AddPolicy(AppPolicies.SystemOperations, policy =>
         policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.AnnouncementManagement, policy =>
+        policy.RequireRole(AppRoles.HrAdmin));
+    options.AddPolicy(AppPolicies.UserManagement, policy =>
+        policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
 });
 
 builder.Services.AddRazorPages(options =>
@@ -197,10 +211,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/JobEdit", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/Policies", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/PolicyEdit", AppPolicies.HrOperations);
-    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.SystemOperations);
-    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.AnnouncementManagement);
+    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.AnnouncementManagement);
     options.Conventions.AuthorizePage("/Admin/Faq", AppPolicies.SystemOperations);
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Users", AppPolicies.UserManagement);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
@@ -211,6 +226,7 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AllowAnonymousToPage("/Account/Login");
         options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
         options.Conventions.AllowAnonymousToPage("/Account/Logout");
+        options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     }
 });
 
@@ -303,6 +319,9 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 });
 
 app.MapRazorPages();
+
+// ── Map API controllers (Zendesk webhook lives here) ──────────────────────
+app.MapControllers();
 
 using (var scope = app.Services.CreateScope())
 {

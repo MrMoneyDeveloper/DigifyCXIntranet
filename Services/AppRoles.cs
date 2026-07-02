@@ -2,7 +2,7 @@ namespace DigifyCXIntranet.Services;
 
 public static class AppRoles
 {
-    public const string Agent = "Agent";
+    public const string Employee = "Employee";
     public const string FinanceAdmin = "FinanceAdmin";
     public const string HrAdmin = "HrAdmin";
     public const string CanteenAdmin = "CanteenAdmin";
@@ -22,5 +22,22 @@ public static class AppRoles
     [
         SystemAdmin,
         SuperAdmin
+    ];
+
+    public static readonly string[] EmployeeAssignableRoles =
+    [
+        Employee,
+        HrAdmin,
+        CanteenAdmin,
+        FinanceAdmin
+    ];
+
+    public static readonly string[] SuperAdminAssignableRoles =
+    [
+        Employee,
+        HrAdmin,
+        CanteenAdmin,
+        FinanceAdmin,
+        SystemAdmin
     ];
 }

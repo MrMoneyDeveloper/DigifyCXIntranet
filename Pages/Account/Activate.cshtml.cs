@@ -1,12 +1,15 @@
+using System.ComponentModel.DataAnnotations;
+using System.Text.Json;
+using System.Text.RegularExpressions;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
-using System.Text.RegularExpressions;
+using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Account;
 
@@ -14,19 +17,27 @@ namespace DigifyCXIntranet.Pages.Account;
 public class ActivateModel : PageModel
 {
     private readonly ApplicationDbContext _db;
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly ActivationOptions _activationOptions;
+    private readonly ILogger<ActivateModel> _logger;
 
-    public ActivateModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public ActivateModel(
+        ApplicationDbContext db,
+        UserManager<ApplicationUser> userManager,
+        IHttpClientFactory httpClientFactory,
+        IOptions<ActivationOptions> activationOptions,
+        ILogger<ActivateModel> logger)
     {
         _db = db;
-        _userManager = userManager;
+        _httpClientFactory = httpClientFactory;
+        _activationOptions = activationOptions.Value;
+        _logger = logger;
     }
 
     [BindProperty]
     public InputModel Input { get; set; } = new();
 
     public string? ErrorMessage { get; set; }
-    public string? DebugInfo { get; set; }   // only shown in dev; remove when done
     public bool AlreadyActivated { get; set; }
 
     public class InputModel
@@ -35,26 +46,27 @@ public class ActivateModel : PageModel
         [Display(Name = "Full Name")]
         public string FullName { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Personal email is required.")]
-        [EmailAddress(ErrorMessage = "Please enter a valid email address.")]
-        [Display(Name = "Personal Email Address")]
-        public string PersonalEmail { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Default password is required.")]
+        [DataType(DataType.Password)]
+        [Display(Name = "Default Password")]
+        public string DefaultPassword { get; set; } = string.Empty;
     }
 
-    // Normalise: lowercase, collapse all whitespace variants to single space, trim
     private static string Normalise(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return string.Empty;
         var s = value
-            .Replace("\u00a0", " ")   // non-breaking space
-            .Replace("\u200b", "")    // zero-width space
-            .Replace("\u200c", "")    // zero-width non-joiner
+            .Replace("\u00a0", " ")
+            .Replace("\u200b", "")
+            .Replace("\u200c", "")
             .Replace("\t", " ");
-        s = Regex.Replace(s, @"\s+", " ").Trim().ToLower();
+        s = Regex.Replace(s, @"\s+", " ").Trim().ToLowerInvariant();
         return s;
     }
 
-    public void OnGet() { }
+    public void OnGet()
+    {
+    }
 
     public async Task<IActionResult> OnPostAsync()
     {
@@ -64,46 +76,120 @@ public class ActivateModel : PageModel
             return Page();
         }
 
-        var normalizedInput = Input.FullName.Trim().ToLower();
+        if (!string.Equals(Input.DefaultPassword, _activationOptions.DefaultPassword, StringComparison.Ordinal))
+        {
+            ErrorMessage = "The default password you entered is incorrect. Please check with your manager, HR, or a System Admin.";
+            return Page();
+        }
+
+        var normalizedInput = Normalise(Input.FullName);
         var derivedUsername = normalizedInput.Replace(" ", ".");
 
-        // Match by DisplayName OR by username derived from the name (firstname.lastname)
+        // AsNoTracking() is required here because the Zendesk webhook resets
+        // IsFirstTimeLogin via raw SQL (ExecuteSqlRawAsync), which bypasses
+        // EF's change tracker. Without AsNoTracking(), EF may return a stale
+        // in-memory entity where IsFirstTimeLogin is still false, incorrectly
+        // blocking re-activation after a password reset ticket is approved.
         var user = await _db.Users
             .OfType<ApplicationUser>()
+            .AsNoTracking()
             .FirstOrDefaultAsync(u =>
                 (u.DisplayName != null && u.DisplayName.ToLower() == normalizedInput) ||
                 (u.UserName != null && u.UserName.ToLower() == derivedUsername));
 
         if (user == null)
         {
+            var nameExistsInSheet = await CheckNameInSheetAsync(Input.FullName.Trim());
+            if (!nameExistsInSheet)
+            {
+                ErrorMessage = "Your name was not found in the employee registry or the system-admin user list. Please contact HR or IT support.";
+                return Page();
+            }
+
             ErrorMessage = "No employee record was found matching that name. Please check the spelling or contact HR.";
             return Page();
         }
 
-        if (!string.IsNullOrWhiteSpace(user.PersonalEmail))
+        // ── Already-activated guard ─────────────────────────────────────
+        // IsFirstTimeLogin is the single source of truth.
+        // The Zendesk webhook resets it to true when an employee raises a
+        // forgot-password ticket, which allows them to re-activate here
+        // without any other user data (profile, canteen orders, etc.) being
+        // affected. If IsFirstTimeLogin is false the employee has already
+        // set their own password and the account is considered active.
+        if (!user.IsFirstTimeLogin)
         {
             AlreadyActivated = true;
             return Page();
         }
 
-        user.PersonalEmail = Input.PersonalEmail.Trim().ToLower();
-        await _userManager.UpdateAsync(user);
-
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
         if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-            ip = forwardedFor.ToString().Split(',')[0].Trim();
-
-        _db.AccountActivationLogs.Add(new AccountActivationLog
         {
-            UserId = user.Id,
-            DisplayName = user.DisplayName ?? user.UserName ?? string.Empty,
-            PersonalEmail = user.PersonalEmail,
-            IpAddress = ip,
-            ActivatedUtc = DateTime.UtcNow
-        });
-        await _db.SaveChangesAsync();
+            ip = forwardedFor.ToString().Split(',')[0].Trim();
+        }
 
         TempData["ActivationUsername"] = user.UserName;
+        TempData["ActivationIp"] = ip;
+        TempData["ActivationDisplay"] = user.DisplayName ?? user.UserName ?? string.Empty;
+        TempData["ActivationUserId"] = user.Id;
+
         return RedirectToPage("/Account/ResetPassword");
+    }
+
+    private async Task<bool> CheckNameInSheetAsync(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(_activationOptions.SheetApiUrl))
+        {
+            _logger.LogWarning("[Activation] SheetApiUrl is not configured; skipping Google Sheet validation.");
+            return true;
+        }
+
+        try
+        {
+            using var client = _httpClientFactory.CreateClient();
+            using var cts = new CancellationTokenSource(
+                TimeSpan.FromSeconds(Math.Clamp(_activationOptions.SheetTimeoutSeconds, 5, 60)));
+
+            var response = await client.GetAsync(_activationOptions.SheetApiUrl, cts.Token);
+            if (!response.IsSuccessStatusCode)
+            {
+                _logger.LogWarning("[Activation] Sheet API returned {Status}; failing open.", response.StatusCode);
+                return true;
+            }
+
+            var content = await response.Content.ReadAsStringAsync(cts.Token);
+            using var doc = JsonDocument.Parse(content);
+
+            if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return true;
+            }
+
+            var normalizedTarget = Normalise(fullName);
+
+            foreach (var element in doc.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("fullName", out var nameProp))
+                {
+                    if (string.Equals(Normalise(nameProp.GetString()), normalizedTarget, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+                else if (element.ValueKind == JsonValueKind.String &&
+                         string.Equals(Normalise(element.GetString()), normalizedTarget, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Activation] Failed to reach Google Sheet API; failing open.");
+            return true;
+        }
     }
 }
