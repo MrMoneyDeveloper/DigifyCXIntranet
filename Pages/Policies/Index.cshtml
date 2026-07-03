@@ -4,58 +4,76 @@
     ViewData["Title"] = "Policies";
 }
 
-<section class="hero-panel mb-4">
-    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-4">
+<section class="dcx-policies-hero mb-4">
+    <div class="dcx-policies-hero__content">
         <div>
-            <div class="page-kicker mb-3">Zendesk Policy Library</div>
-            <h1 class="page-title">Policies that are <span>easy to find</span></h1>
-            <p class="page-copy mt-3 mb-0">Articles are synced from Zendesk and grouped by collection so agents can browse without seeing internal sync labels first.</p>
+            <div class="dcx-kicker mb-3">Zendesk Policy Library</div>
+            <h1 class="dcx-policies-title">Policies that are <span>easy to find</span></h1>
+            <p class="dcx-policies-copy mt-3 mb-0">
+                Articles are synced from Zendesk and grouped by collection so agents can browse without seeing internal sync labels first.
+            </p>
         </div>
-        <a asp-page="/Policies/ComplianceReport" class="btn btn-outline-primary">Compliance Report</a>
+
+        <div class="d-flex flex-column align-items-start align-items-lg-end gap-3">
+            <a asp-page="/Policies/ComplianceReport" class="dcx-btn-secondary">Compliance Report</a>
+            <img src="~/images/branding/digifycx-logo.png"
+                 alt=""
+                 aria-hidden="true"
+                 class="dcx-policies-watermark" />
+        </div>
     </div>
 </section>
 
-<section class="soft-card">
+<section class="dcx-policies-panel">
     <form method="get" class="row g-3 align-items-end mb-4">
         <div class="col-lg-8">
-            <label asp-for="Search" class="form-label fw-bold">Search policies</label>
-            <input asp-for="Search" class="form-control" placeholder="Search by title or keyword" />
+            <label asp-for="Search" class="dcx-label mb-2">Search policies</label>
+            <input asp-for="Search" class="dcx-input" placeholder="Search by title or keyword" />
         </div>
         <div class="col-lg-4">
-            <button type="submit" class="btn btn-primary w-100">Search</button>
+            <button type="submit" class="dcx-btn w-100">Search</button>
         </div>
     </form>
 
     @if (Model.Groups.Count == 0)
     {
-        <div class="list-card">
-            <div class="list-card-title">No synced policy articles found yet.</div>
-            <div class="list-card-meta">Run a Zendesk sync from the admin console once the connection is ready.</div>
+        <div class="dcx-empty-state text-center">
+            <img src="~/images/branding/digifycx-logo.png"
+                 alt=""
+                 aria-hidden="true"
+                 class="dcx-empty-state__logo" />
+            <div class="dcx-list-card__title">No synced policy articles found yet.</div>
+            <div class="dcx-list-card__meta">Run a Zendesk sync from the admin console once the connection is ready.</div>
         </div>
     }
     else
     {
-        foreach (var group in Model.Groups)
-        {
-            <details class="details-card" open>
-                <summary>
-                    <span class="fw-bold">@group.Section</span>
-                    <span class="d-block list-card-meta">@group.Category · @group.Items.Count article(s)</span>
-                </summary>
-                <div class="details-body">
-                    <div class="row g-3">
-                        @foreach (var item in group.Items)
-                        {
-                            <div class="col-lg-6">
-                                <a asp-page="/Policies/View" asp-route-id="@item.Id" class="list-card h-100">
-                                    <div class="list-card-title">@item.Title</div>
-                                    <div class="list-card-meta">Updated @item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
-                                </a>
-                            </div>
-                        }
+        <div class="dcx-policy-group-stack">
+            @foreach (var group in Model.Groups)
+            {
+                <details class="dcx-policy-group" open>
+                    <summary class="dcx-policy-group__summary">
+                        <div>
+                            <div class="dcx-policy-group__title">@group.Section</div>
+                            <div class="dcx-policy-group__meta">@group.Category · @group.Items.Count article(s)</div>
+                        </div>
+                    </summary>
+
+                    <div class="dcx-policy-group__body">
+                        <div class="row g-3">
+                            @foreach (var item in group.Items)
+                            {
+                                <div class="col-lg-6">
+                                    <a asp-page="/Policies/View" asp-route-id="@item.Id" class="dcx-policy-link h-100">
+                                        <div class="dcx-policy-link__title">@item.Title</div>
+                                        <div class="dcx-policy-link__meta">Updated @item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
+                                    </a>
+                                </div>
+                            }
+                        </div>
                     </div>
-                </div>
-            </details>
-        }
+                </details>
+            }
+        </div>
     }
 </section>

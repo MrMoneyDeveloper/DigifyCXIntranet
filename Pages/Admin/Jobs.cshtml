@@ -4,190 +4,199 @@
     ViewData["Title"] = "Manage Jobs";
 }
 
-<!-- Back Button & Header -->
-<div class="mx-auto max-w-7xl mt-4 mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-4">
-        <a asp-page="/Admin/Index" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all" title="Back to Dashboard">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-        </a>
-        <h1 class="text-2xl font-extrabold text-white tracking-tight">Manage Job Postings</h1>
-    </div>
-</div>
+<section class="dcx-admin-manage-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Index" class="dcx-icon-back" title="Back to Dashboard" aria-label="Back to Dashboard">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
 
-<div class="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
-    
-    <!-- ================= LEFT COLUMN: FORM ================= -->
-    <div class="lg:col-span-5">
-        <!-- Notice we keep the enctype="multipart/form-data" so the image upload works! -->
-        <form method="post" asp-page-handler="Create" enctype="multipart/form-data" class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl flex flex-col gap-5">
-            
-            <div class="flex items-center gap-3 mb-2 border-b border-slate-700/80 pb-4">
-                <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                <h2 class="text-lg font-bold text-white">Create Job Posting</h2>
-            </div>
-            
-            <!-- Standard Details -->
             <div>
-                <label asp-for="NewItem.Title" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <input asp-for="NewItem.Title" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="e.g., Senior Developer" />
-                <span asp-validation-for="NewItem.Title" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                <div class="dcx-kicker mb-2">Talent</div>
+                <h1 class="dcx-admin-manage-title">Manage job postings</h1>
             </div>
+        </div>
+    </header>
 
-            <div class="grid grid-cols-2 gap-4">
+    <div class="dcx-admin-manage-grid">
+        <div class="dcx-admin-form-panel">
+            <div class="dcx-admin-form-panel__head">
                 <div>
-                    <label asp-for="NewItem.Department" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewItem.Department" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" />
-                    <span asp-validation-for="NewItem.Department" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                </div>
-                <div>
-                    <label asp-for="NewItem.ClosingDate" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewItem.ClosingDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+                    <div class="dcx-kicker mb-2">Create</div>
+                    <h2 class="dcx-section-heading mb-0">Create job posting</h2>
                 </div>
             </div>
 
-            <div>
-                <label asp-for="NewItem.ApplicationRoute" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <input asp-for="NewItem.ApplicationRoute" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition font-mono" placeholder="hr@digifycx.example" />
-                <span asp-validation-for="NewItem.ApplicationRoute" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-            </div>
+            <form method="post" asp-page-handler="Create" enctype="multipart/form-data" class="dcx-admin-form">
+                <div>
+                    <label asp-for="NewItem.Title" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.Title" class="dcx-input" placeholder="e.g., Senior Developer" />
+                    <span asp-validation-for="NewItem.Title" class="dcx-field-error mt-1"></span>
+                </div>
 
-            <div>
-                <label asp-for="NewItem.Description" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <textarea asp-for="NewItem.Description" rows="4" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition"></textarea>
-                <span asp-validation-for="NewItem.Description" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-            </div>
-
-            <!-- External Referral Checkbox -->
-            <div class="flex items-center pb-2">
-                <label class="flex items-center gap-3 cursor-pointer group w-fit">
-                    <div class="relative flex items-center">
-                        <input asp-for="NewItem.IsExternalReferral" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all" />
-                        <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.Department" class="dcx-label mb-2"></label>
+                        <input asp-for="NewItem.Department" class="dcx-input" />
+                        <span asp-validation-for="NewItem.Department" class="dcx-field-error mt-1"></span>
                     </div>
-                    <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Enable External Referral Workflow</span>
-                </label>
-            </div>
 
-            <!-- Divider: Visual Ad Setup -->
-            <div class="pt-5 border-t border-slate-700/80 mt-2">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-white uppercase tracking-wider">Visual Ad Setup</h3>
-                    
-                    <!-- Use Visual Ad Toggle -->
-                    <label class="flex items-center gap-2 cursor-pointer group">
-                        <div class="relative flex items-center">
-                            <input asp-for="NewItem.UseVisualAd" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none transition-all" />
-                            <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" /></svg>
-                        </div>
-                        <span class="text-sm font-medium text-slate-400 group-hover:text-white transition-colors">Use A4 Format</span>
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.ClosingDate" class="dcx-label mb-2"></label>
+                        <input asp-for="NewItem.ClosingDate" type="date" class="dcx-input" />
+                    </div>
+                </div>
+
+                <div>
+                    <label asp-for="NewItem.ApplicationRoute" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.ApplicationRoute"
+                           class="dcx-input dcx-code-input"
+                           placeholder="hr@digifycx.example" />
+                    <span asp-validation-for="NewItem.ApplicationRoute" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="NewItem.Description" class="dcx-label mb-2"></label>
+                    <textarea asp-for="NewItem.Description" rows="4" class="dcx-textarea"></textarea>
+                    <span asp-validation-for="NewItem.Description" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="dcx-admin-check-group">
+                    <label class="dcx-admin-check__label">
+                        <input asp-for="NewItem.IsExternalReferral" class="dcx-admin-check__input" />
+                        <span class="dcx-admin-check__box">
+                            <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </span>
+                        <span class="dcx-admin-check__text">Enable external referral workflow</span>
                     </label>
                 </div>
 
-                <div class="space-y-4 rounded-xl border border-slate-700/50 bg-slate-900/30 p-4">
-                    <div>
-                        <label asp-for="NewItem.AdHeadline" class="block text-xs font-semibold text-slate-400 mb-1">Ad Headline</label>
-                        <input asp-for="NewItem.AdHeadline" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none transition" />
-                        <span asp-validation-for="NewItem.AdHeadline" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                    </div>
-                    
-                    <div>
-                        <label asp-for="NewItem.AdSubHeadline" class="block text-xs font-semibold text-slate-400 mb-1">Ad Subheadline</label>
-                        <textarea asp-for="NewItem.AdSubHeadline" rows="2" class="w-full rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none transition"></textarea>
-                        <span asp-validation-for="NewItem.AdSubHeadline" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                <section class="dcx-jobs-visual-panel">
+                    <div class="dcx-jobs-visual-panel__head">
+                        <h3 class="dcx-jobs-visual-panel__title">Visual ad setup</h3>
+
+                        <label class="dcx-admin-check__label">
+                            <input asp-for="NewItem.UseVisualAd" class="dcx-admin-check__input" />
+                            <span class="dcx-admin-check__box">
+                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                            </span>
+                            <span class="dcx-admin-check__text">Use A4 format</span>
+                        </label>
                     </div>
 
-                    <div>
-                        <label asp-for="AdBackgroundUpload" class="block text-xs font-semibold text-slate-400 mb-1">Ad Background Image</label>
-                        <input asp-for="AdBackgroundUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="block w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-slate-700 file:text-white hover:file:bg-slate-600 transition cursor-pointer" />
-                        <span asp-validation-for="AdBackgroundUpload" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-                        
-                        <div class="mt-3 flex items-start gap-4">
-                            <img src="/images/job-ad-a4-template.svg" alt="Template" class="h-24 w-16 rounded border border-slate-600 object-cover opacity-80" />
-                            <p class="text-xs text-slate-500 leading-relaxed max-w-[200px]">If omitted, the default template (left) will be used. Please upload A4 portrait format images.</p>
+                    <div class="dcx-jobs-visual-grid">
+                        <div class="dcx-jobs-visual-grid__full">
+                            <label asp-for="NewItem.AdHeadline" class="dcx-label mb-2">Ad Headline</label>
+                            <input asp-for="NewItem.AdHeadline" class="dcx-input" />
+                            <span asp-validation-for="NewItem.AdHeadline" class="dcx-field-error mt-1"></span>
+                        </div>
+
+                        <div class="dcx-jobs-visual-grid__full">
+                            <label asp-for="NewItem.AdSubHeadline" class="dcx-label mb-2">Ad Subheadline</label>
+                            <textarea asp-for="NewItem.AdSubHeadline" rows="2" class="dcx-textarea"></textarea>
+                            <span asp-validation-for="NewItem.AdSubHeadline" class="dcx-field-error mt-1"></span>
+                        </div>
+
+                        <div class="dcx-jobs-visual-grid__full">
+                            <label asp-for="AdBackgroundUpload" class="dcx-label mb-2">Ad Background Image</label>
+                            <input asp-for="AdBackgroundUpload"
+                                   type="file"
+                                   accept=".jpg,.jpeg,.png,.webp"
+                                   class="dcx-file-input" />
+                            <span asp-validation-for="AdBackgroundUpload" class="dcx-field-error mt-1"></span>
+
+                            <div class="dcx-jobs-template-note">
+                                <img src="/images/job-ad-a4-template.svg"
+                                     alt="Template"
+                                     class="dcx-jobs-template-note__thumb" />
+                                <p class="dcx-subtle-text mb-0">
+                                    If omitted, the default template will be used. Please upload A4 portrait format images.
+                                </p>
+                            </div>
                         </div>
                     </div>
+                </section>
+
+                <button type="submit" class="dcx-admin-submit">Publish Job</button>
+            </form>
+        </div>
+
+        <section class="dcx-admin-table-panel">
+            <div class="dcx-admin-table-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Listings</div>
+                    <h2 class="dcx-section-heading mb-0">Current job postings</h2>
                 </div>
+
+                <span class="dcx-admin-count-pill">@Model.Items.Count Total</span>
             </div>
 
-            <!-- Submit Button -->
-            <div class="pt-3 border-t border-slate-700/80 mt-2">
-                <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 transition-all duration-200">
-                    Publish Job
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- ================= RIGHT COLUMN: DATA TABLE ================= -->
-    <div class="lg:col-span-7">
-        <section class="bg-[#1e2336] rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-fit sticky top-6">
-            
-            <div class="p-6 lg:px-8 border-b border-slate-700 bg-slate-800/30 flex items-center justify-between">
-                <h2 class="text-lg font-bold text-white">Current Job Postings</h2>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">@Model.Items.Count Total</span>
-            </div>
-
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
+            <div class="table-responsive">
+                <table class="dcx-report-table">
+                    <thead>
                         <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Title / Dept</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Format</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+                            <th>Title / Dept</th>
+                            <th>Format</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700/50">
+                    <tbody>
                         @foreach (var item in Model.Items)
                         {
-                            <tr class="hover:bg-slate-800/40 transition-colors">
-                                <td class="px-6 py-4 font-medium text-white">
-                                    @item.Title
-                                    <span class="block mt-1 text-xs text-slate-400 font-normal">@item.Department</span>
+                            <tr>
+                                <td>
+                                    <div class="dcx-job-cell">
+                                        <div class="dcx-job-cell__title">@item.Title</div>
+                                        <div class="dcx-job-cell__meta">@item.Department</div>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4">
+                                <td>
                                     @if (item.UseVisualAd)
                                     {
-                                        <span class="inline-flex rounded bg-indigo-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-indigo-400 border border-indigo-500/20">A4 Ad</span>
+                                        <span class="dcx-format-pill dcx-format-pill--visual">A4 Ad</span>
                                     }
                                     else
                                     {
-                                        <span class="inline-flex rounded bg-slate-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-400 border border-slate-500/20">Standard</span>
+                                        <span class="dcx-format-pill dcx-format-pill--standard">Standard</span>
                                     }
                                 </td>
-                                <td class="px-6 py-4">
+                                <td>
                                     @if (item.IsActive)
                                     {
-                                        <span class="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1 w-fit">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Active
-                                        </span>
+                                        <span class="dcx-status-pill dcx-status-pill--success">Active</span>
                                     }
                                     else
                                     {
-                                        <span class="inline-flex rounded-full bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 w-fit">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Inactive
-                                        </span>
+                                        <span class="dcx-status-pill dcx-status-pill--muted">Inactive</span>
                                     }
                                 </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a asp-page="/Admin/JobEdit" asp-route-id="@item.Id" title="Edit Job"
-                                               class="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20 hover:border-amber-500/50">
+                                <td class="text-end">
+                                    <div class="dcx-admin-actions-inline">
+                                        <a asp-page="/Admin/JobEdit"
+                                           asp-route-id="@item.Id"
+                                           class="dcx-mini-btn dcx-mini-btn--edit">
                                             Edit
                                         </a>
-                                        <form method="post" asp-page-handler="ToggleActive" class="m-0 p-0">
+
+                                        <form method="post" asp-page-handler="ToggleActive" class="m-0">
                                             <input type="hidden" name="id" value="@item.Id" />
-                                            <button type="submit" title="@(item.IsActive ? "Deactivate" : "Activate")"
-                                                    class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                                            <button type="submit" class="dcx-mini-btn dcx-mini-btn--neutral">
                                                 @(item.IsActive ? "Deactivate" : "Activate")
                                             </button>
                                         </form>
+
                                         @if (!item.IsActive)
                                         {
-                                            <form method="post" asp-page-handler="Delete" class="m-0 p-0">
+                                            <form method="post" asp-page-handler="Delete" class="m-0">
                                                 <input type="hidden" name="id" value="@item.Id" />
-                                                <button type="submit" title="Delete"
-                                                        class="inline-flex items-center justify-center rounded-lg border border-rose-600 bg-rose-950/40 px-3 py-1.5 text-xs font-bold text-rose-300 transition hover:bg-rose-900/60 hover:text-white">
+                                                <button type="submit" class="dcx-mini-btn dcx-mini-btn--danger">
                                                     Delete
                                                 </button>
                                             </form>
@@ -199,10 +208,9 @@
                     </tbody>
                 </table>
             </div>
-            
         </section>
     </div>
-</div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
