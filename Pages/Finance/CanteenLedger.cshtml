@@ -6,118 +6,145 @@
     var toDate = Model.ToUtc?.ToString("yyyy-MM-dd");
 }
 
-<section class="card-elevated p-4 mb-4">
-    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+<section class="dcx-ledger-shell">
+    <header class="dcx-ledger-header">
         <div>
-            <h1 class="h4 mb-1">Canteen Ledger</h1>
-            <p class="text-muted mb-0">Search employee canteen purchases and export account records.</p>
+            <div class="dcx-kicker mb-3">Finance</div>
+            <h1 class="dcx-ledger-title">Canteen <span>ledger</span></h1>
+            <p class="dcx-ledger-copy mt-3 mb-0">
+                Search employee canteen purchases, review totals, and export account records.
+            </p>
         </div>
-        <div class="d-flex gap-2">
-            <a asp-page="/Finance/Audit" class="btn btn-outline-secondary">Audit Trail</a>
+
+        <div class="d-flex flex-wrap gap-2">
+            <a asp-page="/Finance/Audit" class="dcx-btn-secondary">Audit Trail</a>
             <a asp-page-handler="Export"
                asp-route-Employee="@Model.Employee"
                asp-route-FromUtc="@fromDate"
                asp-route-ToUtc="@toDate"
-               class="btn btn-outline-primary">
+               class="dcx-btn-secondary">
                 Export XLSX
             </a>
         </div>
-    </div>
+    </header>
 
-    <form method="get" class="row g-2 align-items-end">
-        <div class="col-md-4">
-            <label asp-for="Employee" class="form-label"></label>
-            <input asp-for="Employee" class="form-control" placeholder="employee username or blank for all" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="FromUtc" class="form-label">From</label>
-            <input asp-for="FromUtc" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="ToUtc" class="form-label">To</label>
-            <input asp-for="ToUtc" type="date" class="form-control" />
-        </div>
-        <div class="col-md-2">
-            <button type="submit" class="btn btn-primary w-100">Search</button>
-        </div>
-    </form>
-</section>
+    <section class="dcx-ledger-filters">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label asp-for="Employee" class="dcx-label mb-2"></label>
+                <input asp-for="Employee" class="dcx-input" placeholder="employee username or blank for all" />
+            </div>
 
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="dashboard-kpi">
-            <div class="small text-muted">Employees</div>
-            <div class="h4 mb-0">@Model.SummaryRows.Count</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="dashboard-kpi">
-            <div class="small text-muted">Orders</div>
-            <div class="h4 mb-0">@Model.OrderCount</div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="dashboard-kpi">
-            <div class="small text-muted">Total</div>
-            <div class="h4 mb-0">R @Model.TotalAmount.ToString("N2")</div>
-        </div>
-    </div>
-</div>
+            <div class="col-md-3">
+                <label asp-for="FromUtc" class="dcx-label mb-2">From</label>
+                <input asp-for="FromUtc" type="date" class="dcx-input" />
+            </div>
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        <section class="card-elevated p-4 h-100">
-            <h2 class="h6 mb-3">Employee Totals</h2>
+            <div class="col-md-3">
+                <label asp-for="ToUtc" class="dcx-label mb-2">To</label>
+                <input asp-for="ToUtc" type="date" class="dcx-input" />
+            </div>
+
+            <div class="col-md-2">
+                <button type="submit" class="dcx-btn w-100">Search</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="dcx-ledger-kpis">
+        <article class="dcx-ledger-kpi">
+            <div class="dcx-ledger-kpi__label">Employees</div>
+            <div class="dcx-ledger-kpi__value">@Model.SummaryRows.Count</div>
+        </article>
+
+        <article class="dcx-ledger-kpi">
+            <div class="dcx-ledger-kpi__label">Orders</div>
+            <div class="dcx-ledger-kpi__value">@Model.OrderCount</div>
+        </article>
+
+        <article class="dcx-ledger-kpi">
+            <div class="dcx-ledger-kpi__label">Total</div>
+            <div class="dcx-ledger-kpi__value">R @Model.TotalAmount.ToString("N2")</div>
+        </article>
+    </section>
+
+    <section class="dcx-ledger-grid">
+        <section class="dcx-ledger-panel">
+            <div class="mb-3">
+                <div class="dcx-kicker mb-2">Summary</div>
+                <h2 class="dcx-section-heading mb-0">Employee totals</h2>
+            </div>
+
             @if (Model.SummaryRows.Count == 0)
             {
-                <p class="text-muted mb-0">No records found.</p>
-            }
-            else
-            {
-                <table class="table table-sm align-middle">
-                    <thead><tr><th>Employee</th><th>Orders</th><th>Total</th></tr></thead>
-                    <tbody>
-                    @foreach (var row in Model.SummaryRows)
-                    {
-                        <tr>
-                            <td>@row.EmployeeUsername</td>
-                            <td>@row.OrderCount</td>
-                            <td>R @row.TotalAmount.ToString("N2")</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
-    </div>
-    <div class="col-lg-8">
-        <section class="card-elevated p-4">
-            <h2 class="h6 mb-3">Order Detail</h2>
-            @if (Model.DetailRows.Count == 0)
-            {
-                <p class="text-muted mb-0">No records found.</p>
+                <p class="dcx-subtle-text mb-0">No records found.</p>
             }
             else
             {
                 <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead><tr><th>Employee</th><th>Time</th><th>Item</th><th>Meal</th><th>Status</th><th>Total</th></tr></thead>
-                        <tbody>
-                        @foreach (var order in Model.DetailRows)
-                        {
+                    <table class="dcx-report-table">
+                        <thead>
                             <tr>
-                                <td>@order.EmployeeUsername</td>
-                                <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                                <td>@order.ItemSummary</td>
-                                <td>@order.MealSlot</td>
-                                <td>@order.Status</td>
-                                <td>R @order.TotalAmount.ToString("N2")</td>
+                                <th>Employee</th>
+                                <th>Orders</th>
+                                <th>Total</th>
                             </tr>
-                        }
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.SummaryRows)
+                            {
+                                <tr>
+                                    <td>@row.EmployeeUsername</td>
+                                    <td>@row.OrderCount</td>
+                                    <td>R @row.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            }
                         </tbody>
                     </table>
                 </div>
             }
         </section>
-    </div>
-</div>
+
+        <section class="dcx-ledger-panel">
+            <div class="mb-3">
+                <div class="dcx-kicker mb-2">Detail</div>
+                <h2 class="dcx-section-heading mb-0">Order detail</h2>
+            </div>
+
+            @if (Model.DetailRows.Count == 0)
+            {
+                <p class="dcx-subtle-text mb-0">No records found.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="dcx-report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Time</th>
+                                <th>Item</th>
+                                <th>Meal</th>
+                                <th>Status</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var order in Model.DetailRows)
+                            {
+                                <tr>
+                                    <td>@order.EmployeeUsername</td>
+                                    <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                    <td>@order.ItemSummary</td>
+                                    <td>@order.MealSlot</td>
+                                    <td>@order.Status</td>
+                                    <td>R @order.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </section>
+    </section>
+</section>

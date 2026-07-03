@@ -4,119 +4,118 @@
     ViewData["Title"] = "Manage FAQs";
 }
 
-<!-- Back Button & Header -->
-<div class="mx-auto max-w-7xl mt-4 mb-6 flex items-center justify-between">
-    <div class="flex items-center gap-4">
-        <a asp-page="/Admin/Index" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all" title="Back to Dashboard">
-            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-        </a>
-        <h1 class="text-2xl font-extrabold text-white tracking-tight">Manage FAQs</h1>
-    </div>
-</div>
+<section class="dcx-admin-manage-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Index" class="dcx-icon-back" title="Back to Dashboard" aria-label="Back to Dashboard">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
 
-<div class="mx-auto max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-8">
-    
-    <!-- ================= LEFT COLUMN: FORM ================= -->
-    <div class="lg:col-span-5">
-        <section class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl sticky top-6">
-            <div class="flex items-center gap-3 mb-6 border-b border-slate-700/80 pb-4">
-                <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <h2 class="text-lg font-bold text-white">Create FAQ</h2>
+            <div>
+                <div class="dcx-kicker mb-2">Knowledge Base</div>
+                <h1 class="dcx-admin-manage-title">Manage FAQs</h1>
             </div>
-            
-            <form method="post" asp-page-handler="Create" class="flex flex-col gap-5">
-                
-                <!-- Category -->
+        </div>
+    </header>
+
+    <div class="dcx-admin-manage-grid">
+        <section class="dcx-admin-form-panel">
+            <div class="dcx-admin-form-panel__head">
                 <div>
-                    <label asp-for="NewItem.Category" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewItem.Category" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="e.g., General, Canteen, HR" />
+                    <div class="dcx-kicker mb-2">Create</div>
+                    <h2 class="dcx-section-heading mb-0">Create FAQ</h2>
                 </div>
-                
-                <!-- Question -->
+            </div>
+
+            <form method="post" asp-page-handler="Create" class="dcx-admin-form">
                 <div>
-                    <label asp-for="NewItem.Question" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <input asp-for="NewItem.Question" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="What is the policy on..." />
-                    <span asp-validation-for="NewItem.Question" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                    <label asp-for="NewItem.Category" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.Category"
+                           class="dcx-input"
+                           placeholder="e.g., General, Canteen, HR" />
                 </div>
-                
-                <!-- Answer -->
+
                 <div>
-                    <label asp-for="NewItem.Answer" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                    <textarea asp-for="NewItem.Answer" rows="6" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" placeholder="Provide the answer here..."></textarea>
-                    <span asp-validation-for="NewItem.Answer" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+                    <label asp-for="NewItem.Question" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.Question"
+                           class="dcx-input"
+                           placeholder="What is the policy on..." />
+                    <span asp-validation-for="NewItem.Question" class="dcx-field-error mt-1"></span>
                 </div>
-                
-                <!-- Display Order -->
+
                 <div>
-                    <label asp-for="NewItem.DisplayOrder" class="block text-sm font-semibold text-slate-300 mb-1.5">Display Order (Sorting)</label>
-                    <input asp-for="NewItem.DisplayOrder" type="number" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+                    <label asp-for="NewItem.Answer" class="dcx-label mb-2"></label>
+                    <textarea asp-for="NewItem.Answer"
+                              rows="6"
+                              class="dcx-textarea"
+                              placeholder="Provide the answer here..."></textarea>
+                    <span asp-validation-for="NewItem.Answer" class="dcx-field-error mt-1"></span>
                 </div>
-                
-                <!-- Submit Button -->
-                <div class="pt-2">
-                    <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-600 transition-all duration-200">
-                        Save FAQ
-                    </button>
+
+                <div>
+                    <label asp-for="NewItem.DisplayOrder" class="dcx-label mb-2">Display Order (Sorting)</label>
+                    <input asp-for="NewItem.DisplayOrder" type="number" class="dcx-input" />
                 </div>
+
+                <button type="submit" class="dcx-admin-submit">Save FAQ</button>
             </form>
         </section>
-    </div>
 
-    <!-- ================= RIGHT COLUMN: DATA TABLE ================= -->
-    <div class="lg:col-span-7">
-        <section class="bg-[#1e2336] rounded-2xl border border-slate-700 shadow-xl overflow-hidden flex flex-col h-full">
-            
-            <div class="p-6 lg:px-8 border-b border-slate-700 bg-slate-800/30 flex items-center justify-between">
-                <h2 class="text-lg font-bold text-white">Existing FAQs</h2>
-                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 bg-slate-800 px-3 py-1 rounded-full border border-slate-600">@Model.Items.Count Total</span>
+        <section class="dcx-admin-table-panel">
+            <div class="dcx-admin-table-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Library</div>
+                    <h2 class="dcx-section-heading mb-0">Existing FAQs</h2>
+                </div>
+
+                <span class="dcx-admin-count-pill">@Model.Items.Count Total</span>
             </div>
 
-            <div class="overflow-x-auto flex-grow">
-                <table class="w-full text-left text-sm text-slate-300">
-                    <thead class="bg-slate-900/50 text-xs uppercase text-slate-400">
+            <div class="table-responsive">
+                <table class="dcx-report-table">
+                    <thead>
                         <tr>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Category</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Question</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider">Status</th>
-                            <th scope="col" class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+                            <th>Category</th>
+                            <th>Question</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700/50">
+                    <tbody>
                         @foreach (var item in Model.Items)
                         {
-                            <tr class="hover:bg-slate-800/40 transition-colors">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="inline-flex rounded bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-violet-400 border border-violet-500/20">
+                            <tr>
+                                <td>
+                                    <span class="dcx-category-pill">
                                         @item.Category
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 font-medium text-white max-w-xs truncate" title="@item.Question">
+                                <td class="dcx-faq-question-cell" title="@item.Question">
                                     @item.Question
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td>
                                     @if (item.IsActive)
                                     {
-                                        <span class="inline-flex rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1 w-fit">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400"></span> Active
-                                        </span>
+                                        <span class="dcx-status-pill dcx-status-pill--success">Active</span>
                                     }
                                     else
                                     {
-                                        <span class="inline-flex rounded-full bg-slate-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1 w-fit">
-                                            <span class="h-1.5 w-1.5 rounded-full bg-slate-400"></span> Inactive
-                                        </span>
+                                        <span class="dcx-status-pill dcx-status-pill--muted">Inactive</span>
                                     }
                                 </td>
-                                <td class="px-6 py-4 text-right whitespace-nowrap">
-                                    <div class="flex items-center justify-end gap-2">
-                                        <a asp-page="/Admin/FaqEdit" asp-route-id="@item.Id" title="Edit FAQ"
-                                               class="inline-flex items-center justify-center rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-bold text-amber-400 transition hover:bg-amber-500/20 hover:border-amber-500/50">
+                                <td class="text-end">
+                                    <div class="dcx-admin-actions-inline">
+                                        <a asp-page="/Admin/FaqEdit"
+                                           asp-route-id="@item.Id"
+                                           class="dcx-mini-btn dcx-mini-btn--edit">
                                             Edit
                                         </a>
-                                        <form method="post" asp-page-handler="ToggleActive" class="m-0 p-0">
+
+                                        <form method="post" asp-page-handler="ToggleActive" class="m-0">
                                             <input type="hidden" name="id" value="@item.Id" />
-                                            <button type="submit" title="@(item.IsActive ? "Deactivate" : "Activate")"
-                                                    class="inline-flex items-center justify-center rounded-lg border border-slate-600 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-300 transition hover:bg-slate-700 hover:text-white">
+                                            <button type="submit" class="dcx-mini-btn dcx-mini-btn--neutral">
                                                 @(item.IsActive ? "Deactivate" : "Activate")
                                             </button>
                                         </form>
@@ -127,10 +126,9 @@
                     </tbody>
                 </table>
             </div>
-            
         </section>
     </div>
-</div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

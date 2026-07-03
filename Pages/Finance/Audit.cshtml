@@ -4,30 +4,55 @@
     ViewData["Title"] = "Finance Audit";
 }
 
-<section class="card-elevated p-4">
-    <div class="d-flex align-items-center justify-content-between mb-3">
+<section class="dcx-audit-shell">
+    <header class="dcx-audit-header">
         <div>
-            <h1 class="h4 mb-1">Finance Audit Trail</h1>
-            <p class="text-muted mb-0">Recent finance, canteen, payroll, and Zendesk ticket audit events.</p>
+            <div class="dcx-kicker mb-3">Finance</div>
+            <h1 class="dcx-audit-title">Audit <span>trail</span></h1>
+            <p class="dcx-audit-copy mt-3 mb-0">
+                Recent finance, canteen, payroll, and Zendesk ticket audit events.
+            </p>
         </div>
-        <a asp-page="/Finance/CanteenLedger" class="btn btn-outline-secondary">Back to Ledger</a>
-    </div>
 
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>UTC</th><th>Actor</th><th>Action</th><th>Entity</th><th>Detail</th></tr></thead>
-            <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td>@item.TimestampUtc.ToString("dd MMM yyyy HH:mm:ss")</td>
-                    <td>@item.Actor</td>
-                    <td>@item.Action</td>
-                    <td>@item.Entity</td>
-                    <td class="text-break">@item.Detail</td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
+        <a asp-page="/Finance/CanteenLedger" class="dcx-btn-ghost">Back to Ledger</a>
+    </header>
+
+    <section class="dcx-audit-panel">
+        <div class="table-responsive">
+            <table class="dcx-report-table">
+                <thead>
+                    <tr>
+                        <th>UTC</th>
+                        <th>Actor</th>
+                        <th>Action</th>
+                        <th>Entity</th>
+                        <th>Detail</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="5" class="dcx-report-table__empty">
+                                No audit events found.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.TimestampUtc.ToString("dd MMM yyyy HH:mm:ss")</td>
+                                <td>@item.Actor</td>
+                                <td>@item.Action</td>
+                                <td>@item.Entity</td>
+                                <td class="text-break">@item.Detail</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 </section>

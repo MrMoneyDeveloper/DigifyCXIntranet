@@ -979,3 +979,3451 @@ body {
         padding: 0.45rem 1rem;
     }
 }
+
+/* =========================================================
+   DIGIFYCX BRAND REFRESH
+   Additive overrides for updated navy / mint UI direction
+   ========================================================= */
+
+:root {
+    --dcx-navy: #1c1b39;
+    --dcx-night: #11182a;
+    --dcx-mint: #84dcd7;
+    --dcx-teal: #5cc3be;
+    --dcx-aqua: #99d7e2;
+    --dcx-paper: #f6fbfb;
+    --dcx-border: rgba(132, 220, 215, 0.55);
+    --dcx-border-soft: rgba(132, 220, 215, 0.22);
+    --dcx-glow: 0 0 24px rgba(132, 220, 215, 0.35);
+    --dcx-glow-soft: 0 0 18px rgba(132, 220, 215, 0.18);
+    --dcx-panel: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    --dcx-panel-soft: linear-gradient(180deg, rgba(31, 35, 66, 0.96), rgba(17, 24, 42, 0.96));
+}
+
+.dcx-shell {
+    color: var(--dcx-paper);
+    background-color: var(--dcx-night);
+}
+
+.dcx-header {
+    border: 1px solid var(--dcx-border);
+    border-radius: 999px;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.96), rgba(17, 24, 42, 0.94)), rgba(17, 24, 42, 0.9);
+    box-shadow: var(--dcx-glow-soft);
+    backdrop-filter: blur(14px);
+}
+
+.dcx-brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.85rem;
+    text-decoration: none;
+    color: var(--dcx-paper);
+    min-height: 44px;
+}
+
+    .dcx-brand:hover {
+        color: var(--dcx-paper);
+        text-decoration: none;
+    }
+
+    .dcx-brand img {
+        display: block;
+        width: 44px;
+        height: 44px;
+        object-fit: contain;
+        flex: 0 0 auto;
+        filter: drop-shadow(0 8px 22px rgba(132, 220, 215, 0.16));
+    }
+
+.dcx-brand-wordmark {
+    font-size: clamp(1.35rem, 2vw, 1.8rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--dcx-mint);
+    line-height: 1;
+}
+
+.dcx-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.7rem;
+}
+
+    .dcx-nav li {
+        margin: 0;
+        padding: 0;
+    }
+
+    .dcx-nav .nav-link-soft {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0.72rem 1.2rem;
+        border: 1px solid rgba(132, 220, 215, 0.28);
+        border-radius: 999px;
+        background: rgba(17, 24, 42, 0.62);
+        color: rgba(246, 251, 251, 0.88);
+        font-size: 0.92rem;
+        font-weight: 800;
+        line-height: 1;
+        text-decoration: none;
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+        transition: color 180ms ease, background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+
+        .dcx-nav .nav-link-soft:hover {
+            color: var(--dcx-paper);
+            border-color: rgba(132, 220, 215, 0.75);
+            background: rgba(92, 195, 190, 0.14);
+            box-shadow: var(--dcx-glow-soft);
+            transform: translateY(-1px);
+        }
+
+        .dcx-nav .nav-link-soft.active,
+        .dcx-nav .nav-link-soft[aria-current="page"] {
+            background: linear-gradient(180deg, #92e0d9, #7fd6d0);
+            color: #161832;
+            border-color: rgba(255, 255, 255, 0.35);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14) inset, 0 10px 24px rgba(132, 220, 215, 0.26);
+        }
+
+.app-brand-header {
+    background: linear-gradient(rgba(17, 24, 42, 0.14), rgba(17, 24, 42, 0.18)), url("/images/branding/Header.png") center top / cover no-repeat;
+    padding: 0.4rem clamp(0.5rem, 1.2vw, 0.9rem) 1.35rem;
+    box-shadow: 0 18px 45px rgba(6, 10, 24, 0.34);
+}
+
+.app-quickbar {
+    margin: 0.75rem auto 0;
+    max-width: 80rem;
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1rem;
+    background: rgba(16, 22, 38, 0.72);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+
+.app-brand-footer {
+    color: var(--dcx-paper);
+}
+
+.app-footer-details dt,
+.app-footer-details dd {
+    color: var(--dcx-paper);
+}
+
+.app-footer-logo {
+    color: var(--dcx-paper);
+    font-size: clamp(1.5rem, 3vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+}
+
+    .app-footer-logo img {
+        border-radius: 0.8rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 0.2rem;
+        box-shadow: var(--dcx-glow-soft);
+    }
+
+/* Optional reusable branded containers for next pages */
+.dcx-panel,
+.dcx-card,
+.dcx-module {
+    background: var(--dcx-panel);
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.5rem;
+    box-shadow: 0 18px 45px rgba(0, 0, 0, 0.24);
+    color: var(--dcx-paper);
+}
+
+.dcx-card-muted {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-kicker {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 30px;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid rgba(132, 220, 215, 0.28);
+    border-radius: 999px;
+    background: rgba(132, 220, 215, 0.1);
+    color: var(--dcx-aqua);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dcx-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.75rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid var(--dcx-border);
+    background: linear-gradient(180deg, #92e0d9, #7fd6d0);
+    color: #161832;
+    font-weight: 800;
+    text-decoration: none;
+    box-shadow: var(--dcx-glow-soft);
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+    .dcx-btn:hover {
+        color: #161832;
+        text-decoration: none;
+        filter: brightness(1.02);
+        transform: translateY(-1px);
+        box-shadow: var(--dcx-glow);
+    }
+
+.dcx-btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0.75rem 1.2rem;
+    border-radius: 999px;
+    border: 1px solid rgba(132, 220, 215, 0.28);
+    background: rgba(17, 24, 42, 0.6);
+    color: var(--dcx-paper);
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 180ms ease;
+}
+
+    .dcx-btn-secondary:hover {
+        color: var(--dcx-paper);
+        text-decoration: none;
+        border-color: rgba(132, 220, 215, 0.7);
+        box-shadow: var(--dcx-glow-soft);
+    }
+
+/* Auth shell classes for next step */
+.dcx-auth-shell {
+    min-height: calc(100vh - 160px);
+    display: grid;
+    grid-template-columns: minmax(300px, 0.95fr) minmax(340px, 0.9fr);
+    gap: 1.5rem;
+    align-items: stretch;
+}
+
+.dcx-auth-panel {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 2rem;
+    background: radial-gradient(circle at 20% 18%, rgba(132, 220, 215, 0.14), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.5rem, 3vw, 2.4rem);
+}
+
+    .dcx-auth-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.14;
+        background-image: linear-gradient(rgba(132, 220, 215, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 220, 215, 0.22) 1px, transparent 1px);
+        background-size: 70px 70px;
+        pointer-events: none;
+    }
+
+    .dcx-auth-panel > * {
+        position: relative;
+        z-index: 1;
+    }
+
+.dcx-auth-card {
+    border: 1px solid var(--dcx-border);
+    border-radius: 2rem;
+    background: var(--dcx-panel-soft);
+    box-shadow: 0 22px 55px rgba(0, 0, 0, 0.24);
+    padding: clamp(1.35rem, 3vw, 2.2rem);
+    color: var(--dcx-paper);
+}
+
+.dcx-auth-title {
+    color: #fff;
+    font-size: clamp(2rem, 3vw, 2.75rem);
+    font-weight: 850;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+}
+
+.dcx-auth-copy {
+    color: rgba(153, 215, 226, 0.88);
+    line-height: 1.65;
+}
+
+.dcx-auth-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    display: block;
+    margin-bottom: 1.2rem;
+    filter: drop-shadow(0 14px 32px rgba(132, 220, 215, 0.16));
+}
+
+.dcx-watermark {
+    opacity: 0.16;
+    max-width: 180px;
+    margin-left: auto;
+}
+
+@media (max-width: 1100px) {
+    .dcx-auth-shell {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .dcx-header {
+        border-radius: 1.2rem;
+    }
+
+    .dcx-brand {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .dcx-nav {
+        width: 100%;
+    }
+
+        .dcx-nav .nav-link-soft {
+            flex: 1 1 auto;
+            min-width: 132px;
+        }
+
+    .app-brand-header {
+        padding-bottom: 1rem;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX HOME PAGE
+   ========================================================= */
+
+.dcx-home-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 2rem;
+    background: radial-gradient(circle at 18% 20%, rgba(132, 220, 215, 0.14), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+    .dcx-home-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.12;
+        background-image: linear-gradient(rgba(132, 220, 215, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 220, 215, 0.18) 1px, transparent 1px);
+        background-size: 72px 72px;
+        pointer-events: none;
+    }
+
+.dcx-home-hero__grid {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 0.38fr);
+    gap: 1.25rem;
+    align-items: stretch;
+}
+
+.dcx-home-hero__content {
+    display: grid;
+    align-content: space-between;
+}
+
+.dcx-home-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.5rem);
+    font-weight: 850;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-home-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-home-copy {
+    max-width: 68ch;
+    color: rgba(153, 215, 226, 0.9);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+.dcx-role-pill {
+    display: inline-flex;
+    align-items: center;
+    width: fit-content;
+    min-height: 38px;
+    border: 1px solid rgba(132, 220, 215, 0.25);
+    border-radius: 999px;
+    background: rgba(132, 220, 215, 0.08);
+    color: var(--dcx-aqua);
+    padding: 0.5rem 0.95rem;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.dcx-metric-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dcx-metric-card {
+    min-height: 120px;
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1.1rem 1.15rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.dcx-metric-label {
+    color: rgba(153, 215, 226, 0.76);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.dcx-metric-value {
+    margin-top: 0.45rem;
+    color: #fff;
+    font-size: clamp(1.45rem, 2.2vw, 2rem);
+    font-weight: 850;
+    line-height: 1;
+}
+
+.dcx-feed-panel {
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 1rem;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.dcx-panel-title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+}
+
+.dcx-feed-meta-small {
+    color: rgba(153, 215, 226, 0.7);
+}
+
+.dcx-feed-state {
+    color: rgba(153, 215, 226, 0.72);
+    font-size: 0.9rem;
+}
+
+.dcx-feed-mark {
+    width: 42px;
+    height: 42px;
+    object-fit: contain;
+    opacity: 0.85;
+}
+
+.tech-feed-panel,
+.tech-feed-item,
+.tech-feed-title,
+.tech-feed-meta {
+    transition: all 180ms ease;
+}
+
+.tech-feed-list {
+    display: grid;
+    gap: 0.65rem;
+    max-height: 18.5rem;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(132, 220, 215, 0.45) transparent;
+}
+
+.tech-feed-item {
+    display: grid;
+    gap: 0.2rem;
+    border-radius: 0.95rem;
+    border: 1px solid rgba(132, 220, 215, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    padding: 0.8rem 0.9rem;
+    text-decoration: none;
+}
+
+    .tech-feed-item:hover {
+        border-color: rgba(132, 220, 215, 0.42);
+        background: rgba(132, 220, 215, 0.08);
+        transform: translateY(-1px);
+    }
+
+.tech-feed-title {
+    color: #fff;
+    font-size: 0.94rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+
+.tech-feed-meta {
+    color: rgba(153, 215, 226, 0.72);
+    font-weight: 700;
+}
+
+.dcx-dashboard-card {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.5rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    color: var(--dcx-paper);
+}
+
+.dcx-list-stack {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.dcx-list-card {
+    border: 1px solid rgba(132, 220, 215, 0.12);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.95rem 1rem;
+}
+
+.dcx-list-card__title {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.3;
+}
+
+.dcx-list-card__meta {
+    margin-top: 0.2rem;
+    color: rgba(153, 215, 226, 0.78);
+    font-size: 0.92rem;
+    line-height: 1.5;
+}
+
+.dcx-muted {
+    color: rgba(153, 215, 226, 0.72);
+}
+
+@media (max-width: 1100px) {
+    .dcx-home-hero__grid,
+    .dcx-metric-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX JOBS PAGE
+   ========================================================= */
+
+.dcx-jobs-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.8rem;
+    background: radial-gradient(circle at 18% 20%, rgba(132, 220, 215, 0.12), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+    .dcx-jobs-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.12;
+        background-image: linear-gradient(rgba(132, 220, 215, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 220, 215, 0.18) 1px, transparent 1px);
+        background-size: 72px 72px;
+        pointer-events: none;
+    }
+
+.dcx-jobs-hero__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    gap: 1rem;
+    align-items: center;
+}
+
+.dcx-jobs-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 850;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-jobs-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-jobs-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.9);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+.dcx-jobs-watermark-wrap {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.dcx-jobs-watermark {
+    width: 132px;
+    max-width: 100%;
+    opacity: 0.18;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(132, 220, 215, 0.16));
+}
+
+.dcx-job-card {
+    height: 100%;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.5rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.25rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-job-card__title {
+    color: #fff;
+    font-size: 1.45rem;
+    font-weight: 800;
+    line-height: 1.15;
+}
+
+.dcx-job-card__copy {
+    color: rgba(153, 215, 226, 0.88);
+    line-height: 1.65;
+}
+
+.dcx-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 0.35rem 0.8rem;
+    border-radius: 999px;
+    border: 1px solid rgba(132, 220, 215, 0.22);
+    background: rgba(132, 220, 215, 0.08);
+    color: var(--dcx-aqua);
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.dcx-empty-state {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 2rem 1.5rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-empty-state__logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto 1rem;
+    opacity: 0.92;
+}
+
+.dcx-details-card {
+    border-color: rgba(132, 220, 215, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+    .dcx-details-card summary {
+        color: #fff;
+    }
+
+    .dcx-details-card .list-card-meta {
+        color: rgba(153, 215, 226, 0.78);
+    }
+
+@media (max-width: 720px) {
+    .dcx-jobs-hero__content {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-jobs-watermark-wrap {
+        justify-content: flex-start;
+    }
+
+    .dcx-jobs-watermark {
+        width: 104px;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX AUTH PAGES
+   ========================================================= */
+
+.dcx-auth-form-title {
+    color: #fff;
+    font-size: clamp(1.6rem, 2.2vw, 2.1rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+.dcx-auth-feature-list {
+    display: grid;
+    gap: 0.85rem;
+}
+
+.dcx-auth-feature {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    color: rgba(153, 215, 226, 0.9);
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.dcx-auth-feature__dot {
+    width: 10px;
+    height: 10px;
+    flex: 0 0 10px;
+    border-radius: 999px;
+    background: var(--dcx-mint);
+    box-shadow: 0 0 0 6px rgba(132, 220, 215, 0.08);
+}
+
+.dcx-form-stack {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-label {
+    display: block;
+    color: rgba(246, 251, 251, 0.88);
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.dcx-input {
+    width: 100%;
+    min-height: 50px;
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    padding: 0.85rem 1rem;
+    transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+    .dcx-input::placeholder {
+        color: rgba(153, 215, 226, 0.45);
+    }
+
+    .dcx-input:focus {
+        outline: none;
+        border-color: rgba(132, 220, 215, 0.7);
+        box-shadow: 0 0 0 0.2rem rgba(132, 220, 215, 0.12);
+        background: rgba(255, 255, 255, 0.07);
+    }
+
+.dcx-password-wrap {
+    position: relative;
+}
+
+.dcx-input--password {
+    padding-right: 3.2rem;
+}
+
+.dcx-password-toggle {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: 48px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(153, 215, 226, 0.8);
+    background: transparent;
+    border: 0;
+}
+
+    .dcx-password-toggle:hover {
+        color: var(--dcx-mint);
+    }
+
+.dcx-field-error {
+    display: block;
+    color: #fda4af;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.dcx-validation-summary {
+    border: 1px solid rgba(244, 63, 94, 0.28);
+    border-radius: 1rem;
+    background: rgba(244, 63, 94, 0.12);
+    color: #fecdd3;
+    padding: 0.9rem 1rem;
+    font-size: 0.9rem;
+}
+
+    .dcx-validation-summary ul {
+        margin: 0;
+        padding-left: 1rem;
+    }
+
+.dcx-inline-alert {
+    border-radius: 1rem;
+    padding: 1rem 1rem 1.05rem;
+    font-size: 0.94rem;
+}
+
+.dcx-inline-alert--warning {
+    border: 1px solid rgba(245, 158, 11, 0.28);
+    background: rgba(245, 158, 11, 0.12);
+    color: #fde68a;
+}
+
+.dcx-text-link {
+    color: var(--dcx-aqua);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+    .dcx-text-link:hover {
+        color: #fff;
+        text-decoration: underline;
+    }
+
+.dcx-dev-credentials {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.25rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1rem;
+}
+
+.dcx-dev-credentials__title {
+    margin-bottom: 0.75rem;
+    color: rgba(246, 251, 251, 0.75);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dcx-dev-table {
+    color: rgba(246, 251, 251, 0.88);
+}
+
+    .dcx-dev-table thead th {
+        border-bottom-color: rgba(132, 220, 215, 0.14);
+        color: rgba(153, 215, 226, 0.78);
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .dcx-dev-table td {
+        border-top-color: rgba(132, 220, 215, 0.08);
+    }
+
+    .dcx-dev-table code {
+        color: #fff;
+        background: rgba(255, 255, 255, 0.06);
+        padding: 0.15rem 0.45rem;
+        border-radius: 0.45rem;
+    }
+
+/* =========================================================
+   DIGIFYCX ACTIVATE PAGE HELPERS
+   ========================================================= */
+
+.dcx-inline-alert--success {
+    border: 1px solid rgba(16, 185, 129, 0.24);
+    background: rgba(16, 185, 129, 0.12);
+    color: #bbf7d0;
+}
+
+.dcx-helper-text {
+    color: rgba(153, 215, 226, 0.7);
+    font-size: 0.82rem;
+    line-height: 1.55;
+}
+
+/* =========================================================
+   DIGIFYCX FORGOT PASSWORD PAGE
+   ========================================================= */
+
+.dcx-status-icon {
+    width: 52px;
+    height: 52px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.14);
+    color: #bbf7d0;
+}
+
+.dcx-ticket-ref {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(132, 220, 215, 0.12);
+    color: var(--dcx-aqua);
+    font-weight: 800;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dcx-info-panel {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(153, 215, 226, 0.86);
+    padding: 0.95rem 1rem;
+    line-height: 1.6;
+}
+
+.dcx-info-panel__icon {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 0.45rem;
+    margin-top: -2px;
+    vertical-align: middle;
+    color: var(--dcx-mint);
+}
+
+/* =========================================================
+   DIGIFYCX HEADER USER NAV
+   ========================================================= */
+
+.dcx-usernav {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+    .dcx-usernav li {
+        margin: 0;
+        padding: 0;
+    }
+
+.dcx-usernav__signin {
+    min-height: 42px;
+    padding-inline: 1.1rem;
+}
+
+.dcx-usernav__role,
+.dcx-usernav__signout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 800;
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dcx-usernav__role {
+    padding: 0.65rem 1rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+    .dcx-usernav__role:hover,
+    .dcx-usernav__signout:hover {
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+.dcx-usernav__role--admin {
+    border: 1px solid rgba(251, 191, 36, 0.35);
+    background: rgba(251, 191, 36, 0.12);
+    color: #fde68a;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
+    .dcx-usernav__role--admin:hover {
+        border-color: rgba(252, 211, 77, 0.7);
+        background: rgba(251, 191, 36, 0.18);
+        color: #fff3bf;
+    }
+
+.dcx-usernav__role--employee {
+    border: 1px solid rgba(132, 220, 215, 0.2);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(246, 251, 251, 0.88);
+}
+
+    .dcx-usernav__role--employee:hover {
+        border-color: rgba(132, 220, 215, 0.55);
+        color: #fff;
+        box-shadow: var(--dcx-glow-soft);
+    }
+
+.dcx-usernav__signout {
+    border: 1px solid rgba(251, 113, 133, 0.24);
+    background: linear-gradient(180deg, rgba(244, 63, 94, 0.92), rgba(225, 29, 72, 0.92));
+    color: #fff;
+    padding: 0.72rem 1.05rem;
+    font-size: 0.86rem;
+    box-shadow: 0 10px 24px rgba(244, 63, 94, 0.18);
+}
+
+    .dcx-usernav__signout:hover {
+        border-color: rgba(251, 113, 133, 0.45);
+        color: #fff;
+        box-shadow: 0 12px 28px rgba(244, 63, 94, 0.24);
+    }
+
+@media (max-width: 720px) {
+    .dcx-usernav {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .dcx-usernav__signin,
+    .dcx-usernav__role,
+    .dcx-usernav__signout {
+        width: 100%;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX ANNOUNCEMENTS PAGE
+   ========================================================= */
+
+.dcx-announce-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.9rem;
+    background: radial-gradient(circle at 18% 20%, rgba(132, 220, 215, 0.14), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+    .dcx-announce-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.12;
+        background-image: linear-gradient(rgba(132, 220, 215, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 220, 215, 0.18) 1px, transparent 1px);
+        background-size: 72px 72px;
+        pointer-events: none;
+    }
+
+.dcx-announce-hero__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 150px;
+    gap: 1rem;
+    align-items: center;
+}
+
+.dcx-announce-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 850;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-announce-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-announce-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.9);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+.dcx-announce-watermark {
+    width: 120px;
+    max-width: 100%;
+    justify-self: end;
+    opacity: 0.18;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(132, 220, 215, 0.16));
+}
+
+.dcx-announce-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-announce-stack {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.dcx-announce-card {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+}
+
+.dcx-announce-card__summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.1rem;
+}
+
+    .dcx-announce-card__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .dcx-announce-card__summary::after {
+        content: "+";
+        float: right;
+        color: var(--dcx-mint);
+        font-size: 1.3rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+.dcx-announce-card[open] .dcx-announce-card__summary::after {
+    content: "-";
+}
+
+.dcx-announce-card__title {
+    color: #fff;
+    font-size: 1.05rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-announce-card__meta {
+    color: rgba(153, 215, 226, 0.74);
+    font-size: 0.9rem;
+    line-height: 1.45;
+}
+
+.dcx-announce-card__body {
+    border-top: 1px solid rgba(132, 220, 215, 0.1);
+    padding: 1rem 1.1rem 1.15rem;
+    color: rgba(246, 251, 251, 0.88);
+    line-height: 1.7;
+}
+
+@media (max-width: 720px) {
+    .dcx-announce-hero__content {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-announce-watermark {
+        justify-self: start;
+        width: 96px;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX POLICIES PAGE
+   ========================================================= */
+
+.dcx-policies-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.9rem;
+    background: radial-gradient(circle at 18% 20%, rgba(132, 220, 215, 0.14), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+    .dcx-policies-hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        opacity: 0.12;
+        background-image: linear-gradient(rgba(132, 220, 215, 0.18) 1px, transparent 1px), linear-gradient(90deg, rgba(132, 220, 215, 0.18) 1px, transparent 1px);
+        background-size: 72px 72px;
+        pointer-events: none;
+    }
+
+.dcx-policies-hero__content {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1rem;
+    align-items: end;
+}
+
+.dcx-policies-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 850;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-policies-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-policies-copy {
+    max-width: 64ch;
+    color: rgba(153, 215, 226, 0.9);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+.dcx-policies-watermark {
+    width: 96px;
+    max-width: 100%;
+    opacity: 0.18;
+    object-fit: contain;
+    filter: drop-shadow(0 10px 22px rgba(132, 220, 215, 0.16));
+}
+
+.dcx-policies-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-policy-group-stack {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.dcx-policy-group {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+}
+
+.dcx-policy-group__summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.1rem;
+}
+
+    .dcx-policy-group__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .dcx-policy-group__summary::after {
+        content: "+";
+        float: right;
+        color: var(--dcx-mint);
+        font-size: 1.3rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+.dcx-policy-group[open] .dcx-policy-group__summary::after {
+    content: "-";
+}
+
+.dcx-policy-group__title {
+    color: #fff;
+    font-size: 1.02rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-policy-group__meta {
+    margin-top: 0.2rem;
+    color: rgba(153, 215, 226, 0.74);
+    font-size: 0.9rem;
+}
+
+.dcx-policy-group__body {
+    border-top: 1px solid rgba(132, 220, 215, 0.1);
+    padding: 1rem 1.1rem 1.15rem;
+}
+
+.dcx-policy-link {
+    display: block;
+    height: 100%;
+    border: 1px solid rgba(132, 220, 215, 0.12);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.95rem 1rem;
+    text-decoration: none;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+    .dcx-policy-link:hover {
+        text-decoration: none;
+        border-color: rgba(132, 220, 215, 0.42);
+        background: rgba(132, 220, 215, 0.08);
+        transform: translateY(-1px);
+    }
+
+.dcx-policy-link__title {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-policy-link__meta {
+    margin-top: 0.25rem;
+    color: rgba(153, 215, 226, 0.74);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 720px) {
+    .dcx-policies-hero__content {
+        grid-template-columns: 1fr;
+        align-items: start;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX POLICY VIEW
+   ========================================================= */
+
+.dcx-inline-alert--info {
+    border: 1px solid rgba(59, 130, 246, 0.24);
+    background: rgba(59, 130, 246, 0.12);
+    color: #bfdbfe;
+}
+
+.dcx-policy-view {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.8rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+    padding: clamp(1.2rem, 3vw, 2rem);
+    color: var(--dcx-paper);
+}
+
+.dcx-policy-view__header {
+    margin-bottom: 1.25rem;
+}
+
+.dcx-policy-view__title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.8rem, 3vw, 2.7rem);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.dcx-policy-view__section,
+.dcx-policy-view__updated {
+    color: rgba(153, 215, 226, 0.74);
+    font-size: 0.95rem;
+}
+
+.dcx-policy-reader {
+    border: 1px solid rgba(132, 220, 215, 0.12);
+    border-radius: 1.4rem;
+    background: rgba(255, 255, 255, 0.97);
+    color: #172033;
+    padding: clamp(1.1rem, 2.5vw, 1.8rem);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+.zendesk-policy-content {
+    font-size: 1rem;
+    line-height: 1.75;
+}
+
+    .zendesk-policy-content p,
+    .zendesk-policy-content li {
+        margin-bottom: 1.1rem;
+        line-height: 1.75;
+    }
+
+    .zendesk-policy-content ul,
+    .zendesk-policy-content ol {
+        padding-left: 1.3rem;
+        margin-bottom: 1.2rem;
+    }
+
+    .zendesk-policy-content h1,
+    .zendesk-policy-content h2,
+    .zendesk-policy-content h3,
+    .zendesk-policy-content h4 {
+        margin-top: 1.8rem;
+        margin-bottom: 0.8rem;
+        color: #11182a;
+        line-height: 1.25;
+        font-weight: 800;
+    }
+
+    .zendesk-policy-content h1 {
+        font-size: 1.8rem;
+    }
+
+    .zendesk-policy-content h2 {
+        font-size: 1.45rem;
+    }
+
+    .zendesk-policy-content h3 {
+        font-size: 1.2rem;
+    }
+
+    .zendesk-policy-content a {
+        color: #155e75;
+        font-weight: 700;
+        text-decoration: underline;
+    }
+
+    .zendesk-policy-content blockquote {
+        margin: 1.3rem 0;
+        padding: 0.9rem 1rem;
+        border-left: 4px solid rgba(21, 94, 117, 0.35);
+        background: rgba(92, 195, 190, 0.08);
+        border-radius: 0.75rem;
+    }
+
+    .zendesk-policy-content table {
+        width: 100%;
+        margin: 1.25rem 0;
+        border-collapse: collapse;
+        overflow: hidden;
+        font-size: 0.95rem;
+    }
+
+    .zendesk-policy-content th,
+    .zendesk-policy-content td {
+        border: 1px solid rgba(15, 27, 45, 0.12);
+        padding: 0.75rem 0.85rem;
+        vertical-align: top;
+    }
+
+    .zendesk-policy-content th {
+        background: rgba(15, 27, 45, 0.06);
+        font-weight: 800;
+    }
+
+.dcx-policy-ack {
+    display: grid;
+    gap: 1rem;
+    align-items: start;
+}
+
+.dcx-policy-ack__check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    color: rgba(246, 251, 251, 0.92);
+    font-weight: 600;
+    line-height: 1.55;
+}
+
+    .dcx-policy-ack__check input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        margin-top: 0.2rem;
+        accent-color: #84dcd7;
+    }
+
+@media (max-width: 720px) {
+    .dcx-policy-reader {
+        border-radius: 1.1rem;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX FAQ PAGE
+   ========================================================= */
+
+.dcx-faq-shell {
+    max-width: 900px;
+    margin-inline: auto;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.8rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+    padding: clamp(1.25rem, 3vw, 2rem);
+    color: var(--dcx-paper);
+}
+
+.dcx-faq-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid rgba(132, 220, 215, 0.1);
+    text-align: center;
+}
+
+.dcx-faq-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.1rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-faq-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-faq-copy {
+    max-width: 60ch;
+    margin-inline: auto;
+    color: rgba(153, 215, 226, 0.86);
+    line-height: 1.65;
+}
+
+.dcx-faq-stack {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.dcx-faq-card {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.1rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+    transition: border-color 180ms ease, background-color 180ms ease;
+}
+
+    .dcx-faq-card[open] {
+        border-color: rgba(132, 220, 215, 0.24);
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+.dcx-faq-card__summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.1rem;
+    color: #fff;
+}
+
+    .dcx-faq-card__summary::-webkit-details-marker {
+        display: none;
+    }
+
+.dcx-faq-card__question {
+    font-weight: 750;
+    line-height: 1.45;
+}
+
+.dcx-faq-card__icon {
+    color: var(--dcx-mint);
+    transition: transform 180ms ease;
+    flex: 0 0 auto;
+}
+
+.dcx-faq-card[open] .dcx-faq-card__icon {
+    transform: rotate(180deg);
+}
+
+.dcx-faq-card__body {
+    padding: 0 1.1rem 1.1rem;
+}
+
+.dcx-faq-card__answer {
+    color: rgba(246, 251, 251, 0.84);
+    line-height: 1.7;
+}
+
+@media (max-width: 720px) {
+    .dcx-faq-shell {
+        border-radius: 1.2rem;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX CANTEEN PAGE
+   ========================================================= */
+
+.dcx-canteen-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.9rem;
+    background: radial-gradient(circle at 18% 20%, rgba(132, 220, 215, 0.14), transparent 20%), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.dcx-canteen-hero__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    gap: 1rem;
+    align-items: center;
+}
+
+.dcx-canteen-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    font-weight: 850;
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-canteen-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-canteen-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.9);
+    font-size: 1.02rem;
+    line-height: 1.65;
+}
+
+.dcx-canteen-watermark {
+    width: 110px;
+    justify-self: end;
+    opacity: 0.18;
+}
+
+.dcx-canteen-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.5fr) minmax(320px, 0.9fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.dcx-canteen-side {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-canteen-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-section-heading {
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.dcx-menu-stack {
+    display: grid;
+    gap: 1.25rem;
+}
+
+.dcx-menu-group {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.dcx-menu-group__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dcx-menu-group__title {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 800;
+}
+
+.dcx-menu-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.9rem;
+}
+
+.dcx-menu-card {
+    display: block;
+    cursor: pointer;
+}
+
+.dcx-menu-card__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dcx-menu-card__surface {
+    display: grid;
+    gap: 0.8rem;
+    height: 100%;
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.85rem;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.dcx-menu-card:hover .dcx-menu-card__surface {
+    border-color: rgba(132, 220, 215, 0.34);
+    background: rgba(255, 255, 255, 0.06);
+    transform: translateY(-2px);
+}
+
+.dcx-menu-card__input:checked + .dcx-menu-card__surface {
+    border-color: rgba(132, 220, 215, 0.8);
+    background: rgba(132, 220, 215, 0.1);
+    box-shadow: 0 0 0 3px rgba(132, 220, 215, 0.12);
+}
+
+.dcx-menu-card__media {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 140px;
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.dcx-menu-card__image {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+}
+
+.dcx-menu-card__emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 140px;
+    font-size: 3rem;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.dcx-menu-card__content {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.dcx-menu-card__topline {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.dcx-menu-card__name {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-menu-card__price {
+    color: var(--dcx-mint);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.dcx-menu-card__meta {
+    color: rgba(153, 215, 226, 0.72);
+    font-size: 0.9rem;
+}
+
+.dcx-account-card {
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1.2rem;
+    background: rgba(255, 255, 255, 0.04);
+    overflow: hidden;
+}
+
+    .dcx-account-card + .dcx-account-card {
+        margin-top: 0.9rem;
+    }
+
+.dcx-account-card__summary {
+    cursor: pointer;
+    list-style: none;
+    padding: 1rem 1.05rem;
+}
+
+    .dcx-account-card__summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .dcx-account-card__summary::after {
+        content: "+";
+        float: right;
+        color: var(--dcx-mint);
+        font-size: 1.25rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+.dcx-account-card[open] .dcx-account-card__summary::after {
+    content: "-";
+}
+
+.dcx-account-card__title {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-account-card__meta {
+    color: rgba(153, 215, 226, 0.72);
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+
+.dcx-account-card__body {
+    border-top: 1px solid rgba(132, 220, 215, 0.1);
+    padding: 1rem 1.05rem 1.05rem;
+}
+
+.dcx-account-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.dcx-account-list__item {
+    border: 1px solid rgba(132, 220, 215, 0.1);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 0.9rem 0.95rem;
+}
+
+.dcx-subtle-text {
+    color: rgba(153, 215, 226, 0.72);
+}
+
+@media (max-width: 991px) {
+    .dcx-canteen-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .dcx-canteen-hero__content {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-canteen-watermark {
+        justify-self: start;
+        width: 92px;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX PROFILE PAGE
+   ========================================================= */
+
+.dcx-profile-shell {
+    max-width: 920px;
+    margin-inline: auto;
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-profile-header,
+.dcx-profile-panel,
+.dcx-profile-note {
+    border: 1px solid var(--dcx-border-soft);
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.24);
+}
+
+.dcx-profile-header,
+.dcx-profile-panel {
+    border-radius: 1.7rem;
+    padding: clamp(1.25rem, 3vw, 1.8rem);
+}
+
+.dcx-profile-header__identity {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
+}
+
+.dcx-profile-avatar {
+    width: 84px;
+    height: 84px;
+    flex: 0 0 84px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: #fff;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.95), rgba(29, 78, 216, 0.95));
+    border: 4px solid rgba(15, 23, 42, 0.8);
+    box-shadow: 0 16px 34px rgba(6, 182, 212, 0.18);
+}
+
+.dcx-profile-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3vw, 2.7rem);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.dcx-profile-copy {
+    max-width: 58ch;
+    color: rgba(153, 215, 226, 0.84);
+    line-height: 1.65;
+}
+
+.dcx-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.dcx-profile-field {
+    display: grid;
+}
+
+.dcx-profile-readonly {
+    position: relative;
+}
+
+.dcx-profile-readonly__icon {
+    position: absolute;
+    inset-block: 0;
+    left: 0.95rem;
+    display: inline-flex;
+    align-items: center;
+    color: rgba(153, 215, 226, 0.52);
+    pointer-events: none;
+}
+
+.dcx-profile-readonly__input {
+    width: 100%;
+    min-height: 52px;
+    border: 1px solid rgba(132, 220, 215, 0.14);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(246, 251, 251, 0.88);
+    padding: 0.9rem 1rem 0.9rem 2.8rem;
+    font-size: 0.96rem;
+    font-weight: 600;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    cursor: not-allowed;
+    outline: none;
+}
+
+.dcx-profile-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    border-radius: 1.3rem;
+    padding: 1rem 1.05rem;
+    color: rgba(220, 252, 252, 0.86);
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.08), rgba(6, 182, 212, 0.08)), linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+}
+
+.dcx-profile-note__icon {
+    color: var(--dcx-mint);
+    flex: 0 0 auto;
+    margin-top: 0.1rem;
+}
+
+.dcx-profile-note p {
+    line-height: 1.65;
+}
+
+@media (max-width: 767px) {
+    .dcx-profile-header__identity {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .dcx-profile-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX ADMIN CONSOLE
+   ========================================================= */
+
+.dcx-admin-hero {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(251, 191, 36, 0.18);
+    border-radius: 1.9rem;
+    background: radial-gradient(circle at 15% 18%, rgba(251, 191, 36, 0.12), transparent 18%), linear-gradient(180deg, rgba(30, 24, 43, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28);
+    padding: clamp(1.5rem, 3vw, 2.2rem);
+}
+
+.dcx-admin-hero__content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 120px;
+    gap: 1rem;
+    align-items: center;
+}
+
+.dcx-admin-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 850;
+    line-height: 1.04;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-admin-title span {
+        color: #fcd34d;
+    }
+
+.dcx-admin-copy {
+    max-width: 62ch;
+    color: rgba(254, 240, 138, 0.84);
+    line-height: 1.65;
+}
+
+.dcx-admin-watermark {
+    width: 110px;
+    justify-self: end;
+    opacity: 0.14;
+    filter: drop-shadow(0 10px 22px rgba(251, 191, 36, 0.12));
+}
+
+.dcx-admin-kpis {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 0.9rem;
+}
+
+.dcx-admin-kpi {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.25rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.22);
+    padding: 1rem 1.05rem;
+}
+
+.dcx-admin-kpi__label {
+    color: rgba(254, 240, 138, 0.72);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.dcx-admin-kpi__value {
+    margin-top: 0.35rem;
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 850;
+    line-height: 1;
+    letter-spacing: -0.03em;
+}
+
+.dcx-admin-actions {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-admin-actions__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 0.9rem;
+}
+
+.dcx-admin-action {
+    display: block;
+    height: 100%;
+    border: 1px solid rgba(251, 191, 36, 0.14);
+    border-radius: 1.15rem;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 1rem;
+    text-decoration: none;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+    .dcx-admin-action:hover {
+        text-decoration: none;
+        transform: translateY(-2px);
+        border-color: rgba(252, 211, 77, 0.42);
+        background: rgba(251, 191, 36, 0.08);
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.18);
+    }
+
+.dcx-admin-action__title {
+    display: block;
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-admin-action__meta {
+    display: block;
+    margin-top: 0.35rem;
+    color: rgba(254, 240, 138, 0.72);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+    .dcx-admin-hero__content {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-admin-watermark {
+        justify-self: start;
+        width: 92px;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX POLICY COMPLIANCE REPORT
+   ========================================================= */
+
+.dcx-report-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-report-header,
+.dcx-report-filters,
+.dcx-report-table-wrap {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-report-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dcx-report-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 3rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-report-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-report-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.86);
+    line-height: 1.65;
+}
+
+.dcx-select {
+    width: 100%;
+    min-height: 52px;
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    padding: 0.85rem 1rem;
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+    .dcx-select:focus {
+        border-color: rgba(132, 220, 215, 0.5);
+        box-shadow: 0 0 0 3px rgba(132, 220, 215, 0.12);
+    }
+
+    .dcx-select option {
+        color: #111827;
+    }
+
+.dcx-report-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+    .dcx-report-table thead th {
+        padding: 0.95rem 1rem;
+        border-bottom: 1px solid rgba(132, 220, 215, 0.14);
+        color: rgba(153, 215, 226, 0.78);
+        font-size: 0.82rem;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .dcx-report-table tbody td {
+        padding: 0.95rem 1rem;
+        border-bottom: 1px solid rgba(132, 220, 215, 0.08);
+        color: rgba(246, 251, 251, 0.88);
+        vertical-align: top;
+    }
+
+    .dcx-report-table tbody tr:hover td {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+.dcx-report-table__empty {
+    text-align: center;
+    color: rgba(153, 215, 226, 0.72) !important;
+    padding: 1.4rem 1rem !important;
+}
+
+@media (max-width: 767px) {
+    .dcx-report-header {
+        align-items: start;
+        flex-direction: column;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX ACCESS DENIED
+   ========================================================= */
+
+.dcx-access-shell {
+    max-width: 760px;
+    margin: 1rem auto 0;
+}
+
+.dcx-access-card {
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 1.8rem;
+    background: radial-gradient(circle at top, rgba(251, 191, 36, 0.12), transparent 28%), linear-gradient(180deg, rgba(36, 26, 24, 0.98), rgba(28, 24, 39, 0.98));
+    box-shadow: 0 20px 46px rgba(0, 0, 0, 0.26);
+    padding: clamp(1.6rem, 4vw, 2.4rem);
+    text-align: center;
+    color: #f8fafc;
+}
+
+.dcx-access-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 1rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.14);
+    color: #fcd34d;
+    box-shadow: inset 0 0 0 1px rgba(251, 191, 36, 0.18);
+}
+
+.dcx-access-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(2rem, 3vw, 2.6rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.dcx-access-copy {
+    max-width: 42ch;
+    margin-inline: auto;
+    color: rgba(254, 240, 138, 0.82);
+    line-height: 1.65;
+}
+
+.dcx-access-actions {
+    margin-top: 1.5rem;
+    display: flex;
+    justify-content: center;
+}
+
+/* =========================================================
+   DIGIFYCX JOB APPLY PAGE
+   ========================================================= */
+
+.dcx-job-apply-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-job-apply-header,
+.dcx-job-apply-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-job-apply-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.8rem, 3.4vw, 2.8rem);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.dcx-job-apply-copy {
+    color: rgba(153, 215, 226, 0.8);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.dcx-textarea {
+    width: 100%;
+    min-height: 132px;
+    border: 1px solid rgba(132, 220, 215, 0.16);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    padding: 0.95rem 1rem;
+    outline: none;
+    resize: vertical;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+    .dcx-textarea:focus {
+        border-color: rgba(132, 220, 215, 0.5);
+        box-shadow: 0 0 0 3px rgba(132, 220, 215, 0.12);
+    }
+
+.dcx-file-input {
+    width: 100%;
+    min-height: 52px;
+    border: 1px dashed rgba(132, 220, 215, 0.26);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(246, 251, 251, 0.86);
+    padding: 0.8rem 1rem;
+}
+
+    .dcx-file-input::file-selector-button {
+        margin-right: 0.9rem;
+        border: 0;
+        border-radius: 999px;
+        background: rgba(132, 220, 215, 0.14);
+        color: #fff;
+        padding: 0.55rem 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+.dcx-helper-inline {
+    color: rgba(153, 215, 226, 0.7);
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+/* =========================================================
+   DIGIFYCX EXTERNAL APPLY PAGE
+   ========================================================= */
+
+.dcx-external-apply-shell {
+    max-width: 920px;
+    margin-inline: auto;
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-external-apply-hero,
+.dcx-external-apply-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-external-apply-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 2.9rem);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.dcx-external-apply-copy {
+    color: rgba(153, 215, 226, 0.82);
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+/* =========================================================
+   DIGIFYCX CANTEEN LEDGER
+   ========================================================= */
+
+.dcx-ledger-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-ledger-header,
+.dcx-ledger-filters,
+.dcx-ledger-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-ledger-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dcx-ledger-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 3rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-ledger-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-ledger-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.86);
+    line-height: 1.65;
+}
+
+.dcx-ledger-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.dcx-ledger-kpi {
+    border: 1px solid rgba(132, 220, 215, 0.12);
+    border-radius: 1.2rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+    padding: 1rem 1.05rem;
+}
+
+.dcx-ledger-kpi__label {
+    color: rgba(153, 215, 226, 0.72);
+    font-size: 0.84rem;
+}
+
+.dcx-ledger-kpi__value {
+    margin-top: 0.3rem;
+    color: #fff;
+    font-size: 1.7rem;
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+.dcx-ledger-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.95fr) minmax(0, 1.6fr);
+    gap: 1rem;
+}
+
+@media (max-width: 991px) {
+    .dcx-ledger-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .dcx-ledger-header {
+        flex-direction: column;
+        align-items: start;
+    }
+
+    .dcx-ledger-kpis {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX FINANCE AUDIT
+   ========================================================= */
+
+.dcx-audit-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-audit-header,
+.dcx-audit-panel {
+    border: 1px solid var(--dcx-border-soft);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-audit-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dcx-audit-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 3rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-audit-title span {
+        color: var(--dcx-mint);
+    }
+
+.dcx-audit-copy {
+    max-width: 62ch;
+    color: rgba(153, 215, 226, 0.86);
+    line-height: 1.65;
+}
+
+@media (max-width: 767px) {
+    .dcx-audit-header {
+        flex-direction: column;
+        align-items: start;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX ADMIN MANAGE PAGES
+   ========================================================= */
+
+.dcx-admin-manage-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-admin-manage-header,
+.dcx-admin-form-panel,
+.dcx-admin-table-panel {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    color: var(--dcx-paper);
+}
+
+.dcx-admin-manage-header {
+    padding: 1.2rem;
+}
+
+.dcx-admin-manage-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.8rem, 3vw, 2.5rem);
+    font-weight: 850;
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+}
+
+.dcx-icon-back {
+    width: 42px;
+    height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fcd34d;
+    text-decoration: none;
+    transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
+}
+
+    .dcx-icon-back:hover {
+        text-decoration: none;
+        border-color: rgba(252, 211, 77, 0.44);
+        background: rgba(251, 191, 36, 0.08);
+        transform: translateY(-1px);
+    }
+
+.dcx-admin-manage-grid {
+    display: grid;
+    grid-template-columns: minmax(320px, 0.9fr) minmax(0, 1.3fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.dcx-admin-form-panel {
+    padding: 1.2rem;
+    position: sticky;
+    top: 1.5rem;
+}
+
+.dcx-admin-form-panel__head,
+.dcx-admin-table-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.dcx-admin-form {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-admin-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 48px;
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    border-radius: 1rem;
+    background: linear-gradient(180deg, rgba(217, 119, 6, 0.96), rgba(180, 83, 9, 0.96));
+    color: #fff;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    box-shadow: 0 12px 28px rgba(217, 119, 6, 0.18);
+    transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+    .dcx-admin-submit:hover {
+        transform: translateY(-1px);
+        filter: brightness(1.04);
+        box-shadow: 0 16px 32px rgba(217, 119, 6, 0.22);
+    }
+
+.dcx-admin-check__label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    cursor: pointer;
+}
+
+.dcx-admin-check__input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.dcx-admin-check__box {
+    width: 20px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.4rem;
+    border: 1px solid rgba(251, 191, 36, 0.32);
+    background: rgba(255, 255, 255, 0.04);
+    color: transparent;
+    transition: all 180ms ease;
+}
+
+.dcx-admin-check__input:checked + .dcx-admin-check__box {
+    background: rgba(251, 191, 36, 0.9);
+    color: #fff;
+    border-color: rgba(251, 191, 36, 0.95);
+}
+
+.dcx-admin-check__text {
+    color: rgba(246, 251, 251, 0.9);
+    font-weight: 600;
+}
+
+.dcx-admin-table-panel {
+    overflow: hidden;
+}
+
+.dcx-admin-table-panel__head {
+    padding: 1.2rem 1.2rem 0;
+}
+
+.dcx-admin-count-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    border: 1px solid rgba(251, 191, 36, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    color: rgba(254, 240, 138, 0.84);
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dcx-table-subtext {
+    color: rgba(153, 215, 226, 0.62);
+    font-size: 0.78rem;
+    margin-top: 0.2rem;
+}
+
+.dcx-status-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 0.18rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dcx-status-pill--success {
+    background: rgba(16, 185, 129, 0.14);
+    color: #86efac;
+    border: 1px solid rgba(16, 185, 129, 0.22);
+}
+
+.dcx-status-pill--muted {
+    background: rgba(148, 163, 184, 0.12);
+    color: #cbd5e1;
+    border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.dcx-admin-actions-inline {
+    display: inline-flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.45rem;
+}
+
+.dcx-mini-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 34px;
+    padding: 0.45rem 0.75rem;
+    border-radius: 0.8rem;
+    border: 1px solid transparent;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-decoration: none;
+    transition: all 180ms ease;
+}
+
+    .dcx-mini-btn:hover {
+        text-decoration: none;
+        transform: translateY(-1px);
+    }
+
+.dcx-mini-btn--edit {
+    background: rgba(251, 191, 36, 0.12);
+    border-color: rgba(251, 191, 36, 0.24);
+    color: #fcd34d;
+}
+
+.dcx-mini-btn--neutral {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(148, 163, 184, 0.18);
+    color: #e2e8f0;
+}
+
+.dcx-mini-btn--danger {
+    background: rgba(244, 63, 94, 0.12);
+    border-color: rgba(244, 63, 94, 0.22);
+    color: #fda4af;
+}
+
+@media (max-width: 991px) {
+    .dcx-admin-manage-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-admin-form-panel {
+        position: static;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX ADMIN EDIT PAGES
+   ========================================================= */
+
+.dcx-admin-edit-shell {
+    display: grid;
+    gap: 1rem;
+    max-width: 980px;
+    margin-inline: auto;
+}
+
+.dcx-admin-edit-panel {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-admin-edit-copy {
+    max-width: 54ch;
+    color: rgba(254, 240, 138, 0.72);
+    line-height: 1.6;
+}
+
+.dcx-admin-edit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(251, 191, 36, 0.12);
+}
+
+/* =========================================================
+   DIGIFYCX POLICY SYNC
+   ========================================================= */
+
+.dcx-policy-sync-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-policy-sync-header,
+.dcx-policy-sync-panel {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-policy-sync-header {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.dcx-policy-sync-title {
+    margin: 0;
+    color: #fff;
+    font-size: clamp(1.9rem, 3.5vw, 3rem);
+    font-weight: 850;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+}
+
+    .dcx-policy-sync-title span {
+        color: #fcd34d;
+    }
+
+.dcx-policy-sync-copy {
+    max-width: 64ch;
+    color: rgba(254, 240, 138, 0.8);
+    line-height: 1.65;
+}
+
+.dcx-policy-sync-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.dcx-policy-sync-kpi {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.2rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.2);
+    padding: 1rem 1.05rem;
+}
+
+.dcx-policy-sync-kpi__label {
+    color: rgba(254, 240, 138, 0.72);
+    font-size: 0.84rem;
+}
+
+.dcx-policy-sync-kpi__value {
+    margin-top: 0.35rem;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 800;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.dcx-policy-sync-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    gap: 1rem;
+}
+
+.dcx-sync-log-list,
+.dcx-cache-group-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.dcx-sync-log-card,
+.dcx-cache-article {
+    display: block;
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.95rem 1rem;
+    color: inherit;
+    text-decoration: none;
+}
+
+.dcx-sync-log-card__title,
+.dcx-cache-article__title,
+.dcx-cache-group__title {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.4;
+}
+
+.dcx-sync-log-card__meta,
+.dcx-cache-article__meta,
+.dcx-cache-group__meta {
+    color: rgba(254, 240, 138, 0.68);
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.dcx-cache-group {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1rem;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+}
+
+    .dcx-cache-group summary {
+        list-style: none;
+        cursor: pointer;
+        padding: 0.95rem 1rem;
+    }
+
+        .dcx-cache-group summary::-webkit-details-marker {
+            display: none;
+        }
+
+.dcx-cache-group__body {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0 1rem 1rem;
+}
+
+.dcx-status-pill--danger {
+    background: rgba(244, 63, 94, 0.12);
+    color: #fda4af;
+    border: 1px solid rgba(244, 63, 94, 0.22);
+}
+
+@media (max-width: 991px) {
+    .dcx-policy-sync-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 767px) {
+    .dcx-policy-sync-header {
+        flex-direction: column;
+        align-items: start;
+    }
+
+    .dcx-policy-sync-kpis {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX POLICY EDIT
+   ========================================================= */
+
+.dcx-input-select {
+    appearance: none;
+    background-image: linear-gradient(45deg, transparent 50%, rgba(254, 240, 138, 0.88) 50%), linear-gradient(135deg, rgba(254, 240, 138, 0.88) 50%, transparent 50%);
+    background-position: calc(100% - 18px) calc(50% - 3px), calc(100% - 12px) calc(50% - 3px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    padding-right: 2.75rem;
+}
+
+.dcx-policy-editor {
+    min-height: 360px;
+    font-variant-numeric: tabular-nums lining-nums;
+    line-height: 1.7;
+}
+
+/* =========================================================
+   DIGIFYCX USERS ADMIN
+   ========================================================= */
+
+.dcx-user-cell {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.dcx-user-cell__name {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-user-cell__meta {
+    color: rgba(153, 215, 226, 0.62);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.dcx-role-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    background: rgba(251, 191, 36, 0.12);
+    color: #fcd34d;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.dcx-status-pill--warning {
+    background: rgba(245, 158, 11, 0.14);
+    color: #fcd34d;
+    border: 1px solid rgba(245, 158, 11, 0.24);
+}
+
+/* =========================================================
+   DIGIFYCX CANTEEN REPORTING
+   ========================================================= */
+
+.dcx-report-shell {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-report-filter-panel,
+.dcx-report-card {
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.6rem;
+    background: linear-gradient(180deg, rgba(28, 27, 57, 0.98), rgba(17, 24, 42, 0.98));
+    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+    padding: 1.2rem;
+    color: var(--dcx-paper);
+}
+
+.dcx-report-filter-panel__head,
+.dcx-report-card__head {
+    margin-bottom: 1rem;
+}
+
+.dcx-report-grid {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.85fr) minmax(0, 1.45fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.dcx-report-main {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-report-card--aside {
+    position: sticky;
+    top: 1.5rem;
+}
+
+.dcx-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+}
+
+    .dcx-report-table thead th {
+        padding: 0.85rem 0.9rem;
+        border-bottom: 1px solid rgba(251, 191, 36, 0.12);
+        color: rgba(254, 240, 138, 0.72);
+        font-size: 0.74rem;
+        font-weight: 800;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    .dcx-report-table tbody td {
+        padding: 0.9rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+        color: rgba(241, 245, 249, 0.94);
+        vertical-align: middle;
+    }
+
+    .dcx-report-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.03);
+    }
+
+.dcx-report-table--compact tbody td,
+.dcx-report-table--compact thead th {
+    padding-left: 0.7rem;
+    padding-right: 0.7rem;
+}
+
+.dcx-num {
+    font-variant-numeric: tabular-nums lining-nums;
+    white-space: nowrap;
+}
+
+@media (max-width: 991px) {
+    .dcx-report-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dcx-report-card--aside {
+        position: static;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX FAQ ADMIN
+   ========================================================= */
+
+.dcx-category-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    border: 1px solid rgba(167, 139, 250, 0.22);
+    background: rgba(167, 139, 250, 0.12);
+    color: #c4b5fd;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dcx-faq-question-cell {
+    max-width: 28rem;
+    color: #fff;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* =========================================================
+   DIGIFYCX JOBS ADMIN
+   ========================================================= */
+
+.dcx-code-input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+.dcx-admin-check-group {
+    padding-bottom: 0.25rem;
+}
+
+.dcx-jobs-visual-panel {
+    display: grid;
+    gap: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(251, 191, 36, 0.12);
+    border-radius: 1.2rem;
+    background: rgba(15, 23, 42, 0.32);
+}
+
+.dcx-jobs-visual-panel__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.dcx-jobs-visual-panel__title {
+    margin: 0;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.dcx-jobs-visual-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.dcx-jobs-visual-grid__full {
+    display: grid;
+    gap: 0;
+}
+
+.dcx-file-input {
+    display: block;
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 0.9rem;
+    background: rgba(15, 23, 42, 0.42);
+    color: rgba(226, 232, 240, 0.88);
+    font-size: 0.9rem;
+}
+
+    .dcx-file-input::file-selector-button {
+        margin-right: 1rem;
+        padding: 0.6rem 0.9rem;
+        border: 0;
+        border-radius: 0.7rem;
+        background: rgba(71, 85, 105, 0.95);
+        color: #fff;
+        font-size: 0.78rem;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+.dcx-jobs-template-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-top: 0.9rem;
+}
+
+.dcx-jobs-template-note__thumb {
+    width: 4rem;
+    height: 6rem;
+    flex-shrink: 0;
+    border-radius: 0.6rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    object-fit: cover;
+    opacity: 0.85;
+}
+
+.dcx-job-cell {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.dcx-job-cell__title {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.dcx-job-cell__meta {
+    color: rgba(153, 215, 226, 0.62);
+    font-size: 0.8rem;
+    line-height: 1.4;
+}
+
+.dcx-format-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0.2rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.dcx-format-pill--visual {
+    border: 1px solid rgba(99, 102, 241, 0.24);
+    background: rgba(99, 102, 241, 0.12);
+    color: #a5b4fc;
+}
+
+.dcx-format-pill--standard {
+    border: 1px solid rgba(148, 163, 184, 0.18);
+    background: rgba(148, 163, 184, 0.12);
+    color: #cbd5e1;
+}
+
+/* =========================================================
+   DIGIFYCX JOB EDIT
+   ========================================================= */
+
+.dcx-job-edit-shell {
+    max-width: 980px;
+}
+
+.dcx-job-image-replace {
+    display: grid;
+    grid-template-columns: 96px minmax(0, 1fr);
+    gap: 1rem;
+    align-items: start;
+    padding-top: 0.25rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.dcx-job-image-replace__preview {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.dcx-job-image-replace__img {
+    width: 96px;
+    height: 136px;
+    border-radius: 0.75rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    object-fit: cover;
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.dcx-job-image-replace__caption {
+    width: 96px;
+    color: rgba(148, 163, 184, 0.72);
+    font-size: 0.7rem;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dcx-job-image-replace__form {
+    min-width: 0;
+}
+
+.dcx-job-edit-flags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(251, 191, 36, 0.12);
+}
+
+@media (max-width: 575px) {
+    .dcx-job-image-replace {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* =========================================================
+   DIGIFYCX MENU ADMIN
+   ========================================================= */
+
+.dcx-menu-thumb {
+    width: 56px;
+    height: 42px;
+    border-radius: 0.7rem;
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    object-fit: cover;
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.dcx-menu-emoji {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 56px;
+    height: 42px;
+    border-radius: 0.7rem;
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.dcx-menu-item-cell {
+    display: grid;
+    gap: 0.2rem;
+}
+
+.dcx-menu-item-cell__name {
+    color: #fff;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+/* =========================================================
+   DIGIFYCX MENU EDIT
+   ========================================================= */
+
+.dcx-menu-edit-shell {
+    max-width: 980px;
+}
+
+.dcx-menu-image-edit {
+    display: grid;
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 1.25rem;
+    align-items: start;
+}
+
+.dcx-menu-image-edit__preview,
+.dcx-menu-image-edit__upload {
+    min-width: 0;
+}
+
+.dcx-menu-image-edit__img {
+    width: 180px;
+    height: 120px;
+    border-radius: 0.9rem;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    object-fit: cover;
+    background: rgba(15, 23, 42, 0.4);
+}
+
+.dcx-menu-image-edit__empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 180px;
+    height: 120px;
+    padding: 1rem;
+    border-radius: 0.9rem;
+    border: 1px dashed rgba(148, 163, 184, 0.24);
+    background: rgba(255, 255, 255, 0.03);
+    color: rgba(148, 163, 184, 0.8);
+    text-align: center;
+}
+
+@media (max-width: 767px) {
+    .dcx-menu-image-edit {
+        grid-template-columns: 1fr;
+    }
+}

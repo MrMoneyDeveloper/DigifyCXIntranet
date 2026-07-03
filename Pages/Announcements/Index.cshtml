@@ -4,37 +4,62 @@
     ViewData["Title"] = "Announcements";
 }
 
-<div>
-    <section class="portal-panel">
-        <div class="page-kicker mb-3">What's New</div>
-        <h1 class="page-title">Business notices & <span>announcements</span></h1>
-        <p class="page-copy mt-3 mb-4">Current notices from the business. Pinned updates stay near the top for quick scanning.</p>
+<section class="dcx-announce-hero mb-4">
+    <div class="dcx-announce-hero__content">
+        <div>
+            <div class="dcx-kicker mb-3">What's New</div>
+            <h1 class="dcx-announce-title">Business notices & <span>announcements</span></h1>
+            <p class="dcx-announce-copy mt-3 mb-0">
+                Current notices from the business. Pinned updates stay near the top for quick scanning.
+            </p>
+        </div>
 
-        @if (Model.Items.Count == 0)
-        {
-            <div class="list-card">
-                <div class="list-card-title">No announcements available right now.</div>
-                <div class="list-card-meta">Check back later for business updates.</div>
-            </div>
-        }
-        else
-        {
-            foreach (var item in Model.Items)
+        <img src="~/images/branding/digifycx-logo.png"
+             alt=""
+             aria-hidden="true"
+             class="dcx-announce-watermark" />
+    </div>
+</section>
+
+<section class="dcx-announce-panel">
+    @if (Model.Items.Count == 0)
+    {
+        <div class="dcx-empty-state text-center">
+            <img src="~/images/branding/digifycx-logo.png"
+                 alt=""
+                 aria-hidden="true"
+                 class="dcx-empty-state__logo" />
+            <div class="dcx-list-card__title">No announcements available right now.</div>
+            <div class="dcx-list-card__meta">Check back later for business updates.</div>
+        </div>
+    }
+    else
+    {
+        <div class="dcx-announce-stack">
+            @foreach (var item in Model.Items)
             {
-                <details class="details-card" @(item.IsPinned ? "open" : "")>
-                    <summary>
-                        <span class="fw-bold">@item.Title</span>
-                        @if (item.IsPinned)
-                        {
-                            <span class="meta-pill ms-2">Pinned</span>
-                        }
-                        <span class="d-block list-card-meta">@item.Summary · @item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy")</span>
+                <details class="dcx-announce-card" @(item.IsPinned ? "open" : "")>
+                    <summary class="dcx-announce-card__summary">
+                        <div class="dcx-announce-card__heading">
+                            <span class="dcx-announce-card__title">@item.Title</span>
+
+                            <div class="d-flex flex-wrap align-items-center gap-2 mt-2">
+                                @if (item.IsPinned)
+                                {
+                                    <span class="dcx-chip">Pinned</span>
+                                }
+                                <span class="dcx-announce-card__meta">
+                                    @item.Summary · @item.PublishDateUtc.ToLocalTime().ToString("dd MMM yyyy")
+                                </span>
+                            </div>
+                        </div>
                     </summary>
-                    <div class="details-body">
+
+                    <div class="dcx-announce-card__body">
                         <p class="mb-0">@item.Content</p>
                     </div>
                 </details>
             }
-        }
-    </section>
-</div>
+        </div>
+    }
+</section>

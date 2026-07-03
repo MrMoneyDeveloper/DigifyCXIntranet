@@ -6,54 +6,91 @@
     var toDate = Model.ToUtc?.ToString("yyyy-MM-dd");
 }
 
-<section class="card-elevated p-4">
-    <h1 class="h4 mb-3">Policy Compliance Report</h1>
-    <form method="get" class="row g-2 mb-3">
-        <div class="col-md-3">
-            <label asp-for="PolicyArticleId" class="form-label">Policy</label>
-            <select asp-for="PolicyArticleId" asp-items="Model.PolicyOptions" class="form-select">
-                <option value="">All policies</option>
-            </select>
+<section class="dcx-report-shell">
+    <header class="dcx-report-header">
+        <div>
+            <div class="dcx-kicker mb-3">Policy Reporting</div>
+            <h1 class="dcx-report-title">Policy compliance <span>report</span></h1>
+            <p class="dcx-report-copy mt-3 mb-0">
+                Filter acknowledgements by policy, employee, or date range, then export the current result set when needed.
+            </p>
         </div>
-        <div class="col-md-3">
-            <label asp-for="Employee" class="form-label"></label>
-            <input asp-for="Employee" class="form-control" placeholder="employee username" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="FromUtc" class="form-label">From</label>
-            <input asp-for="FromUtc" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="ToUtc" class="form-label">To</label>
-            <input asp-for="ToUtc" type="date" class="form-control" />
-        </div>
-        <div class="col-md-3 align-self-end d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Filter</button>
-            <a asp-page-handler="ExportCsv"
-               asp-route-PolicyArticleId="@Model.PolicyArticleId"
-               asp-route-Employee="@Model.Employee"
-               asp-route-FromUtc="@fromDate"
-               asp-route-ToUtc="@toDate"
-               class="btn btn-outline-primary">
-                Export CSV
-            </a>
-        </div>
-    </form>
 
-    <div class="table-responsive">
-        <table class="table align-middle">
-            <thead><tr><th>Employee</th><th>Policy Article ID</th><th>Version</th><th>Acknowledged UTC</th></tr></thead>
-            <tbody>
-            @foreach (var item in Model.Items)
-            {
-                <tr>
-                    <td>@item.EmployeeDomainName</td>
-                    <td>@item.PolicyArticleId</td>
-                    <td>@item.PolicyVersion</td>
-                    <td>@item.TimestampUtc.ToString("dd MMM yyyy HH:mm")</td>
-                </tr>
-            }
-            </tbody>
-        </table>
-    </div>
+        <a asp-page-handler="ExportCsv"
+           asp-route-PolicyArticleId="@Model.PolicyArticleId"
+           asp-route-Employee="@Model.Employee"
+           asp-route-FromUtc="@fromDate"
+           asp-route-ToUtc="@toDate"
+           class="dcx-btn-secondary">
+            Export CSV
+        </a>
+    </header>
+
+    <section class="dcx-report-filters">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label asp-for="PolicyArticleId" class="dcx-label mb-2">Policy</label>
+                <select asp-for="PolicyArticleId" asp-items="Model.PolicyOptions" class="dcx-select">
+                    <option value="">All policies</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Employee" class="dcx-label mb-2"></label>
+                <input asp-for="Employee" class="dcx-input" placeholder="employee username" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="FromUtc" class="dcx-label mb-2">From</label>
+                <input asp-for="FromUtc" type="date" class="dcx-input" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="ToUtc" class="dcx-label mb-2">To</label>
+                <input asp-for="ToUtc" type="date" class="dcx-input" />
+            </div>
+
+            <div class="col-12 d-flex flex-wrap gap-2 pt-2">
+                <button type="submit" class="dcx-btn">Filter</button>
+                <a asp-page="/Policies/ComplianceReport" class="dcx-btn-ghost">Reset</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="dcx-report-table-wrap">
+        <div class="table-responsive">
+            <table class="dcx-report-table">
+                <thead>
+                    <tr>
+                        <th>Employee</th>
+                        <th>Policy Article ID</th>
+                        <th>Version</th>
+                        <th>Acknowledged UTC</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items.Count == 0)
+                    {
+                        <tr>
+                            <td colspan="4" class="dcx-report-table__empty">
+                                No compliance records matched your current filters.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>@item.EmployeeDomainName</td>
+                                <td>@item.PolicyArticleId</td>
+                                <td>@item.PolicyVersion</td>
+                                <td>@item.TimestampUtc.ToString("dd MMM yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
 </section>

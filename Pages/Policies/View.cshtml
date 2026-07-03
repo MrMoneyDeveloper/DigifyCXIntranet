@@ -6,64 +6,67 @@
 
 @if (Model.Item is null)
 {
-    <div class="alert alert-warning">Policy article not found.</div>
+    <div class="dcx-inline-alert dcx-inline-alert--warning">
+        Policy article not found.
+    </div>
 }
 else
 {
-    <article class="portal-panel">
-        <div class="d-flex justify-content-between flex-wrap gap-3 mb-3">
-            <div>
-                <div class="page-kicker mb-3">Policy Article</div>
-                <h1 class="h3 mb-1">@Model.Item.Title</h1>
-                <div class="text-muted">@(string.IsNullOrWhiteSpace(Model.Item.SectionName) ? "Policy Library" : Model.Item.SectionName)</div>
+    <article class="dcx-policy-view">
+        <header class="dcx-policy-view__header">
+            <div class="d-flex justify-content-between flex-wrap gap-3">
+                <div>
+                    <div class="dcx-kicker mb-3">Policy Article</div>
+                    <h1 class="dcx-policy-view__title">@Model.Item.Title</h1>
+                    <div class="dcx-policy-view__section">
+                        @(string.IsNullOrWhiteSpace(Model.Item.SectionName) ? "Policy Library" : Model.Item.SectionName)
+                    </div>
+                </div>
+
+                <div class="dcx-policy-view__updated">
+                    Updated @Model.Item.UpdatedAtUtc.ToString("dd MMM yyyy")
+                </div>
             </div>
-            <div class="small text-muted">Updated @Model.Item.UpdatedAtUtc.ToString("dd MMM yyyy")</div>
-        </div>
+        </header>
 
         @if (!string.IsNullOrWhiteSpace(Model.AcknowledgeMessage))
         {
-            <div class="alert alert-success">@Model.AcknowledgeMessage</div>
+            <div class="dcx-inline-alert dcx-inline-alert--success mb-3">
+                @Model.AcknowledgeMessage
+            </div>
         }
 
-        <div class="soft-card mb-3 zendesk-policy-content">
-            @* Fix: Using Html.Raw to interpret Zendesk HTML formatting tags properly *@
+        <section class="dcx-policy-reader mb-3 zendesk-policy-content">
             @Html.Raw(Model.Item.Body)
+        </section>
+
+        <div class="d-flex flex-wrap gap-3 mb-3">
+            <a href="@Model.Item.HtmlUrl"
+               target="_blank"
+               rel="noreferrer noopener"
+               class="dcx-btn-secondary">
+                Open Source Article
+            </a>
         </div>
-        <a href="@Model.Item.HtmlUrl" target="_blank" rel="noreferrer noopener" class="btn btn-sm btn-outline-primary mb-3">Open Source Article</a>
 
         @if (Model.AlreadyAcknowledged)
         {
-            <div class="alert alert-info mb-0">You have already acknowledged this policy version.</div>
+            <div class="dcx-inline-alert dcx-inline-alert--info mb-0">
+                You have already acknowledged this policy version.
+            </div>
         }
         else
         {
-            <form method="post" asp-page-handler="Acknowledge">
+            <form method="post" asp-page-handler="Acknowledge" class="dcx-policy-ack">
                 <input type="hidden" name="id" value="@Model.Item.Id" />
-                <div class="form-check mb-2">
-                    <input class="form-check-input" type="checkbox" id="ack" required />
-                    <label class="form-check-label" for="ack">
-                        I acknowledge that I have read this policy.
-                    </label>
-                </div>
-                <button type="submit" class="btn btn-primary">Acknowledge Policy</button>
+
+                <label class="dcx-policy-ack__check">
+                    <input type="checkbox" id="ack" required />
+                    <span>I acknowledge that I have read this policy.</span>
+                </label>
+
+                <button type="submit" class="dcx-btn">Acknowledge Policy</button>
             </form>
         }
     </article>
-
-    <style>
-        /* target paragraphs and list items inside the policy container */
-        .zendesk-policy-content p,
-        .zendesk-policy-content li {
-            margin-bottom: 1.25rem; /* Adds smooth spacing below elements */
-            line-height: 1.6; /* Gives lines inside paragraphs extra breathing room */
-        }
-
-        /* add space specifically around bold section headers/numbered points */
-        .zendesk-policy-content h1,
-        .zendesk-policy-content h2,
-        .zendesk-policy-content h3 {
-            margin-top: 1.75rem;
-            margin-bottom: 0.75rem;
-        }
-    </style>
 }
