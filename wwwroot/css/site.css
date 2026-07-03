@@ -3989,6 +3989,11 @@ body {
     padding-right: 2.75rem;
 }
 
+.dcx-input-select option {
+    background-color: #fff;
+    color: #111827;
+}
+
 .dcx-policy-editor {
     min-height: 360px;
     font-variant-numeric: tabular-nums lining-nums;
