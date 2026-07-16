@@ -29,17 +29,20 @@ public class UserRegistrySyncWorker : BackgroundService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ILogger<UserRegistrySyncWorker> _logger;
     private readonly IOptionsMonitor<UserRegistrySyncOptions> _options;
+    private readonly IOptionsMonitor<AuthModeOptions> _authModeOptions;
 
     public UserRegistrySyncWorker(
         IServiceProvider serviceProvider,
         IHttpClientFactory httpClientFactory,
         ILogger<UserRegistrySyncWorker> logger,
-        IOptionsMonitor<UserRegistrySyncOptions> options)
+        IOptionsMonitor<UserRegistrySyncOptions> options,
+        IOptionsMonitor<AuthModeOptions> authModeOptions)
     {
         _serviceProvider   = serviceProvider;
         _httpClientFactory = httpClientFactory;
         _logger            = logger;
         _options           = options;
+        _authModeOptions   = authModeOptions;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -223,8 +226,18 @@ public class UserRegistrySyncWorker : BackgroundService
             var deleted = 0;
             if (options.DeleteRemovedUsers)
             {
+                var authMode = _authModeOptions.CurrentValue;
+                var protectedTestUsernames = authMode.SeedConfiguredTestUsers
+                    ? authMode.DevelopmentUsers
+                        .Where(user => !string.IsNullOrWhiteSpace(user.Username))
+                        .Select(user => userManager.NormalizeName(user.Username.Trim()))
+                        .Where(username => !string.IsNullOrWhiteSpace(username))
+                        .ToHashSet(StringComparer.Ordinal)
+                    : new HashSet<string>(StringComparer.Ordinal);
+
                 var usersToDelete = existingUsers.Values
-                    .Where(u => !sheetNormalisedNames.Contains(u.NormalizedUserName ?? string.Empty))
+                    .Where(u => !sheetNormalisedNames.Contains(u.NormalizedUserName ?? string.Empty) &&
+                                !protectedTestUsernames.Contains(u.NormalizedUserName ?? string.Empty))
                     .ToList();
 
                 foreach (var staleUser in usersToDelete)

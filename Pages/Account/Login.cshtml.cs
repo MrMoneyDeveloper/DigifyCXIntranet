@@ -77,8 +77,10 @@ public class LoginModel : PageModel
         var inputPassword = Input.Password;
 
         // ── 1. Hardcoded dev credentials ──────────────────────────────────
-        var devUser = _authModeOptions.DevelopmentUsers.FirstOrDefault(
-            x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase));
+        var devUser = _environment.IsDevelopment()
+            ? _authModeOptions.DevelopmentUsers.FirstOrDefault(
+                x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase))
+            : null;
 
         if (devUser is not null)
         {
@@ -96,7 +98,7 @@ public class LoginModel : PageModel
                 new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(devUser.DisplayName)
                     ? devUser.Username
                     : devUser.DisplayName),
-                new(ClaimTypes.Role, NormalizeRole(devUser.Role))
+                new(ClaimTypes.Role, AppRoles.NormalizeOrEmployee(devUser.Role))
             };
 
             var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -109,11 +111,10 @@ public class LoginModel : PageModel
         }
 
         // ── 2. Database employee accounts ─────────────────────────────────
+        var normalizedUsername = inputUsername.ToUpperInvariant();
         var dbUser = await _db.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u =>
-                u.UserName != null &&
-                u.UserName.ToLower() == inputUsername.ToLower());
+            .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUsername);
 
         if (dbUser == null)
         {
@@ -144,7 +145,7 @@ public class LoginModel : PageModel
             return Page();
         }
 
-        var role        = NormalizeRole(dbUser.CustomRole);
+        var role        = AppRoles.NormalizeOrEmployee(dbUser.CustomRole);
         var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
             ? (dbUser.UserName ?? inputUsername)
             : dbUser.DisplayName;
@@ -176,21 +177,4 @@ public class LoginModel : PageModel
         public string Password { get; set; } = string.Empty;
     }
 
-    private static string NormalizeRole(string? role)
-    {
-        if (string.IsNullOrWhiteSpace(role))
-        {
-            return AppRoles.Employee;
-        }
-
-        var candidate = role.Trim();
-        return candidate is AppRoles.Employee
-            or AppRoles.FinanceAdmin
-            or AppRoles.HrAdmin
-            or AppRoles.CanteenAdmin
-            or AppRoles.SystemAdmin
-            or AppRoles.SuperAdmin
-            ? candidate
-            : AppRoles.Employee;
-    }
 }

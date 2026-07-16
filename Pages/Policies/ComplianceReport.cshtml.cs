@@ -1,11 +1,13 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using System.Text;
 
 namespace DigifyCXIntranet.Pages.Policies;
@@ -14,10 +16,12 @@ namespace DigifyCXIntranet.Pages.Policies;
 public class ComplianceReportModel : PageModel
 {
     private readonly PolicyDbContext _db;
+    private readonly ZendeskSyncOptions _zendeskSyncOptions;
 
-    public ComplianceReportModel(PolicyDbContext db)
+    public ComplianceReportModel(PolicyDbContext db, IOptions<ZendeskSyncOptions> zendeskSyncOptions)
     {
         _db = db;
+        _zendeskSyncOptions = zendeskSyncOptions.Value;
     }
 
     [BindProperty(SupportsGet = true)]
@@ -40,6 +44,7 @@ public class ComplianceReportModel : PageModel
         PolicyOptions = await _db.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
+            .InAllowedZendeskSections(_zendeskSyncOptions)
             .OrderBy(x => x.Title)
             .Select(x => new SelectListItem
             {

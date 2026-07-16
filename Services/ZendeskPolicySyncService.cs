@@ -1,4 +1,4 @@
-using System.Net.Http.Headers;
+﻿using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 using DigifyCXIntranet.Data;
@@ -48,10 +48,8 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
             return;
         }
 
-        // Build a HashSet for O(1) section lookups. Null = no filter, sync everything.
-        var allowedSections = _options.AllowedSectionIds.Count > 0
-            ? new HashSet<long>(_options.AllowedSectionIds)
-            : null;
+        // Null = no filter configured, so keep the historical sync-everything behavior.
+        var allowedSections = ZendeskPolicyArticleFilters.GetAllowedSectionIds(_options);
 
         if (allowedSections is not null)
             _logger.LogInformation(
@@ -59,7 +57,7 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
                 allowedSections.Count,
                 string.Join(", ", allowedSections));
         else
-            _logger.LogInformation("Zendesk sync — no section filter configured, all articles will be synced.");
+            _logger.LogInformation("Zendesk sync â€” no section filter configured, all articles will be synced.");
 
         try
         {
@@ -72,16 +70,23 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
 
             var now = DateTime.UtcNow;
             int saved = 0, skipped = 0;
+            var skippedSectionIds = new HashSet<long>();
 
             foreach (var article in articles)
             {
                 var zendeskArticleId = article.GetProperty("id").GetInt64();
                 var sectionId        = article.TryGetProperty("section_id", out var sectionNode) ? sectionNode.GetInt64() : 0;
+                long? nullableSectionId = sectionId == 0 ? null : sectionId;
 
                 // Skip articles whose section is not in the allowlist.
-                if (allowedSections is not null && !allowedSections.Contains(sectionId))
+                if (!ZendeskPolicyArticleFilters.IsAllowedSection(nullableSectionId, allowedSections))
                 {
                     skipped++;
+                    if (nullableSectionId.HasValue)
+                    {
+                        skippedSectionIds.Add(nullableSectionId.Value);
+                    }
+
                     continue;
                 }
 
@@ -116,7 +121,7 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
                 record.UpdatedAtUtc = updatedAt;
                 record.VersionLabel = $"v{updatedAt:yyyyMMddHHmm}";
                 record.SyncedAtUtc  = now;
-                record.SectionId    = sectionId == 0 ? null : sectionId;
+                record.SectionId    = nullableSectionId;
                 record.SectionName  = section?.Name  ?? string.Empty;
                 record.CategoryId   = category?.Id;
                 record.CategoryName = category?.Name ?? string.Empty;
@@ -128,7 +133,7 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
             if (allowedSections is not null)
             {
                 var stale = await _db.ZendeskPolicyArticles
-                    .Where(a => a.SectionId.HasValue && !allowedSections.Contains(a.SectionId.Value))
+                    .Where(a => !a.SectionId.HasValue || !allowedSections.Contains(a.SectionId.Value))
                     .ToListAsync(cancellationToken);
 
                 if (stale.Count > 0)
@@ -143,7 +148,7 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
             log.CompletedUtc   = DateTime.UtcNow;
             log.Succeeded      = true;
             log.ItemsProcessed = saved;
-            log.Message        = $"Synced {saved} article(s) ({skipped} skipped — not in allowed sections), {sections.Count} section(s), {categories.Count} category/categories.";
+            log.Message        = $"Synced {saved} article(s) ({skipped} skipped from {skippedSectionIds.Count} non-allowed section(s)), {sections.Count} section(s), {categories.Count} category/categories.";
             await _db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex)

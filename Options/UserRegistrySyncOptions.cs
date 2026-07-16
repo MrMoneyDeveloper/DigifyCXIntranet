@@ -9,8 +9,7 @@ public class UserRegistrySyncOptions
     public bool Enabled { get; set; } = true;
 
     [Url]
-    public string SheetApiUrl { get; set; } =
-        "https://script.google.com/macros/s/AKfycbxrrhzqV_pFVYpUH-vv2i7EUA5x7i184HokCBVdUxNJVe49r6RBwxI24S2ZVauUo9A5Zg/exec";
+    public string SheetApiUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// Initial startup delay before the first sync, in seconds.

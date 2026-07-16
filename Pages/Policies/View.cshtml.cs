@@ -1,19 +1,23 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Policies;
 
 public class ViewModel : PageModel
 {
     private readonly PolicyDbContext _db;
+    private readonly ZendeskSyncOptions _zendeskSyncOptions;
 
-    public ViewModel(PolicyDbContext db)
+    public ViewModel(PolicyDbContext db, IOptions<ZendeskSyncOptions> zendeskSyncOptions)
     {
         _db = db;
+        _zendeskSyncOptions = zendeskSyncOptions.Value;
     }
 
     public ZendeskPolicyArticle? Item { get; private set; }
@@ -65,7 +69,11 @@ public class ViewModel : PageModel
 
     private async Task LoadAsync(int id)
     {
-        Item = await _db.ZendeskPolicyArticles.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsPublished);
+        Item = await _db.ZendeskPolicyArticles
+            .AsNoTracking()
+            .Where(x => x.Id == id && x.IsPublished)
+            .InAllowedZendeskSections(_zendeskSyncOptions)
+            .FirstOrDefaultAsync();
         if (Item is null)
         {
             return;

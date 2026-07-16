@@ -16,6 +16,7 @@ public class IndexModel : PageModel
     private readonly PolicyDbContext _policyDb;
     private readonly IAdminAccessService _adminAccessService;
     private readonly HomePageOptions _homePageOptions;
+    private readonly ZendeskSyncOptions _zendeskSyncOptions;
 
     public IndexModel(
         ApplicationDbContext db,
@@ -23,7 +24,8 @@ public class IndexModel : PageModel
         HrDbContext hrDb,
         PolicyDbContext policyDb,
         IAdminAccessService adminAccessService,
-        IOptions<HomePageOptions> homePageOptions)
+        IOptions<HomePageOptions> homePageOptions,
+        IOptions<ZendeskSyncOptions> zendeskSyncOptions)
     {
         _db = db;
         _canteenDb = canteenDb;
@@ -31,6 +33,7 @@ public class IndexModel : PageModel
         _policyDb = policyDb;
         _adminAccessService = adminAccessService;
         _homePageOptions = homePageOptions.Value;
+        _zendeskSyncOptions = zendeskSyncOptions.Value;
     }
 
     public bool IsAdmin { get; private set; }
@@ -69,6 +72,7 @@ public class IndexModel : PageModel
         Policies = await _policyDb.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
+            .InAllowedZendeskSections(_zendeskSyncOptions)
             .OrderByDescending(x => x.UpdatedAtUtc)
             .Take(5)
             .ToListAsync();
@@ -77,6 +81,7 @@ public class IndexModel : PageModel
         PolicyCount = await _policyDb.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
+            .InAllowedZendeskSections(_zendeskSyncOptions)
             .CountAsync();
 
         var username = UserNameHelper.GetShortName(User);

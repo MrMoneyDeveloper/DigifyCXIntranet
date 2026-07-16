@@ -5,7 +5,13 @@
 
 # ASP.NET Core environment-specific config — NEVER commit these
 appsettings.Development.json
+appsettings.Test.json
 appsettings.Production.json
+appsettings.*.local.json
+*.secrets.json
+artifacts/
+App_Data/Outbox/
+wwwroot/uploads/
 
 # User-specific files
 *.rsuser

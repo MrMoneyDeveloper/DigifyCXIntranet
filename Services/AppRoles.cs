@@ -40,4 +40,36 @@ public static class AppRoles
         FinanceAdmin,
         SystemAdmin
     ];
+
+    public static bool TryNormalize(string? role, out string normalizedRole)
+    {
+        normalizedRole = Employee;
+        if (string.IsNullOrWhiteSpace(role))
+        {
+            return false;
+        }
+
+        var match = new[]
+        {
+            Employee,
+            FinanceAdmin,
+            HrAdmin,
+            CanteenAdmin,
+            SystemAdmin,
+            SuperAdmin
+        }.FirstOrDefault(candidate => string.Equals(candidate, role.Trim(), StringComparison.OrdinalIgnoreCase));
+
+        if (match is null)
+        {
+            return false;
+        }
+
+        normalizedRole = match;
+        return true;
+    }
+
+    public static string NormalizeOrEmployee(string? role)
+    {
+        return TryNormalize(role, out var normalizedRole) ? normalizedRole : Employee;
+    }
 }

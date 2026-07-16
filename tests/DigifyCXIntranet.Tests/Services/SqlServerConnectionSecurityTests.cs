@@ -35,6 +35,34 @@ public sealed class SqlServerConnectionSecurityTests
     }
 
     [Fact]
+    public void Validate_AllowsTrustServerCertificate_WhenInternalTestOverrideIsEnabled()
+    {
+        var environment = new TestHostEnvironment("Production");
+
+        var action = () => SqlServerConnectionSecurity.Validate(
+            "Server=sql;Database=app;Encrypt=True;TrustServerCertificate=True",
+            environment,
+            NullLogger.Instance,
+            allowTrustServerCertificateForInternalTest: true);
+
+        action.Should().NotThrow();
+    }
+
+    [Fact]
+    public void Validate_RejectsUnencryptedConnection_WhenInternalTestOverrideIsEnabled()
+    {
+        var environment = new TestHostEnvironment("Production");
+
+        var action = () => SqlServerConnectionSecurity.Validate(
+            "Server=sql;Database=app;Encrypt=False;TrustServerCertificate=True",
+            environment,
+            NullLogger.Instance,
+            allowTrustServerCertificateForInternalTest: true);
+
+        action.Should().Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void Validate_AllowsWeakConnectionString_InDevelopment()
     {
         var environment = new TestHostEnvironment(Environments.Development);

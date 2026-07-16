@@ -47,6 +47,7 @@ public class PoliciesModel : PageModel
     {
         Items = await _db.ZendeskPolicyArticles
             .AsNoTracking()
+            .InAllowedZendeskSections(_options)
             .OrderBy(x => x.CategoryName)
             .ThenBy(x => x.SectionName)
             .ThenByDescending(x => x.UpdatedAtUtc)

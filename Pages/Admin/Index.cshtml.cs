@@ -1,8 +1,10 @@
 using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Admin;
 
@@ -13,19 +15,22 @@ public class IndexModel : PageModel
     private readonly HrDbContext _hrDb;
     private readonly PolicyDbContext _policyDb;
     private readonly IAuthorizationService _authorizationService;
+    private readonly ZendeskSyncOptions _zendeskSyncOptions;
 
     public IndexModel(
         ApplicationDbContext db,
         CanteenDbContext canteenDb,
         HrDbContext hrDb,
         PolicyDbContext policyDb,
-        IAuthorizationService authorizationService)
+        IAuthorizationService authorizationService,
+        IOptions<ZendeskSyncOptions> zendeskSyncOptions)
     {
         _db = db;
         _canteenDb = canteenDb;
         _hrDb = hrDb;
         _policyDb = policyDb;
         _authorizationService = authorizationService;
+        _zendeskSyncOptions = zendeskSyncOptions.Value;
     }
 
     public int PolicyCount { get; private set; }
@@ -51,7 +56,9 @@ public class IndexModel : PageModel
         CanManageUsers = (await _authorizationService.AuthorizeAsync(User, AppPolicies.UserManagement)).Succeeded;
         CanViewFinance = (await _authorizationService.AuthorizeAsync(User, AppPolicies.FinanceLedger)).Succeeded;
 
-        PolicyCount = await _policyDb.ZendeskPolicyArticles.CountAsync();
+        PolicyCount = await _policyDb.ZendeskPolicyArticles
+            .InAllowedZendeskSections(_zendeskSyncOptions)
+            .CountAsync();
         AnnouncementCount = await _db.Announcements.CountAsync(x => !x.IsDeleted);
         JobCount = await _hrDb.JobPostings.CountAsync(x => !x.IsDeleted);
         FaqCount = await _db.FaqItems.CountAsync();

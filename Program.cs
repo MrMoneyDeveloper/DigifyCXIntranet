@@ -66,6 +66,8 @@ builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
 builder.Services.Configure<ActivationOptions>(
     builder.Configuration.GetSection(ActivationOptions.SectionName));
+builder.Services.Configure<SqlServerSecurityOptions>(
+    builder.Configuration.GetSection(SqlServerSecurityOptions.SectionName));
 
 // ── Zendesk inbound webhook (password reset trigger from IT) ──────────────
 builder.Services.Configure<ZendeskWebhookOptions>(
@@ -118,6 +120,7 @@ builder.Services.AddScoped<IZendeskPolicySyncService, ZendeskPolicySyncService>(
 builder.Services.AddScoped<IZendeskTicketService, ZendeskTicketService>();
 builder.Services.AddScoped<IFinanceAuditService, FinanceAuditService>();
 builder.Services.AddScoped<IEmailSender, SmtpOrOutboxEmailSender>();
+builder.Services.AddScoped<ConfiguredTestUserSeeder>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
 builder.Services.AddHttpClient(nameof(HackerNewsCacheService), (serviceProvider, client) =>
@@ -154,6 +157,8 @@ builder.Services.AddControllers();
 
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
+var allowInsecureHttpForInternalTest =
+    !builder.Environment.IsDevelopment() && authMode.AllowInsecureHttpForInternalTest;
 
 if (useWindowsAuth)
 {
@@ -171,7 +176,7 @@ else
             options.ExpireTimeSpan = TimeSpan.FromHours(8);
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
         });
@@ -261,7 +266,18 @@ builder.Services.AddQuartz(q =>
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
 var app = builder.Build();
-SqlServerConnectionSecurity.Validate(connectionString, app.Environment, app.Logger);
+var sqlServerSecurity = app.Services.GetRequiredService<IOptions<SqlServerSecurityOptions>>().Value;
+SqlServerConnectionSecurity.Validate(
+    connectionString,
+    app.Environment,
+    app.Logger,
+    sqlServerSecurity.AllowTrustServerCertificateForInternalTest);
+
+if (allowInsecureHttpForInternalTest)
+{
+    app.Logger.LogWarning(
+        "HTTP authentication cookies are temporarily allowed because AuthMode:AllowInsecureHttpForInternalTest is enabled. Use this only for the internal port 8080 test binding and disable it when HTTPS is configured.");
+}
 
 app.UseForwardedHeaders();
 
@@ -272,11 +288,18 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    if (!allowInsecureHttpForInternalTest)
+    {
+        app.UseHsts();
+    }
 }
 
 app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseHttpsRedirection();
+if (!allowInsecureHttpForInternalTest)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
@@ -332,6 +355,8 @@ using (var scope = app.Services.CreateScope())
 
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await DatabaseSchemaRepair.EnsurePostMigrationSchemaAsync(db);
+    var testUserSeeder = scope.ServiceProvider.GetRequiredService<ConfiguredTestUserSeeder>();
+    await testUserSeeder.SeedAsync();
     await SeedData.InitializeAsync(db);
 }
 
