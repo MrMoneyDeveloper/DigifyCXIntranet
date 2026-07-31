@@ -4,15 +4,25 @@
     ViewData["Title"] = "Job Postings";
 }
 
-<section class="hero-panel mb-4">
-    <div class="page-kicker mb-3">Internal Openings</div>
-    <h1 class="page-title">Roles that power <span>high performance</span></h1>
-    <p class="page-copy mt-3 mb-0">Apply for yourself or refer someone strong. All submissions go directly to HR via Zendesk.</p>
+<section class="dcx-jobs-hero mb-4">
+    <div class="dcx-jobs-hero__content">
+        <div>
+            <div class="dcx-kicker mb-3">Internal Openings</div>
+            <h1 class="dcx-jobs-title">Roles that power <span>high performance</span></h1>
+            <p class="dcx-jobs-copy mt-3 mb-0">
+                Apply for yourself or refer someone strong. All submissions go directly to HR via Zendesk.
+            </p>
+        </div>
+
+        <div class="dcx-jobs-watermark-wrap">
+            <img src="~/images/branding/digifycx-logo.png"
+                 alt=""
+                 aria-hidden="true"
+                 class="dcx-jobs-watermark" />
+        </div>
+    </div>
 </section>
 
-@* ================================================================ *@
-@* INTERNAL APPLICATION RESULT (redirected from Apply page)         *@
-@* ================================================================ *@
 @if (!string.IsNullOrWhiteSpace(Model.JobApplyMessage))
 {
     <div class="alert alert-success d-flex align-items-start gap-3 mb-4" role="alert">
@@ -29,7 +39,8 @@
                     Zendesk Ticket&#160;<strong>#@Model.JobApplyTicketId</strong>
                     @if (!string.IsNullOrWhiteSpace(Model.JobApplyTicketUrl))
                     {
-                        <span>&mdash;
+                        <span>
+                            &mdash;
                             <a href="@Model.JobApplyTicketUrl" target="_blank" rel="noopener noreferrer"
                                class="alert-link fw-semibold">View in Zendesk &rarr;</a>
                         </span>
@@ -40,9 +51,6 @@
     </div>
 }
 
-@* ================================================================ *@
-@* REFERRAL RESULT                                                  *@
-@* ================================================================ *@
 @if (!string.IsNullOrWhiteSpace(Model.ReferralMessage))
 {
     <div class="alert alert-success d-flex align-items-start gap-3 mb-4" role="alert">
@@ -59,7 +67,8 @@
                     Zendesk Ticket&#160;<strong>#@Model.ReferralTicketId</strong>
                     @if (!string.IsNullOrWhiteSpace(Model.ReferralTicketUrl))
                     {
-                        <span>&mdash;
+                        <span>
+                            &mdash;
                             <a href="@Model.ReferralTicketUrl" target="_blank" rel="noopener noreferrer"
                                class="alert-link fw-semibold">View in Zendesk &rarr;</a>
                         </span>
@@ -88,13 +97,15 @@
     </div>
 }
 
-@* ================================================================ *@
-@* JOB LISTING                                                      *@
-@* ================================================================ *@
 @if (Model.Items.Count == 0)
 {
-    <section class="soft-card text-center py-5">
-        <h2 class="h5 mb-0">No active job postings right now</h2>
+    <section class="dcx-empty-state text-center">
+        <img src="~/images/branding/digifycx-logo.png"
+             alt=""
+             aria-hidden="true"
+             class="dcx-empty-state__logo" />
+        <h2 class="h5 mb-2">No active job postings right now</h2>
+        <p class="mb-0 text-white-50">New internal openings and referral-enabled roles will appear here.</p>
     </section>
 }
 else
@@ -103,13 +114,13 @@ else
         @foreach (var item in Model.Items)
         {
             <div class="col-xl-6">
-                <article class="soft-card h-100">
+                <article class="dcx-job-card h-100">
                     @if (item.UseVisualAd)
                     {
                         var backgroundUrl = string.IsNullOrWhiteSpace(item.AdBackgroundImagePath)
                             ? "/images/job-ad-a4-template.svg"
                             : item.AdBackgroundImagePath;
-                        <div class="job-ad-a4 mb-3" style="background-image:linear-gradient(180deg,rgba(15,27,45,0.12),rgba(15,27,45,0.82)),url('@backgroundUrl');">
+                        <div class="job-ad-a4 mb-3" style="background-image:linear-gradient(180deg,rgba(15,27,45,0.18),rgba(15,27,45,0.88)),url('@backgroundUrl');">
                             <div class="job-ad-layer">
                                 <div class="job-ad-pill">@item.Department</div>
                                 <h2 class="job-ad-title">@(string.IsNullOrWhiteSpace(item.AdHeadline) ? item.Title : item.AdHeadline)</h2>
@@ -121,23 +132,23 @@ else
 
                     <div class="d-flex flex-column gap-3">
                         <div>
-                            <h2 class="h4 mb-2">@item.Title</h2>
-                            <p class="page-copy mb-0">@item.Description</p>
+                            <h2 class="dcx-job-card__title mb-2">@item.Title</h2>
+                            <p class="dcx-job-card__copy mb-0">@item.Description</p>
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
-                            <span class="meta-pill">@item.Department</span>
+                            <span class="dcx-chip">@item.Department</span>
                             @if (item.IsExternalReferral)
                             {
-                                <span class="meta-pill">Referral enabled</span>
+                                <span class="dcx-chip">Referral enabled</span>
                             }
                         </div>
 
-                        <a asp-page="/Jobs/Apply" asp-route-id="@item.Id" class="btn btn-primary">Apply Internally</a>
+                        <a asp-page="/Jobs/Apply" asp-route-id="@item.Id" class="dcx-btn">Apply Internally</a>
 
                         @if (item.IsExternalReferral)
                         {
-                            <details class="details-card">
+                            <details class="details-card dcx-details-card">
                                 <summary>
                                     <span class="fw-bold">Refer someone</span>
                                     <span class="d-block list-card-meta">Candidate details and optional CV</span>
@@ -151,7 +162,6 @@ else
                                     }
                                     <form method="post" asp-page-handler="Refer" enctype="multipart/form-data" class="row g-3">
                                         @Html.AntiForgeryToken()
-                                        @* Use name/value directly — asp-for overrides value with model default (0) *@
                                         <input type="hidden" name="Referral.JobPostingId" value="@item.Id" />
                                         <div class="col-md-6">
                                             <label class="form-label">Candidate Name <span class="text-danger">*</span></label>
@@ -170,7 +180,7 @@ else
                                             </span>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Phone <span class="text-muted">(optional)</span></label>
+                                            <label class="form-label">Phone Number<span class="text-muted"></span></label>
                                             <input name="Referral.CandidatePhone" class="form-control" placeholder="+27 xx xxx xxxx"
                                                    value="@(Model.Referral.JobPostingId == item.Id ? Model.Referral.CandidatePhone : "")" />
                                         </div>
@@ -185,10 +195,9 @@ else
                                             <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
                                             <textarea name="Referral.Notes" rows="3" class="form-control" placeholder="Why are you referring this candidate?">@(Model.Referral.JobPostingId == item.Id ? Model.Referral.Notes : "")</textarea>
                                         </div>
-                                        <div class="col-12">
-                                            <button type="submit" class="btn btn-primary">Submit Referral</button>
-                                            <span class="text-muted small ms-2">Submits directly to HR via Zendesk</span>
-
+                                        <div class="col-12 d-flex flex-wrap align-items-center gap-3">
+                                            <button type="submit" class="dcx-btn">Submit Referral</button>
+                                            <span class="text-muted small">Submits directly to HR via Zendesk</span>
                                         </div>
                                     </form>
                                 </div>

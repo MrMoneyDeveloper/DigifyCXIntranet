@@ -4,91 +4,171 @@
     ViewData["Title"] = "Manage Canteen Menu";
 }
 
-<div class="row g-4">
-    <div class="col-lg-5">
-        <section class="card-elevated p-4">
-            <h1 class="h5 mb-3">Add Menu Item</h1>
-            <form method="post" asp-page-handler="Create" enctype="multipart/form-data" class="row g-3">
-                <div class="col-12">
-                    <label asp-for="NewItem.Name" class="form-label"></label>
-                    <input asp-for="NewItem.Name" class="form-control" />
-                    <span asp-validation-for="NewItem.Name" class="text-danger"></span>
+<section class="dcx-admin-manage-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Index" class="dcx-icon-back" title="Back to Dashboard" aria-label="Back to Dashboard">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+
+            <div>
+                <div class="dcx-kicker mb-2">Canteen</div>
+                <h1 class="dcx-admin-manage-title">Manage canteen menu</h1>
+            </div>
+        </div>
+    </header>
+
+    <div class="dcx-admin-manage-grid">
+        <div class="dcx-admin-form-panel">
+            <div class="dcx-admin-form-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Create</div>
+                    <h2 class="dcx-section-heading mb-0">Add menu item</h2>
                 </div>
-                <div class="col-sm-6">
-                    <label asp-for="NewItem.Price" class="form-label"></label>
-                    <input asp-for="NewItem.Price" type="number" step="0.01" class="form-control" />
+            </div>
+
+            <form method="post" asp-page-handler="Create" enctype="multipart/form-data" class="dcx-admin-form">
+                <div>
+                    <label asp-for="NewItem.Name" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.Name" class="dcx-input" />
+                    <span asp-validation-for="NewItem.Name" class="dcx-field-error mt-1"></span>
                 </div>
-                <div class="col-sm-6">
-                    <label asp-for="NewItem.MealSlot" class="form-label"></label>
-                    <select asp-for="NewItem.MealSlot" class="form-select" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.MealSlot>()"></select>
+
+                <div class="row g-3">
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.Price" class="dcx-label mb-2"></label>
+                        <input asp-for="NewItem.Price" type="number" step="0.01" class="dcx-input" />
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.MealSlot" class="dcx-label mb-2"></label>
+                        <select asp-for="NewItem.MealSlot"
+                                asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.MealSlot>()"
+                                class="dcx-input dcx-input-select"></select>
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.Emoji" class="dcx-label mb-2"></label>
+                        <input asp-for="NewItem.Emoji" class="dcx-input" />
+                    </div>
+
+                    <div class="col-sm-6">
+                        <label asp-for="NewItem.DisplayOrder" class="dcx-label mb-2"></label>
+                        <input asp-for="NewItem.DisplayOrder" type="number" class="dcx-input" />
+                    </div>
                 </div>
-                <div class="col-sm-6">
-                    <label asp-for="NewItem.Emoji" class="form-label"></label>
-                    <input asp-for="NewItem.Emoji" class="form-control" />
+
+                <div>
+                    <label asp-for="NewItem.IconClass" class="dcx-label mb-2"></label>
+                    <input asp-for="NewItem.IconClass" class="dcx-input dcx-code-input" />
                 </div>
-                <div class="col-sm-6">
-                    <label asp-for="NewItem.DisplayOrder" class="form-label"></label>
-                    <input asp-for="NewItem.DisplayOrder" type="number" class="form-control" />
+
+                <div>
+                    <label asp-for="FoodImageUpload" class="dcx-label mb-2">Food Image</label>
+                    <input asp-for="FoodImageUpload"
+                           type="file"
+                           accept=".jpg,.jpeg,.png,.webp"
+                           class="dcx-file-input" />
+                    <span asp-validation-for="FoodImageUpload" class="dcx-field-error mt-1"></span>
                 </div>
-                <div class="col-12">
-                    <label asp-for="NewItem.IconClass" class="form-label"></label>
-                    <input asp-for="NewItem.IconClass" class="form-control" />
-                </div>
-                <div class="col-12">
-                    <label asp-for="FoodImageUpload" class="form-label">Food Image</label>
-                    <input asp-for="FoodImageUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
-                    <span asp-validation-for="FoodImageUpload" class="text-danger"></span>
-                </div>
-                <div class="col-12">
-                    <button type="submit" class="btn btn-primary">Save Menu Item</button>
-                </div>
+
+                <button type="submit" class="dcx-admin-submit">Save Menu Item</button>
             </form>
+        </div>
+
+        <section class="dcx-admin-table-panel">
+            <div class="dcx-admin-table-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Catalog</div>
+                    <h2 class="dcx-section-heading mb-0">Menu items</h2>
+                </div>
+
+                <span class="dcx-admin-count-pill">@Model.Items.Count Total</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="dcx-report-table">
+                    <thead>
+                        <tr>
+                            <th>Image</th>
+                            <th>Name</th>
+                            <th>Meal</th>
+                            <th>Price</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr>
+                                <td>
+                                    @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                                    {
+                                        <img src="@item.ImagePath"
+                                             alt="@item.Name"
+                                             class="dcx-menu-thumb" />
+                                    }
+                                    else
+                                    {
+                                        <span class="dcx-menu-emoji">@item.Emoji</span>
+                                    }
+                                </td>
+                                <td>
+                                    <div class="dcx-menu-item-cell">
+                                        <div class="dcx-menu-item-cell__name">@item.Name</div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="dcx-format-pill dcx-format-pill--standard">@item.MealSlot</span>
+                                </td>
+                                <td class="dcx-num">R @item.Price.ToString("N2")</td>
+                                <td>
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="dcx-status-pill dcx-status-pill--success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dcx-status-pill dcx-status-pill--muted">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="dcx-admin-actions-inline">
+                                        <a asp-page="/Admin/MenuEdit"
+                                           asp-route-id="@item.Id"
+                                           class="dcx-mini-btn dcx-mini-btn--edit">
+                                            Edit
+                                        </a>
+
+                                        <form method="post" asp-page-handler="ToggleActive" class="m-0">
+                                            <input type="hidden" name="id" value="@item.Id" />
+                                            <button type="submit" class="dcx-mini-btn dcx-mini-btn--neutral">
+                                                @(item.IsActive ? "Deactivate" : "Activate")
+                                            </button>
+                                        </form>
+
+                                        @if (!item.IsActive)
+                                        {
+                                            <form method="post" asp-page-handler="Delete" class="m-0">
+                                                <input type="hidden" name="id" value="@item.Id" />
+                                                <button type="submit" class="dcx-mini-btn dcx-mini-btn--danger">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
         </section>
     </div>
-    <div class="col-lg-7">
-        <section class="card-elevated p-4">
-            <h2 class="h6 mb-3">Menu Items</h2>
-            <table class="table align-middle">
-                <thead><tr><th>Image</th><th>Name</th><th>Meal</th><th>Price</th><th>Status</th><th></th></tr></thead>
-                <tbody>
-                @foreach (var item in Model.Items)
-                {
-                    <tr>
-                        <td>
-                            @if (!string.IsNullOrWhiteSpace(item.ImagePath))
-                            {
-                                <img src="@item.ImagePath" alt="@item.Name" class="rounded object-cover" style="width:56px;height:42px;" />
-                            }
-                            else
-                            {
-                                <span class="text-2xl">@item.Emoji</span>
-                            }
-                        </td>
-                        <td>@item.Name</td>
-                        <td>@item.MealSlot</td>
-                        <td>R @item.Price.ToString("N2")</td>
-                        <td>@(item.IsActive ? "Active" : "Inactive")</td>
-                        <td class="d-flex gap-2">
-                            <a asp-page="/Admin/MenuEdit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary">Edit</a>
-                            <form method="post" asp-page-handler="ToggleActive" class="m-0">
-                                <input type="hidden" name="id" value="@item.Id" />
-                                <button type="submit" class="btn btn-sm btn-outline-secondary">@(item.IsActive ? "Deactivate" : "Activate")</button>
-                            </form>
-                            @if (!item.IsActive)
-                            {
-                                <form method="post" asp-page-handler="Delete" class="m-0">
-                                    <input type="hidden" name="id" value="@item.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </section>
-    </div>
-</div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

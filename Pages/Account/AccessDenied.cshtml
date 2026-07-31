@@ -3,8 +3,22 @@
     ViewData["Title"] = "Access Denied";
 }
 
-<section class="mx-auto max-w-xl rounded-3xl border border-amber-200 bg-amber-50/80 p-8 text-center shadow-lg">
-    <h1 class="text-2xl font-bold text-amber-900">Access Denied</h1>
-    <p class="mt-2 text-amber-800">Your account does not have permission to access this area.</p>
-    <a asp-page="/Index" class="mt-6 inline-flex rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-700">Return Home</a>
+<section class="dcx-access-shell">
+    <div class="dcx-access-card">
+        <div class="dcx-access-icon" aria-hidden="true">
+            <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v3.75m0 3.75h.007v.008H12v-.008ZM10.29 3.86 1.82 18a2.25 2.25 0 0 0 1.93 3.37h16.5A2.25 2.25 0 0 0 22.18 18L13.71 3.86a2.25 2.25 0 0 0-3.42 0Z" />
+            </svg>
+        </div>
+
+        <div class="dcx-kicker mb-3">Restricted Area</div>
+        <h1 class="dcx-access-title">Access denied</h1>
+        <p class="dcx-access-copy mt-3 mb-0">
+            Your account does not currently have permission to access this area of the DigifyCX intranet.
+        </p>
+
+        <div class="dcx-access-actions">
+            <a asp-page="/Index" class="dcx-btn-secondary">Return Home</a>
+        </div>
+    </div>
 </section>

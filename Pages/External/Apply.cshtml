@@ -4,52 +4,76 @@
     ViewData["Title"] = "External Application";
 }
 
-<section class="mx-auto max-w-2xl card-elevated p-4">
+<section class="dcx-external-apply-shell">
     @if (!Model.TokenValid || Model.Job is null)
     {
-        <h1 class="h4">Referral Link Invalid or Expired</h1>
-        <p class="text-muted mb-0">Please contact the employee who referred you for a new invitation link.</p>
+        <div class="dcx-access-card">
+            <div class="dcx-access-icon" aria-hidden="true">
+                <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 9v3.75m0 3.75h.007v.008H12v-.008ZM10.29 3.86 1.82 18a2.25 2.25 0 0 0 1.93 3.37h16.5A2.25 2.25 0 0 0 22.18 18L13.71 3.86a2.25 2.25 0 0 0-3.42 0Z" />
+                </svg>
+            </div>
+
+            <div class="dcx-kicker mb-3">Referral Link</div>
+            <h1 class="dcx-access-title">Referral link invalid or expired</h1>
+            <p class="dcx-access-copy mt-3 mb-0">
+                Please contact the employee who referred you for a new invitation link.
+            </p>
+        </div>
     }
     else
     {
-        <h1 class="h4 mb-1">Apply for @Model.Job.Title</h1>
-        <p class="text-muted mb-4">@Model.Job.Department</p>
+        <header class="dcx-external-apply-hero">
+            <div class="dcx-kicker mb-3">External Application</div>
+            <h1 class="dcx-external-apply-title">Apply for @Model.Job.Title</h1>
+            <p class="dcx-external-apply-copy mt-2 mb-0">@Model.Job.Department</p>
+        </header>
 
         @if (TempData["ExternalApplyDone"] is string doneMsg)
         {
-            <div class="alert alert-success">@doneMsg</div>
+            <div class="dcx-inline-alert dcx-inline-alert--success mb-4">
+                @doneMsg
+            </div>
         }
 
-        <form method="post" enctype="multipart/form-data" class="row g-3">
-            <input asp-for="Input.Token" type="hidden" />
-            <div class="col-md-6">
-                <label asp-for="Input.CandidateName" class="form-label"></label>
-                <input asp-for="Input.CandidateName" class="form-control" />
-                <span asp-validation-for="Input.CandidateName" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.CandidateEmail" class="form-label"></label>
-                <input asp-for="Input.CandidateEmail" class="form-control" />
-                <span asp-validation-for="Input.CandidateEmail" class="text-danger"></span>
-            </div>
-            <div class="col-md-6">
-                <label asp-for="Input.CandidatePhone" class="form-label">Phone</label>
-                <input asp-for="Input.CandidatePhone" class="form-control" />
-                <span asp-validation-for="Input.CandidatePhone" class="text-danger"></span>
-            </div>
-            <div class="col-12">
-                <label asp-for="Input.Notes" class="form-label"></label>
-                <textarea asp-for="Input.Notes" rows="4" class="form-control"></textarea>
-            </div>
-            <div class="col-12">
-                <label asp-for="ResumeFile" class="form-label">Resume (PDF/DOCX, max 5MB)</label>
-                <input asp-for="ResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
-                <span asp-validation-for="ResumeFile" class="text-danger"></span>
-            </div>
-            <div class="col-12">
-                <button type="submit" class="btn btn-primary">Submit Application</button>
-            </div>
-        </form>
+        <section class="dcx-external-apply-panel">
+            <form method="post" enctype="multipart/form-data" class="row g-3">
+                <input asp-for="Input.Token" type="hidden" />
+
+                <div class="col-md-6">
+                    <label asp-for="Input.CandidateName" class="dcx-label mb-2"></label>
+                    <input asp-for="Input.CandidateName" class="dcx-input" />
+                    <span asp-validation-for="Input.CandidateName" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Input.CandidateEmail" class="dcx-label mb-2"></label>
+                    <input asp-for="Input.CandidateEmail" class="dcx-input" />
+                    <span asp-validation-for="Input.CandidateEmail" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Input.CandidatePhone" class="dcx-label mb-2">Phone</label>
+                    <input asp-for="Input.CandidatePhone" class="dcx-input" />
+                    <span asp-validation-for="Input.CandidatePhone" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="Input.Notes" class="dcx-label mb-2"></label>
+                    <textarea asp-for="Input.Notes" rows="5" class="dcx-textarea"></textarea>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="ResumeFile" class="dcx-label mb-2">Resume <span class="dcx-helper-inline">(PDF/DOCX, max 5MB)</span></label>
+                    <input asp-for="ResumeFile" type="file" accept=".pdf,.docx" class="dcx-file-input" />
+                    <span asp-validation-for="ResumeFile" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="dcx-btn">Submit Application</button>
+                </div>
+            </form>
+        </section>
     }
 </section>
 

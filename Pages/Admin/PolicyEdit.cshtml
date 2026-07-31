@@ -4,80 +4,79 @@
     ViewData["Title"] = "Edit Policy";
 }
 
-<!-- Back Button & Header -->
-<div class="mx-auto max-w-4xl mt-4 mb-6 flex items-center gap-4">
-    <a asp-page="/Admin/Policies" class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 border border-slate-600 text-slate-400 hover:text-amber-400 hover:border-amber-500/50 hover:bg-slate-800/80 transition-all" title="Back to Policies">
-        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-    </a>
-    <div>
-        <h1 class="text-2xl font-extrabold text-white tracking-tight">Edit Document</h1>
-        <p class="text-sm text-slate-700 mt-1">Update policy details, content, and visibility.</p>
-    </div>
-</div>
+<section class="dcx-admin-edit-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Policies" class="dcx-icon-back" title="Back to Policies" aria-label="Back to Policies">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
 
-<div class="mx-auto max-w-4xl">
-    <section class="bg-[#1e2336] rounded-2xl p-6 lg:p-8 border border-slate-700 shadow-xl">
-        <form method="post" class="grid grid-cols-1 md:grid-cols-12 gap-6">
+            <div>
+                <div class="dcx-kicker mb-2">Policy Library</div>
+                <h1 class="dcx-admin-manage-title">Edit document</h1>
+                <p class="dcx-admin-edit-copy mb-0 mt-2">
+                    Update policy details, content, and visibility.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    <section class="dcx-admin-edit-panel">
+        <form method="post" class="row g-4">
             <input asp-for="Item.Id" type="hidden" />
-            
-            <!-- Title (Spans 6 of 12 columns on desktop) -->
-            <div class="md:col-span-6">
-                <label asp-for="Item.Title" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <input asp-for="Item.Title" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" />
-                <span asp-validation-for="Item.Title" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+
+            <div class="col-md-6">
+                <label asp-for="Item.Title" class="dcx-label mb-2"></label>
+                <input asp-for="Item.Title" class="dcx-input" />
+                <span asp-validation-for="Item.Title" class="dcx-field-error mt-1"></span>
             </div>
-            
-            <!-- Content Type (Spans 3 of 12 columns) -->
-            <div class="md:col-span-3">
-                <label asp-for="Item.ContentType" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <select asp-for="Item.ContentType" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition appearance-none" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.PolicyContentType>()"></select>
+
+            <div class="col-md-3">
+                <label asp-for="Item.ContentType" class="dcx-label mb-2"></label>
+                <select asp-for="Item.ContentType"
+                        asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.PolicyContentType>()"
+                        class="dcx-input dcx-input-select"></select>
             </div>
-            
-            <!-- Version Label (Spans 3 of 12 columns) -->
-            <div class="md:col-span-3">
-                <label asp-for="Item.VersionLabel" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <input asp-for="Item.VersionLabel" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition" />
+
+            <div class="col-md-3">
+                <label asp-for="Item.VersionLabel" class="dcx-label mb-2"></label>
+                <input asp-for="Item.VersionLabel" class="dcx-input" />
             </div>
-            
-            <!-- Effective Date (Spans 6 columns) -->
-            <div class="md:col-span-6">
-                <label asp-for="Item.EffectiveDate" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <input asp-for="Item.EffectiveDate" type="date" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-2.5 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition [color-scheme:dark]" />
+
+            <div class="col-md-6">
+                <label asp-for="Item.EffectiveDate" class="dcx-label mb-2"></label>
+                <input asp-for="Item.EffectiveDate" type="date" class="dcx-input" />
             </div>
-            
-            <!-- IsActive Checkbox (Spans 6 columns, vertically centered) -->
-            <div class="md:col-span-6 flex items-center md:pt-7">
-                <label class="flex items-center gap-3 cursor-pointer group">
-                    <div class="relative flex items-center">
-                        <input asp-for="Item.IsActive" class="peer h-5 w-5 cursor-pointer appearance-none rounded border border-slate-500 bg-slate-800/50 checked:border-amber-500 checked:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:ring-offset-1 focus:ring-offset-slate-900 transition-all" />
-                        <!-- Custom Checkmark SVG that appears when peer is checked -->
-                        <svg class="pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-3.5 w-3.5 text-white opacity-0 peer-checked:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+
+            <div class="col-md-6 d-flex align-items-center">
+                <label class="dcx-admin-check__label">
+                    <input asp-for="Item.IsActive" class="dcx-admin-check__input" />
+                    <span class="dcx-admin-check__box">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
-                    </div>
-                    <span class="text-sm font-semibold text-slate-300 group-hover:text-white transition-colors">Document is Active and Visible</span>
+                    </span>
+                    <span class="dcx-admin-check__text">Document is Active and Visible</span>
                 </label>
             </div>
-            
-            <!-- Content Textarea (Full Width) -->
-            <div class="md:col-span-12">
-                <label asp-for="Item.Content" class="block text-sm font-semibold text-slate-300 mb-1.5"></label>
-                <textarea asp-for="Item.Content" rows="12" class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition"></textarea>
-                <span asp-validation-for="Item.Content" class="text-xs font-medium text-rose-400 mt-1 block"></span>
+
+            <div class="col-12">
+                <label asp-for="Item.Content" class="dcx-label mb-2"></label>
+                <textarea asp-for="Item.Content" rows="12" class="dcx-textarea dcx-policy-editor"></textarea>
+                <span asp-validation-for="Item.Content" class="dcx-field-error mt-1"></span>
             </div>
-            
-            <!-- Form Action Buttons -->
-            <div class="md:col-span-12 flex items-center gap-4 pt-4 border-t border-slate-700/80">
-                <button type="submit" class="inline-flex items-center justify-center rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-bold tracking-wide text-white shadow-md hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 focus:ring-offset-slate-900 transition-all">
-                    Save Changes
-                </button>
-                <a asp-page="/Admin/Policies" class="inline-flex items-center justify-center rounded-xl border border-slate-600 bg-transparent px-6 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-700 hover:text-white transition-all">
-                    Cancel
-                </a>
+
+            <div class="col-12">
+                <div class="dcx-admin-edit-actions">
+                    <button type="submit" class="dcx-admin-submit">Save Changes</button>
+                    <a asp-page="/Admin/Policies" class="dcx-btn-ghost">Cancel</a>
+                </div>
             </div>
         </form>
     </section>
-</div>
+</section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

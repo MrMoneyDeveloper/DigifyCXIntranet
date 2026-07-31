@@ -37,7 +37,15 @@ public class ForgotPasswordModel : PageModel
     public string  ErrorMessage  { get; private set; } = string.Empty;
 
     // ── GET ──────────────────────────────────────────────────────────
-    public void OnGet() { }
+    /// <summary>
+    /// Pre-fills the Full Name field when the user arrives via the login page
+    /// wrong-password prompt, which passes their username as a query string parameter.
+    /// </summary>
+    public void OnGet(string? name = null)
+    {
+        if (!string.IsNullOrWhiteSpace(name))
+            Input = new InputModel { FullName = name.Trim() };
+    }
 
     // ── POST ─────────────────────────────────────────────────────────
     public async Task<IActionResult> OnPostAsync()
@@ -50,8 +58,8 @@ public class ForgotPasswordModel : PageModel
                  ?? HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
                  ?? "unknown";
 
-        var now            = DateTime.UtcNow;
-        var fullName       = Input.FullName.Trim();
+        var now             = DateTime.UtcNow;
+        var fullName        = Input.FullName.Trim();
         var autoDescription = $"User {fullName} has submitted a forgotten password request via the DigifyCX Intranet login page.";
 
         // Call Zendesk

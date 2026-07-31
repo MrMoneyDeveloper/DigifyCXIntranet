@@ -4,59 +4,135 @@
     ViewData["Title"] = "Activate Account";
 }
 
-<section class="mx-auto max-w-md bg-[#1e2336] rounded-2xl p-8 border border-slate-700 shadow-2xl relative overflow-hidden mt-8">
-    <div class="mb-8 text-center">
-        <h1 class="text-3xl font-extrabold text-white tracking-tight">Activate Your Account</h1>
-        <p class="mt-2 text-sm text-slate-400">Enter your full name as registered by HR and your personal email address to get started.</p>
-    </div>
+<section class="dcx-auth-shell mt-4">
+    <aside class="dcx-auth-panel">
+        <img src="~/images/branding/digifycx-logo.png"
+             alt="DigifyCX logo"
+             class="dcx-auth-logo" />
 
-    @if (Model.AlreadyActivated)
-    {
-        <div class="mb-6 rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-4 py-4 text-sm text-emerald-400">
-            <p class="font-bold text-emerald-300 mb-1">&#10003; Account Already Activated</p>
-            <p>Your personal email is already on record. You can log in using your intranet credentials.</p>
+        <div class="dcx-kicker mb-3">First-Time Access</div>
+        <h1 class="dcx-auth-title">Activate your DigifyCX account</h1>
+        <p class="dcx-auth-copy mt-3">
+            Enter your full name as registered by HR or a system administrator, then use the shared default password to continue into password setup.
+        </p>
+
+        <div class="dcx-auth-feature-list mt-4">
+            <div class="dcx-auth-feature">
+                <span class="dcx-auth-feature__dot"></span>
+                <span>Use your HR-registered full name</span>
+            </div>
+            <div class="dcx-auth-feature">
+                <span class="dcx-auth-feature__dot"></span>
+                <span>Enter the default password shared with new users</span>
+            </div>
+            <div class="dcx-auth-feature">
+                <span class="dcx-auth-feature__dot"></span>
+                <span>Continue to secure your account with your own password</span>
+            </div>
         </div>
-        <a href="/Account/Login" class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 transition-all duration-200">
-            Go to Login
-        </a>
-    }
-    else
-    {
-        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+
+        <img src="~/images/branding/digifycx-logo.png"
+             alt=""
+             aria-hidden="true"
+             class="dcx-watermark" />
+    </aside>
+
+    <section class="dcx-auth-card">
+        <div class="mb-4 text-center text-md-start">
+            <div class="dcx-kicker mb-3">Activate Account</div>
+            <h2 class="dcx-auth-form-title">Get started securely</h2>
+            <p class="dcx-auth-copy mb-0">This step confirms your identity before you create your personal password.</p>
+        </div>
+
+        @if (Model.AlreadyActivated)
         {
-            <div class="alert alert-error">@Model.ErrorMessage</div>
+            <div class="dcx-inline-alert dcx-inline-alert--success mb-4">
+                <p class="fw-bold mb-1">Account Already Activated</p>
+                <p class="mb-3">Your account has already been activated. Please log in using your personal password.</p>
+                <a href="/Account/Login" class="dcx-btn">Go to Login</a>
+            </div>
         }
-        <!-- DEBUG: @Model.DebugInfo -->
+        else
+        {
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="dcx-validation-summary mb-4">
+                    @Model.ErrorMessage
+                </div>
+            }
 
-        <form method="post" class="space-y-5">
-            @Html.AntiForgeryToken()
-            <div>
-                <label asp-for="Input.FullName" class="mb-1.5 block text-sm font-semibold text-slate-300">Full Name</label>
-                <input asp-for="Input.FullName"
-                       class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-                       placeholder="e.g. Farhaan Mohamed" autocomplete="name" />
-                <span asp-validation-for="Input.FullName" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-            </div>
-            <div>
-                <label asp-for="Input.PersonalEmail" class="mb-1.5 block text-sm font-semibold text-slate-300">Personal Email Address</label>
-                <input asp-for="Input.PersonalEmail"
-                       class="w-full rounded-xl border border-slate-600 bg-slate-800/50 px-4 py-3 text-sm text-white placeholder-slate-500 focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 transition"
-                       placeholder="you@gmail.com" autocomplete="email" />
-                <span asp-validation-for="Input.PersonalEmail" class="text-xs font-medium text-rose-400 mt-1 block"></span>
-            </div>
-            <div class="pt-2">
-                <button type="submit" class="w-full inline-flex items-center justify-center rounded-xl bg-cyan-600 px-6 py-3 text-sm font-bold tracking-wide text-white shadow-sm hover:bg-cyan-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-600 transition-all duration-200">
-                    Continue &rarr;
-                </button>
-            </div>
-        </form>
-    }
+            <form method="post" class="dcx-form-stack" autocomplete="off">
+                @Html.AntiForgeryToken()
 
-    <div class="mt-6 text-center">
-        <a href="/Account/Login" class="text-xs text-slate-500 hover:text-slate-300 transition">&larr; Back to login</a>
-    </div>
+                <input type="text" name="__trap_name" style="display:none" tabindex="-1" autocomplete="username" aria-hidden="true" />
+                <input type="password" name="__trap_pass" style="display:none" tabindex="-1" autocomplete="current-password" aria-hidden="true" />
+
+                <div>
+                    <label asp-for="Input.FullName" class="dcx-label mb-2">Full Name</label>
+                    <input asp-for="Input.FullName"
+                           class="dcx-input"
+                           placeholder="e.g. Farhaan Mohamed"
+                           autocomplete="off"
+                           data-lpignore="true"
+                           data-form-type="other" />
+                    <span asp-validation-for="Input.FullName" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="Input.DefaultPassword" class="dcx-label mb-2">Default Password</label>
+                    <div class="dcx-password-wrap">
+                        <input asp-for="Input.DefaultPassword"
+                               id="activate-password"
+                               type="password"
+                               class="dcx-input dcx-input--password"
+                               placeholder="Shared default password"
+                               autocomplete="new-password"
+                               data-lpignore="true"
+                               data-form-type="other" />
+                        <button type="button"
+                                onclick="togglePasswordVisibility('activate-password', this)"
+                                class="dcx-password-toggle"
+                                aria-label="Show password">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                    </div>
+                    <p class="mt-2 mb-0 dcx-helper-text">
+                        This is the shared password provided to new users. Ask your manager or a system administrator if you don&rsquo;t have it.
+                    </p>
+                    <span asp-validation-for="Input.DefaultPassword" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="dcx-btn w-100">Continue</button>
+                </div>
+            </form>
+        }
+
+        <div class="mt-4 text-center text-md-start">
+            <a href="/Account/Login" class="dcx-text-link">&larr; Back to login</a>
+        </div>
+    </section>
 </section>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function togglePasswordVisibility(inputId, btn) {
+            var input = document.getElementById(inputId);
+            var isHidden = input.type === 'password';
+            input.type = isHidden ? 'text' : 'password';
+            btn.setAttribute('aria-label', isHidden ? 'Hide password' : 'Show password');
+            btn.innerHTML = isHidden
+                ? `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.477 0-8.268-2.943-9.542-7a9.956 9.956 0 012.293-3.95M6.228 6.228A9.956 9.956 0 0112 5c4.477 0 8.268 2.943 9.542 7a9.956 9.956 0 01-1.772 3.274M6.228 6.228L3 3m3.228 3.228l3.65 3.65M17.772 15.272l3.228 3.228m-3.228-3.228l-3.65-3.65" />
+                   </svg>`
+                : `<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                     <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.477 0 8.268 2.943 9.542 7-1.274 4.057-5.065 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                   </svg>`;
+        }
+    </script>
 }

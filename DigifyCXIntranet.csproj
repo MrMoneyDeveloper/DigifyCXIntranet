@@ -30,6 +30,48 @@
     <Content Remove="packages\**\*" />
     <EmbeddedResource Remove="packages\**\*" />
     <None Remove="packages\**\*" />
+    <Content Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*;nuget.config" />
+    <None Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*;nuget.config" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="artifacts\**\*.cs;App_Data\Outbox\**\*.cs" />
+    <Content Remove="artifacts\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*" />
+    <EmbeddedResource Remove="artifacts\**\*;App_Data\Outbox\**\*" />
+    <None Remove="artifacts\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Remove="appsettings.Development.json;appsettings.Test.json;appsettings.Production.json;appsettings.*.local.json;appsettings.*.example.json;*.secrets.json" />
+    <None Remove="appsettings.Development.json;appsettings.Test.json;appsettings.Production.json;appsettings.*.local.json;appsettings.*.example.json;*.secrets.json" />
+    <Content Update="appsettings.Development.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <Content Update="appsettings.Test.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <Content Update="appsettings.Production.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <Content Update="appsettings.*.local.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <Content Update="appsettings.*.example.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <Content Update="*.secrets.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </Content>
+    <None Include="appsettings.Development.json;appsettings.Test.json;appsettings.Production.json;appsettings.*.local.json;appsettings.*.example.json;*.secrets.json">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Never</CopyToPublishDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

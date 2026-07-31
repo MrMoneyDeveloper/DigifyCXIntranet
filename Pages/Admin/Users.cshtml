@@ -1,0 +1,134 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.UsersModel
+@{
+    ViewData["Title"] = "Manage Users";
+}
+
+<section class="dcx-admin-manage-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Index" class="dcx-icon-back" title="Back to Dashboard" aria-label="Back to Dashboard">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
+
+            <div>
+                <div class="dcx-kicker mb-2">Admin Console</div>
+                <h1 class="dcx-admin-manage-title">Manage users</h1>
+                <p class="dcx-admin-edit-copy mb-0 mt-2">
+                    Add users to the system-admin managed activation table.
+                </p>
+            </div>
+        </div>
+    </header>
+
+    @if (!string.IsNullOrWhiteSpace(Model.SuccessMessage))
+    {
+        <div class="dcx-inline-alert dcx-inline-alert--success">
+            @Model.SuccessMessage
+        </div>
+    }
+
+    @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+    {
+        <div class="dcx-inline-alert dcx-inline-alert--danger">
+            @Model.ErrorMessage
+        </div>
+    }
+
+    <div class="dcx-admin-manage-grid">
+        <section class="dcx-admin-form-panel">
+            <div class="dcx-admin-form-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Provision</div>
+                    <h2 class="dcx-section-heading mb-0">Add user</h2>
+                </div>
+            </div>
+
+            <form method="post" asp-page-handler="Create" class="dcx-admin-form">
+                <div asp-validation-summary="ModelOnly" class="dcx-field-error"></div>
+
+                <div>
+                    <label asp-for="NewUser.FullName" class="dcx-label mb-2"></label>
+                    <input asp-for="NewUser.FullName" class="dcx-input" placeholder="e.g. Lerato Mokoena" />
+                    <span asp-validation-for="NewUser.FullName" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="NewUser.Email" class="dcx-label mb-2"></label>
+                    <input asp-for="NewUser.Email" type="email" class="dcx-input" placeholder="name@digifycx.com" />
+                    <span asp-validation-for="NewUser.Email" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <div>
+                    <label asp-for="NewUser.Role" class="dcx-label mb-2"></label>
+                    <select asp-for="NewUser.Role" class="dcx-input dcx-input-select">
+                        @foreach (var role in Model.AssignableRoles)
+                        {
+                            <option value="@role.Value">@role.Label</option>
+                        }
+                    </select>
+                    <span asp-validation-for="NewUser.Role" class="dcx-field-error mt-1"></span>
+                </div>
+
+                <button type="submit" class="dcx-admin-submit">Add User</button>
+            </form>
+        </section>
+
+        <section class="dcx-admin-table-panel">
+            <div class="dcx-admin-table-panel__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Directory</div>
+                    <h2 class="dcx-section-heading mb-0">Set by system admins</h2>
+                </div>
+
+                <span class="dcx-admin-count-pill">@Model.Users.Count Total</span>
+            </div>
+
+            <div class="table-responsive">
+                <table class="dcx-report-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in Model.Users)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="dcx-user-cell">
+                                        <div class="dcx-user-cell__name">@user.DisplayName</div>
+                                        <div class="dcx-user-cell__meta">@user.Username</div>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    <span class="dcx-role-pill">@user.Role</span>
+                                </td>
+                                <td>
+                                    @if (user.IsFirstTimeLogin || !user.HasPassword)
+                                    {
+                                        <span class="dcx-status-pill dcx-status-pill--warning">Awaiting activation</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="dcx-status-pill dcx-status-pill--success">Activated</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </div>
+</section>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

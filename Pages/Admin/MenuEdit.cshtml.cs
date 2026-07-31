@@ -64,15 +64,16 @@ public class MenuEditModel : PageModel
             return NotFound();
         }
 
-        var imagePath = Item.ImagePath;
+        string? replacementImagePath = null;
         if (FoodImageUpload is { Length: > 0 })
         {
             try
             {
-                imagePath = await MenuItemImageStorage.SaveAsync(FoodImageUpload, _environment.WebRootPath);
+                replacementImagePath = await MenuItemImageStorage.SaveAsync(FoodImageUpload, _environment.WebRootPath);
             }
             catch (InvalidOperationException ex)
             {
+                Item.ImagePath = entity.ImagePath;
                 ModelState.AddModelError(nameof(FoodImageUpload), ex.Message);
                 return Page();
             }
@@ -82,7 +83,7 @@ public class MenuEditModel : PageModel
         entity.Price = Item.Price;
         entity.Emoji = string.IsNullOrWhiteSpace(Item.Emoji) ? "\U0001F37D" : Item.Emoji.Trim();
         entity.IconClass = Item.IconClass?.Trim() ?? string.Empty;
-        entity.ImagePath = imagePath?.Trim() ?? string.Empty;
+        entity.ImagePath = ResolveImagePath(entity.ImagePath, replacementImagePath);
         entity.MealSlot = Item.MealSlot;
         entity.IsActive = Item.IsActive;
         entity.DisplayOrder = Item.DisplayOrder;
@@ -90,6 +91,13 @@ public class MenuEditModel : PageModel
         await _db.SaveChangesAsync();
         await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "Edit", "MenuItem", $"id={entity.Id};name={entity.Name};price={entity.Price};active={entity.IsActive}");
         return RedirectToPage("/Admin/Menu");
+    }
+
+    public static string ResolveImagePath(string? existingImagePath, string? replacementImagePath)
+    {
+        return string.IsNullOrWhiteSpace(replacementImagePath)
+            ? existingImagePath?.Trim() ?? string.Empty
+            : replacementImagePath.Trim();
     }
 
     public class EditMenuItemInput

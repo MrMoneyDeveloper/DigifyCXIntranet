@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -11,67 +11,72 @@ namespace DigifyCXIntranet.Data.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.CreateTable(
-                name: "ForgotPasswordRequests",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IpAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    SubmittedUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    ZendeskTicketId = table.Column<long>(type: "bigint", nullable: true),
-                    ZendeskTicketUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Succeeded = table.Column<bool>(type: "bit", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ForgotPasswordRequests", x => x.Id);
-                });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ForgotPasswordRequests')
+                BEGIN
+                    CREATE TABLE [ForgotPasswordRequests] (
+                        [Id]             int           NOT NULL IDENTITY(1,1),
+                        [FullName]       nvarchar(max) NOT NULL,
+                        [Description]   nvarchar(max) NOT NULL,
+                        [IpAddress]     nvarchar(max) NOT NULL,
+                        [SubmittedUtc]  datetime2     NOT NULL,
+                        [ZendeskTicketId] bigint      NULL,
+                        [ZendeskTicketUrl] nvarchar(max) NOT NULL,
+                        [Succeeded]     bit           NOT NULL,
+                        CONSTRAINT [PK_ForgotPasswordRequests] PRIMARY KEY ([Id])
+                    );
+                END
+            ");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_ZendeskPolicyArticles_SectionName_Title",
-                table: "ZendeskPolicyArticles",
-                columns: new[] { "SectionName", "Title" });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_ZendeskPolicyArticles_SectionName_Title'
+                    AND object_id = OBJECT_ID(N'ZendeskPolicyArticles')
+                )
+                    CREATE INDEX [IX_ZendeskPolicyArticles_SectionName_Title]
+                    ON [ZendeskPolicyArticles] ([SectionName], [Title]);
+            ");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder",
-                table: "MenuItems",
-                columns: new[] { "IsDeleted", "IsActive", "MealSlot", "DisplayOrder" });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder'
+                    AND object_id = OBJECT_ID(N'MenuItems')
+                )
+                    CREATE INDEX [IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder]
+                    ON [MenuItems] ([IsDeleted], [IsActive], [MealSlot], [DisplayOrder]);
+            ");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_JobPostings_IsDeleted_IsActive_ClosingDate",
-                table: "JobPostings",
-                columns: new[] { "IsDeleted", "IsActive", "ClosingDate" });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_JobPostings_IsDeleted_IsActive_ClosingDate'
+                    AND object_id = OBJECT_ID(N'JobPostings')
+                )
+                    CREATE INDEX [IX_JobPostings_IsDeleted_IsActive_ClosingDate]
+                    ON [JobPostings] ([IsDeleted], [IsActive], [ClosingDate]);
+            ");
 
-            migrationBuilder.CreateIndex(
-                name: "IX_CanteenOrders_EmployeeUsername_OrderTimeUtc",
-                table: "CanteenOrders",
-                columns: new[] { "EmployeeUsername", "OrderTimeUtc" });
+            migrationBuilder.Sql(@"
+                IF NOT EXISTS (
+                    SELECT 1 FROM sys.indexes
+                    WHERE name = 'IX_CanteenOrders_EmployeeUsername_OrderTimeUtc'
+                    AND object_id = OBJECT_ID(N'CanteenOrders')
+                )
+                    CREATE INDEX [IX_CanteenOrders_EmployeeUsername_OrderTimeUtc]
+                    ON [CanteenOrders] ([EmployeeUsername], [OrderTimeUtc]);
+            ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "ForgotPasswordRequests");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ZendeskPolicyArticles_SectionName_Title",
-                table: "ZendeskPolicyArticles");
-
-            migrationBuilder.DropIndex(
-                name: "IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder",
-                table: "MenuItems");
-
-            migrationBuilder.DropIndex(
-                name: "IX_JobPostings_IsDeleted_IsActive_ClosingDate",
-                table: "JobPostings");
-
-            migrationBuilder.DropIndex(
-                name: "IX_CanteenOrders_EmployeeUsername_OrderTimeUtc",
-                table: "CanteenOrders");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.tables WHERE name = 'ForgotPasswordRequests') DROP TABLE [ForgotPasswordRequests];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_ZendeskPolicyArticles_SectionName_Title' AND object_id = OBJECT_ID(N'ZendeskPolicyArticles')) DROP INDEX [IX_ZendeskPolicyArticles_SectionName_Title] ON [ZendeskPolicyArticles];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder' AND object_id = OBJECT_ID(N'MenuItems')) DROP INDEX [IX_MenuItems_IsDeleted_IsActive_MealSlot_DisplayOrder] ON [MenuItems];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_JobPostings_IsDeleted_IsActive_ClosingDate' AND object_id = OBJECT_ID(N'JobPostings')) DROP INDEX [IX_JobPostings_IsDeleted_IsActive_ClosingDate] ON [JobPostings];");
+            migrationBuilder.Sql("IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'IX_CanteenOrders_EmployeeUsername_OrderTimeUtc' AND object_id = OBJECT_ID(N'CanteenOrders')) DROP INDEX [IX_CanteenOrders_EmployeeUsername_OrderTimeUtc] ON [CanteenOrders];");
         }
     }
 }

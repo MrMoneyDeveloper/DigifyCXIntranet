@@ -64,7 +64,7 @@ public class ConfigurationAdminAccessService : IAdminAccessService
                      AppRoles.FinanceAdmin,
                      AppRoles.HrAdmin,
                      AppRoles.CanteenAdmin,
-                     AppRoles.Agent
+                     AppRoles.Employee,
                  })
         {
             if (user.IsInRole(role))
@@ -81,7 +81,7 @@ public class ConfigurationAdminAccessService : IAdminAccessService
             return roles.First();
         }
 
-        return AppRoles.Agent;
+        return AppRoles.Employee;
     }
 
     public IReadOnlyCollection<string> GetConfiguredRoles(string identityName)

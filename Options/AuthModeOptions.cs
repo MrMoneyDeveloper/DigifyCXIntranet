@@ -5,6 +5,8 @@ public class AuthModeOptions
     public const string SectionName = "AuthMode";
 
     public bool UseWindowsAuthenticationInNonDevelopment { get; set; } = true;
+    public bool AllowInsecureHttpForInternalTest { get; set; }
+    public bool SeedConfiguredTestUsers { get; set; }
     public List<DevelopmentUserOption> DevelopmentUsers { get; set; } = new();
 }
 

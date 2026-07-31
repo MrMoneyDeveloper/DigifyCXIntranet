@@ -4,74 +4,112 @@
     ViewData["Title"] = "Edit Menu Item";
 }
 
-<section class="card-elevated p-4">
-    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-        <div>
-            <h1 class="h5 mb-1">Edit Menu Item</h1>
-            <p class="text-muted mb-0">Update canteen item details, display order, and food image.</p>
-        </div>
-        <a asp-page="/Admin/Menu" class="btn btn-outline-secondary">Back to Menu</a>
-    </div>
+<section class="dcx-admin-edit-shell dcx-menu-edit-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center gap-3 flex-wrap">
+            <a asp-page="/Admin/Menu" class="dcx-icon-back" title="Back to Menu" aria-label="Back to Menu">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+            </a>
 
-    <form method="post" enctype="multipart/form-data" class="row g-3">
-        <input asp-for="Item.Id" type="hidden" />
-        <input asp-for="Item.ImagePath" type="hidden" />
-
-        <div class="col-md-6">
-            <label asp-for="Item.Name" class="form-label"></label>
-            <input asp-for="Item.Name" class="form-control" />
-            <span asp-validation-for="Item.Name" class="text-danger"></span>
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Item.Price" class="form-label"></label>
-            <input asp-for="Item.Price" type="number" step="0.01" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Item.MealSlot" class="form-label"></label>
-            <select asp-for="Item.MealSlot" class="form-select" asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.MealSlot>()"></select>
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Item.Emoji" class="form-label"></label>
-            <input asp-for="Item.Emoji" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Item.DisplayOrder" class="form-label"></label>
-            <input asp-for="Item.DisplayOrder" type="number" class="form-control" />
-        </div>
-        <div class="col-md-3">
-            <label asp-for="Item.IconClass" class="form-label"></label>
-            <input asp-for="Item.IconClass" class="form-control" />
-        </div>
-        <div class="col-md-3 d-flex align-items-end">
-            <div class="form-check">
-                <input asp-for="Item.IsActive" class="form-check-input" />
-                <label asp-for="Item.IsActive" class="form-check-label"></label>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <label class="form-label">Current Image</label>
             <div>
-                @if (!string.IsNullOrWhiteSpace(Model.Item.ImagePath))
-                {
-                    <img src="@Model.Item.ImagePath" alt="@Model.Item.Name" class="rounded border object-fit-cover" style="width:180px;height:120px;" />
-                }
-                else
-                {
-                    <div class="rounded border p-4 text-muted">No image uploaded.</div>
-                }
+                <div class="dcx-kicker mb-2">Canteen</div>
+                <h1 class="dcx-admin-manage-title">Edit menu item</h1>
+                <p class="dcx-admin-edit-copy mb-0 mt-2">
+                    Update canteen item details, display order, status, and food image.
+                </p>
             </div>
         </div>
-        <div class="col-md-8">
-            <label asp-for="FoodImageUpload" class="form-label">Replace Food Image</label>
-            <input asp-for="FoodImageUpload" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
-            <span asp-validation-for="FoodImageUpload" class="text-danger"></span>
-            <div class="form-text">Accepted formats: JPG, PNG, WEBP. Maximum 3MB.</div>
-        </div>
-        <div class="col-12 d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Save Changes</button>
-            <a asp-page="/Admin/Menu" class="btn btn-outline-secondary">Cancel</a>
-        </div>
-    </form>
+    </header>
+
+    <section class="dcx-admin-edit-panel">
+        <form method="post" enctype="multipart/form-data" class="row g-4">
+            <input asp-for="Item.Id" type="hidden" />
+            <input asp-for="Item.ImagePath" type="hidden" />
+
+            <div class="col-md-6">
+                <label asp-for="Item.Name" class="dcx-label mb-2"></label>
+                <input asp-for="Item.Name" class="dcx-input" />
+                <span asp-validation-for="Item.Name" class="dcx-field-error mt-1"></span>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Item.Price" class="dcx-label mb-2"></label>
+                <input asp-for="Item.Price" type="number" step="0.01" class="dcx-input" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Item.MealSlot" class="dcx-label mb-2"></label>
+                <select asp-for="Item.MealSlot"
+                        asp-items="Html.GetEnumSelectList<DigifyCXIntranet.Models.MealSlot>()"
+                        class="dcx-input dcx-input-select"></select>
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Item.Emoji" class="dcx-label mb-2"></label>
+                <input asp-for="Item.Emoji" class="dcx-input" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Item.DisplayOrder" class="dcx-label mb-2"></label>
+                <input asp-for="Item.DisplayOrder" type="number" class="dcx-input" />
+            </div>
+
+            <div class="col-md-3">
+                <label asp-for="Item.IconClass" class="dcx-label mb-2"></label>
+                <input asp-for="Item.IconClass" class="dcx-input dcx-code-input" />
+            </div>
+
+            <div class="col-md-3 d-flex align-items-center">
+                <label class="dcx-admin-check__label">
+                    <input asp-for="Item.IsActive" class="dcx-admin-check__input" />
+                    <span class="dcx-admin-check__box">
+                        <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                    <span class="dcx-admin-check__text">Item is Active</span>
+                </label>
+            </div>
+
+            <div class="col-12">
+                <div class="dcx-menu-image-edit">
+                    <div class="dcx-menu-image-edit__preview">
+                        <label class="dcx-label mb-2">Current Image</label>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Item.ImagePath))
+                        {
+                            <img src="@Model.Item.ImagePath"
+                                 alt="@Model.Item.Name"
+                                 class="dcx-menu-image-edit__img" />
+                        }
+                        else
+                        {
+                            <div class="dcx-menu-image-edit__empty">No image uploaded.</div>
+                        }
+                    </div>
+
+                    <div class="dcx-menu-image-edit__upload">
+                        <label asp-for="FoodImageUpload" class="dcx-label mb-2">Replace Food Image</label>
+                        <input asp-for="FoodImageUpload"
+                               type="file"
+                               accept=".jpg,.jpeg,.png,.webp"
+                               class="dcx-file-input" />
+                        <span asp-validation-for="FoodImageUpload" class="dcx-field-error mt-1"></span>
+                        <div class="dcx-subtle-text mt-2">Accepted formats: JPG, PNG, WEBP. Maximum 3MB.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12">
+                <div class="dcx-admin-edit-actions">
+                    <button type="submit" class="dcx-admin-submit">Save Changes</button>
+                    <a asp-page="/Admin/Menu" class="dcx-btn-ghost">Cancel</a>
+                </div>
+            </div>
+        </form>
+    </section>
 </section>
 
 @section Scripts {

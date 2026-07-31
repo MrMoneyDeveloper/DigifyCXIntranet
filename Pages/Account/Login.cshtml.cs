@@ -20,20 +20,17 @@ public class LoginModel : PageModel
     private readonly IWebHostEnvironment _environment;
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<ApplicationUser> _hasher;
-    private readonly IAuditService _auditService;
 
     public LoginModel(
         IOptions<AuthModeOptions> authModeOptions,
         IWebHostEnvironment environment,
         ApplicationDbContext db,
-        IPasswordHasher<ApplicationUser> hasher,
-        IAuditService auditService)
+        IPasswordHasher<ApplicationUser> hasher)
     {
         _authModeOptions = authModeOptions.Value;
-        _environment = environment;
-        _db = db;
-        _hasher = hasher;
-        _auditService = auditService;
+        _environment     = environment;
+        _db              = db;
+        _hasher          = hasher;
     }
 
     [BindProperty]
@@ -47,6 +44,22 @@ public class LoginModel : PageModel
     public bool ShowDemoCredentials => _environment.IsDevelopment();
 
     public string ReturnUrl { get; private set; } = "/Index";
+
+    /// <summary>
+    /// Set to true when the user's credentials were rejected due to a wrong password
+    /// so the view can show the prominent Forgot Password call-to-action.
+    /// </summary>
+    public bool ShowForgotPasswordPrompt { get; private set; }
+
+    /// <summary>
+    /// The display name that was looked up, carried into the view so the amber banner
+    /// can build a pre-filled link to /Account/ForgotPassword.
+    /// Using DisplayName (e.g. "Wendy Moodley") instead of the raw username
+    /// (e.g. "wendy.moodley") ensures the Zendesk webhook can match the
+    /// employee record in the database.
+    /// Only populated when ShowForgotPasswordPrompt is true.
+    /// </summary>
+    public string FailedUsername { get; private set; } = string.Empty;
 
     public void OnGet(string? returnUrl = null)
     {
@@ -63,84 +76,76 @@ public class LoginModel : PageModel
         var inputUsername = Input.Username.Trim();
         var inputPassword = Input.Password;
 
-        // ── 1. Check hardcoded dev credentials first (admin, moham, finance, etc.) ──
-        var devUser = _authModeOptions.DevelopmentUsers.FirstOrDefault(
-            x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase));
+        // ── 1. Hardcoded dev credentials ──────────────────────────────────
+        var devUser = _environment.IsDevelopment()
+            ? _authModeOptions.DevelopmentUsers.FirstOrDefault(
+                x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase))
+            : null;
 
         if (devUser is not null)
         {
             if (devUser.Password != inputPassword)
             {
-                await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=development-user", false, errorCode: "InvalidCredentials", httpContext: HttpContext);
+                // Wrong password for a dev user — show the generic error (no forgot-password
+                // prompt for hardcoded dev accounts, they don't use Zendesk).
                 ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 return Page();
             }
 
-            // Dev user matched — sign in via cookie claim (unchanged from original)
             var devClaims = new List<Claim>
             {
                 new(ClaimTypes.Name,      devUser.Username.Trim()),
                 new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(devUser.DisplayName)
                     ? devUser.Username
                     : devUser.DisplayName),
-                new(ClaimTypes.Role,      string.IsNullOrWhiteSpace(devUser.Role)
-                    ? AppRoles.Agent
-                    : devUser.Role.Trim())
+                new(ClaimTypes.Role, AppRoles.NormalizeOrEmployee(devUser.Role))
             };
 
             var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
             var devPrincipal = new ClaimsPrincipal(devIdentity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, devPrincipal);
-            await _auditService.WriteAsync(devUser.Username, "LoginSucceeded", "Account", "source=development-user", httpContext: HttpContext);
 
             return Url.IsLocalUrl(ReturnUrl)
                 ? LocalRedirect(ReturnUrl)
                 : RedirectToPage("/Index");
         }
 
-        // ── 2. Fall through to database for real employee accounts ──
+        // ── 2. Database employee accounts ─────────────────────────────────
+        var normalizedUsername = inputUsername.ToUpperInvariant();
         var dbUser = await _db.Users
             .AsNoTracking()
-            .FirstOrDefaultAsync(u =>
-                u.UserName != null &&
-                u.UserName.ToLower() == inputUsername.ToLower());
+            .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUsername);
 
         if (dbUser == null)
         {
-            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=database-user", false, errorCode: "InvalidCredentials", httpContext: HttpContext);
             ModelState.AddModelError(string.Empty, "Invalid username or password.");
-            return Page();
-        }
-
-        // Employee must have completed account activation (PersonalEmail set + PasswordHash set)
-        if (string.IsNullOrWhiteSpace(dbUser.PersonalEmail))
-        {
-            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "reason=not-activated", false, dbUser.Id, "NotActivated", HttpContext);
-            ModelState.AddModelError(string.Empty,
-                "Your account has not been activated yet. Please visit the Activate Account page first.");
             return Page();
         }
 
         if (string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
             dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
         {
-            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "reason=password-not-set", false, dbUser.Id, "PasswordNotSet", HttpContext);
             ModelState.AddModelError(string.Empty,
                 "You have not set a password yet. Please complete account activation first.");
             return Page();
         }
 
-        // Verify the password hash
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
-            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=database-user", false, dbUser.Id, "InvalidCredentials", HttpContext);
-            ModelState.AddModelError(string.Empty, "Invalid username or password.");
+            // Wrong password: flag the view to show the Forgot Password prompt.
+            // Pass DisplayName (e.g. "Wendy Moodley") — NOT the raw username
+            // (e.g. "wendy.moodley") — so the ForgotPassword page pre-fills
+            // the full name that the Zendesk webhook needs to match the DB record.
+            ShowForgotPasswordPrompt = true;
+            FailedUsername = !string.IsNullOrWhiteSpace(dbUser.DisplayName)
+                ? dbUser.DisplayName.Trim()
+                : inputUsername;
+            ModelState.AddModelError(string.Empty, "Incorrect password.");
             return Page();
         }
 
-        // Sign the employee in via cookie auth — same structure as dev users above
-        var role = string.IsNullOrWhiteSpace(dbUser.CustomRole) ? AppRoles.Agent : dbUser.CustomRole;
+        var role        = AppRoles.NormalizeOrEmployee(dbUser.CustomRole);
         var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
             ? (dbUser.UserName ?? inputUsername)
             : dbUser.DisplayName;
@@ -155,7 +160,6 @@ public class LoginModel : PageModel
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-        await _auditService.WriteAsync(dbUser.UserName ?? inputUsername, "LoginSucceeded", "Account", "source=database-user", true, dbUser.Id, httpContext: HttpContext);
 
         return Url.IsLocalUrl(ReturnUrl)
             ? LocalRedirect(ReturnUrl)
@@ -172,4 +176,5 @@ public class LoginModel : PageModel
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
     }
+
 }

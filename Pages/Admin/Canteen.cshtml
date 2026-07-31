@@ -4,108 +4,193 @@
     ViewData["Title"] = "Canteen Reporting";
 }
 
-<section class="card-elevated p-4 mb-4">
-    <h1 class="h5 mb-3">Canteen Reconciliation & Job History</h1>
-    <form method="get" class="row g-2 align-items-end">
-        <div class="col-sm-3">
-            <label asp-for="Year" class="form-label"></label>
-            <input asp-for="Year" type="number" class="form-control" />
+<section class="dcx-report-shell">
+    <header class="dcx-admin-manage-header">
+        <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+            <div>
+                <div class="dcx-kicker mb-2">Operations</div>
+                <h1 class="dcx-admin-manage-title">Canteen reporting</h1>
+                <p class="dcx-admin-edit-copy mb-0 mt-2">
+                    Review monthly tallies, batch jobs, and order-level reconciliation for canteen activity.
+                </p>
+            </div>
         </div>
-        <div class="col-sm-3">
-            <label asp-for="Month" class="form-label"></label>
-            <input asp-for="Month" type="number" min="1" max="12" class="form-control" />
-        </div>
-        <div class="col-sm-3">
-            <button type="submit" class="btn btn-primary">Load</button>
-        </div>
-    </form>
-</section>
+    </header>
 
-<div class="row g-4">
-    <div class="col-lg-4">
-        <section class="card-elevated p-4 mb-4">
-            <h2 class="h6 mb-3">Employee Monthly Tallies</h2>
+    <section class="dcx-report-filter-panel">
+        <div class="dcx-report-filter-panel__head">
+            <div>
+                <div class="dcx-kicker mb-2">Filters</div>
+                <h2 class="dcx-section-heading mb-0">Reporting period</h2>
+            </div>
+        </div>
+
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-sm-4 col-lg-3">
+                <label asp-for="Year" class="dcx-label mb-2"></label>
+                <input asp-for="Year" type="number" class="dcx-input" />
+            </div>
+
+            <div class="col-sm-4 col-lg-3">
+                <label asp-for="Month" class="dcx-label mb-2"></label>
+                <input asp-for="Month" type="number" min="1" max="12" class="dcx-input" />
+            </div>
+
+            <div class="col-sm-4 col-lg-2">
+                <button type="submit" class="dcx-admin-submit w-100">Load</button>
+            </div>
+        </form>
+    </section>
+
+    <div class="dcx-report-grid">
+        <section class="dcx-report-card dcx-report-card--aside">
+            <div class="dcx-report-card__head">
+                <div>
+                    <div class="dcx-kicker mb-2">Summary</div>
+                    <h2 class="dcx-section-heading mb-0">Employee monthly tallies</h2>
+                </div>
+            </div>
+
             @if (Model.Tallies.Count == 0)
             {
-                <p class="text-muted mb-0">No orders found for this period.</p>
+                <p class="dcx-subtle-text mb-0">No orders found for this period.</p>
             }
             else
             {
-                <table class="table table-sm">
-                    <thead><tr><th>Employee</th><th>Count</th><th>Total</th></tr></thead>
-                    <tbody>
-                    @foreach (var item in Model.Tallies)
-                    {
-                        <tr><td>@item.EmployeeUsername</td><td>@item.Count</td><td>R @item.TotalAmount.ToString("N2")</td></tr>
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
-    </div>
-
-    <div class="col-lg-8">
-        <section class="card-elevated p-4 mb-4">
-            <h2 class="h6 mb-3">Canteen Batch Runs</h2>
-            @if (Model.BatchRuns.Count == 0)
-            {
-                <p class="text-muted mb-0">No batch runs yet.</p>
-            }
-            else
-            {
-                <table class="table align-middle">
-                    <thead><tr><th>When</th><th>Meal</th><th>Orders</th><th>Status</th><th>Attachment</th><th>Artifact</th></tr></thead>
-                    <tbody>
-                    @foreach (var run in Model.BatchRuns)
-                    {
-                        <tr>
-                            <td>@run.TriggeredUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                            <td>@run.MealSlot</td>
-                            <td>@run.OrdersCount</td>
-                            <td>@(run.SentSuccessfully ? "Sent" : "Failed")</td>
-                            <td>@run.AttachmentFileName</td>
-                            <td>
-                                @if (!string.IsNullOrWhiteSpace(run.ArtifactPath))
-                                {
-                                    <a asp-page-handler="DownloadBatchArtifact" asp-route-id="@run.Id" class="btn btn-sm btn-outline-primary">Download</a>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">SMTP/no artifact</span>
-                                }
-                            </td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="dcx-report-table dcx-report-table--compact">
+                        <thead>
+                            <tr>
+                                <th>Employee</th>
+                                <th>Count</th>
+                                <th>Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model.Tallies)
+                            {
+                                <tr>
+                                    <td>@item.EmployeeUsername</td>
+                                    <td class="dcx-num">@item.Count</td>
+                                    <td class="dcx-num">R @item.TotalAmount.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
             }
         </section>
 
-        <section class="card-elevated p-4">
-            <h2 class="h6 mb-3">Order Detail</h2>
-            @if (Model.Orders.Count == 0)
-            {
-                <p class="text-muted mb-0">No orders in this period.</p>
-            }
-            else
-            {
-                <table class="table align-middle">
-                    <thead><tr><th>Employee</th><th>Time</th><th>Item</th><th>Meal</th><th>Status</th><th>Total</th></tr></thead>
-                    <tbody>
-                    @foreach (var order in Model.Orders)
-                    {
-                        <tr>
-                            <td>@order.EmployeeUsername</td>
-                            <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
-                            <td>@order.ItemSummary</td>
-                            <td>@order.MealSlot</td>
-                            <td>@order.Status</td>
-                            <td>R @order.TotalAmount.ToString("N2")</td>
-                        </tr>
-                    }
-                    </tbody>
-                </table>
-            }
-        </section>
+        <div class="dcx-report-main">
+            <section class="dcx-report-card">
+                <div class="dcx-report-card__head">
+                    <div>
+                        <div class="dcx-kicker mb-2">Jobs</div>
+                        <h2 class="dcx-section-heading mb-0">Canteen batch runs</h2>
+                    </div>
+                </div>
+
+                @if (Model.BatchRuns.Count == 0)
+                {
+                    <p class="dcx-subtle-text mb-0">No batch runs yet.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="dcx-report-table">
+                            <thead>
+                                <tr>
+                                    <th>When</th>
+                                    <th>Meal</th>
+                                    <th>Orders</th>
+                                    <th>Status</th>
+                                    <th>Attachment</th>
+                                    <th>Artifact</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var run in Model.BatchRuns)
+                                {
+                                    <tr>
+                                        <td>@run.TriggeredUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                        <td>@run.MealSlot</td>
+                                        <td class="dcx-num">@run.OrdersCount</td>
+                                        <td>
+                                            @if (run.SentSuccessfully)
+                                            {
+                                                <span class="dcx-status-pill dcx-status-pill--success">Sent</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="dcx-status-pill dcx-status-pill--danger">Failed</span>
+                                            }
+                                        </td>
+                                        <td>@run.AttachmentFileName</td>
+                                        <td>
+                                            @if (!string.IsNullOrWhiteSpace(run.ArtifactPath))
+                                            {
+                                                <a asp-page-handler="DownloadBatchArtifact"
+                                                   asp-route-id="@run.Id"
+                                                   class="dcx-mini-btn dcx-mini-btn--edit">
+                                                    Download
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="dcx-subtle-text">SMTP/no artifact</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+
+            <section class="dcx-report-card">
+                <div class="dcx-report-card__head">
+                    <div>
+                        <div class="dcx-kicker mb-2">Orders</div>
+                        <h2 class="dcx-section-heading mb-0">Order detail</h2>
+                    </div>
+                </div>
+
+                @if (Model.Orders.Count == 0)
+                {
+                    <p class="dcx-subtle-text mb-0">No orders in this period.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="dcx-report-table">
+                            <thead>
+                                <tr>
+                                    <th>Employee</th>
+                                    <th>Time</th>
+                                    <th>Item</th>
+                                    <th>Meal</th>
+                                    <th>Status</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var order in Model.Orders)
+                                {
+                                    <tr>
+                                        <td>@order.EmployeeUsername</td>
+                                        <td>@order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</td>
+                                        <td>@order.ItemSummary</td>
+                                        <td>@order.MealSlot</td>
+                                        <td>@order.Status</td>
+                                        <td class="dcx-num">R @order.TotalAmount.ToString("N2")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        </div>
     </div>
-</div>
+</section>

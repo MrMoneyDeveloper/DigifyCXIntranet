@@ -4,75 +4,123 @@
     ViewData["Title"] = "Admin Console";
 }
 
-<section class="card-elevated p-4 mb-4">
-    <h1 class="h4 mb-2">Admin Console</h1>
-    <p class="text-muted mb-0">Control publishing, canteen automation inputs, and operational reporting.</p>
-</section>
-
-<div class="row g-3 mb-4">
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Policies</div><div class="h4 mb-0">@Model.PolicyCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Announcements</div><div class="h4 mb-0">@Model.AnnouncementCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Jobs</div><div class="h4 mb-0">@Model.JobCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">FAQs</div><div class="h4 mb-0">@Model.FaqCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Canteen orders</div><div class="h4 mb-0">@Model.CanteenOrderCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Menu items</div><div class="h4 mb-0">@Model.MenuItemCount</div></div></div>
-    <div class="col-md-3"><div class="dashboard-kpi"><div class="small text-muted">Batch runs</div><div class="h4 mb-0">@Model.BatchRunCount</div></div></div>
-</div>
-
-<section class="card-elevated p-4 mt-4">
-    <h2 class="h5 mb-3">Background Job Status</h2>
-    @if (Model.LatestJobRuns.Count == 0)
-    {
-        <p class="text-muted mb-0">No background job runs have been recorded yet.</p>
-    }
-    else
-    {
-        <div class="table-responsive">
-            <table class="table table-sm align-middle mb-0">
-                <thead>
-                <tr>
-                    <th>Job</th>
-                    <th>Status</th>
-                    <th>Started UTC</th>
-                    <th>Completed UTC</th>
-                    <th>Message</th>
-                </tr>
-                </thead>
-                <tbody>
-                @foreach (var run in Model.LatestJobRuns)
-                {
-                    <tr>
-                        <td>@run.JobName</td>
-                        <td>@run.Status</td>
-                        <td>@run.StartedUtc.ToString("yyyy-MM-dd HH:mm")</td>
-                        <td>@(run.CompletedUtc?.ToString("yyyy-MM-dd HH:mm") ?? "-")</td>
-                        <td>@run.Message</td>
-                    </tr>
-                }
-                </tbody>
-            </table>
+<section class="dcx-admin-hero mb-4">
+    <div class="dcx-admin-hero__content">
+        <div>
+            <div class="dcx-kicker mb-3">Admin Console</div>
+            <h1 class="dcx-admin-title">Operational control for the <span>DigifyCX intranet</span></h1>
+            <p class="dcx-admin-copy mt-3 mb-0">
+                Control publishing, canteen automation inputs, user access, and operational reporting from one place.
+            </p>
         </div>
-    }
+
+        <img src="~/images/branding/digifycx-logo.png"
+             alt=""
+             aria-hidden="true"
+             class="dcx-admin-watermark" />
+    </div>
 </section>
 
-<div class="d-grid gap-2 d-md-flex flex-wrap">
-    @if (Model.CanManageCanteen)
-    {
-        <a asp-page="/Admin/Menu" class="btn btn-primary">Manage Canteen Menu</a>
-        <a asp-page="/Admin/Canteen" class="btn btn-primary">Canteen Operations</a>
-    }
-    @if (Model.CanViewFinance)
-    {
-        <a asp-page="/Finance/CanteenLedger" class="btn btn-primary">Finance Ledger</a>
-    }
-    @if (Model.CanManageHr)
-    {
-        <a asp-page="/Admin/Policies" class="btn btn-primary">Manage Policies</a>
-        <a asp-page="/Admin/Jobs" class="btn btn-primary">Manage Jobs</a>
-    }
-    @if (Model.CanManageSystem)
-    {
-        <a asp-page="/Admin/Announcements" class="btn btn-primary">Manage Announcements</a>
-        <a asp-page="/Admin/Faq" class="btn btn-primary">Manage FAQs</a>
-    }
-</div>
+<section class="dcx-admin-kpis mb-4">
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Policies</div>
+        <div class="dcx-admin-kpi__value">@Model.PolicyCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Announcements</div>
+        <div class="dcx-admin-kpi__value">@Model.AnnouncementCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Jobs</div>
+        <div class="dcx-admin-kpi__value">@Model.JobCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">FAQs</div>
+        <div class="dcx-admin-kpi__value">@Model.FaqCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Canteen orders</div>
+        <div class="dcx-admin-kpi__value">@Model.CanteenOrderCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Menu items</div>
+        <div class="dcx-admin-kpi__value">@Model.MenuItemCount</div>
+    </article>
+
+    <article class="dcx-admin-kpi">
+        <div class="dcx-admin-kpi__label">Batch runs</div>
+        <div class="dcx-admin-kpi__value">@Model.BatchRunCount</div>
+    </article>
+</section>
+
+<section class="dcx-admin-actions">
+    <div class="mb-3">
+        <div class="dcx-kicker mb-2">Actions</div>
+        <h2 class="dcx-section-heading mb-0">Management areas</h2>
+    </div>
+
+    <div class="dcx-admin-actions__grid">
+        @if (Model.CanManageCanteen)
+        {
+            <a asp-page="/Admin/Menu" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage Canteen Menu</span>
+                <span class="dcx-admin-action__meta">Update available items and meal options.</span>
+            </a>
+
+            <a asp-page="/Admin/Canteen" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Canteen Operations</span>
+                <span class="dcx-admin-action__meta">Monitor canteen processes and activity.</span>
+            </a>
+        }
+
+        @if (Model.CanViewFinance)
+        {
+            <a asp-page="/Finance/CanteenLedger" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Finance Ledger</span>
+                <span class="dcx-admin-action__meta">Review ledger activity and canteen costs.</span>
+            </a>
+        }
+
+        @if (Model.CanManageHr)
+        {
+            <a asp-page="/Admin/Policies" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage Policies</span>
+                <span class="dcx-admin-action__meta">Publish and maintain policy content.</span>
+            </a>
+
+            <a asp-page="/Admin/Jobs" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage Jobs</span>
+                <span class="dcx-admin-action__meta">Post and maintain internal opportunities.</span>
+            </a>
+        }
+
+        @if (Model.CanManageSystem)
+        {
+            <a asp-page="/Admin/Faq" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage FAQs</span>
+                <span class="dcx-admin-action__meta">Maintain help content for employees.</span>
+            </a>
+        }
+
+        @if (Model.CanManageAnnouncements)
+        {
+            <a asp-page="/Admin/Announcements" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage Announcements</span>
+                <span class="dcx-admin-action__meta">Publish business notices and updates.</span>
+            </a>
+        }
+
+        @if (Model.CanManageUsers)
+        {
+            <a asp-page="/Admin/Users" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">Manage Users</span>
+                <span class="dcx-admin-action__meta">Control user access and administration.</span>
+            </a>
+        }
+    </div>
+</section>

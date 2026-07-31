@@ -4,124 +4,169 @@
     ViewData["Title"] = "Canteen";
 }
 
-<section class="hero-panel mb-4">
-    <div class="d-flex flex-column flex-lg-row align-items-lg-end justify-content-between gap-4">
+<section class="dcx-canteen-hero mb-4">
+    <div class="dcx-canteen-hero__content">
         <div>
-            <div class="page-kicker mb-3">Canteen</div>
-            <h1 class="page-title">Choose your <span>next meal</span></h1>
-            <p class="page-copy mt-3 mb-0">Browse available breakfast and lunch items, then expand your account section when you need order history or monthly totals.</p>
+            <div class="dcx-kicker mb-3">Canteen</div>
+            <h1 class="dcx-canteen-title">Choose your <span>next meal</span></h1>
+            <p class="dcx-canteen-copy mt-3 mb-0">
+                Browse available breakfast and lunch items, then use your account panel for recent orders and monthly totals.
+            </p>
         </div>
+
+        <img src="~/images/branding/digifycx-logo.png"
+             alt=""
+             aria-hidden="true"
+             class="dcx-canteen-watermark" />
     </div>
 </section>
 
 @if (!ViewData.ModelState.IsValid)
 {
-    <div asp-validation-summary="All" class="alert alert-danger"></div>
+    <div asp-validation-summary="All" class="dcx-validation-summary mb-4"></div>
 }
 
-<div class="portal-grid">
-    <section class="soft-card">
+<div class="dcx-canteen-layout">
+    <section class="dcx-canteen-panel">
         <form method="post" asp-page-handler="Submit">
-            <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
-                <h2 class="section-title mb-0">Menu</h2>
-                <button type="submit" class="btn btn-primary">Place Order</button>
+            <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3 mb-4">
+                <div>
+                    <div class="dcx-kicker mb-2">Today's Menu</div>
+                    <h2 class="dcx-section-heading mb-0">Select an item to order</h2>
+                </div>
+                <button type="submit" class="dcx-btn">Place Order</button>
             </div>
 
             @if (Model.MenuItems.Count == 0)
             {
-                <p class="text-muted mb-0">No menu items are active right now.</p>
+                <div class="dcx-empty-state text-center">
+                    <img src="~/images/branding/digifycx-logo.png"
+                         alt=""
+                         aria-hidden="true"
+                         class="dcx-empty-state__logo" />
+                    <p class="mb-0">No menu items are active right now.</p>
+                </div>
             }
             else
             {
-                <div class="menu-grid">
+                <div class="dcx-menu-stack">
                     @foreach (var group in Model.MenuItems.GroupBy(x => x.MealSlot))
                     {
-                        foreach (var item in group)
-                        {
-                            <label class="menu-card">
-                                <input type="radio" name="SelectedMenuItemId" value="@item.Id" />
-                                @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                        <section class="dcx-menu-group">
+                            <div class="dcx-menu-group__header">
+                                <h3 class="dcx-menu-group__title mb-0">@group.Key</h3>
+                                <span class="dcx-chip">@group.Count() item(s)</span>
+                            </div>
+
+                            <div class="dcx-menu-grid">
+                                @foreach (var item in group)
                                 {
-                                    <img src="@item.ImagePath" alt="@item.Name" />
+                                    <label class="dcx-menu-card">
+                                        <input type="radio" name="SelectedMenuItemId" value="@item.Id" class="dcx-menu-card__input" />
+                                        <span class="dcx-menu-card__surface">
+                                            <span class="dcx-menu-card__media">
+                                                @if (!string.IsNullOrWhiteSpace(item.ImagePath))
+                                                {
+                                                    <img src="@item.ImagePath" alt="@item.Name" class="dcx-menu-card__image" />
+                                                }
+                                                else
+                                                {
+                                                    <span class="dcx-menu-card__emoji">@item.Emoji</span>
+                                                }
+                                            </span>
+
+                                            <span class="dcx-menu-card__content">
+                                                <span class="dcx-menu-card__topline">
+                                                    <span class="dcx-menu-card__name">@item.Name</span>
+                                                    <span class="dcx-menu-card__price">R @item.Price.ToString("N2")</span>
+                                                </span>
+                                                <span class="dcx-menu-card__meta">@item.MealSlot</span>
+                                            </span>
+                                        </span>
+                                    </label>
                                 }
-                                else
-                                {
-                                    <div class="d-flex align-items-center justify-content-center rounded-4 bg-light" style="aspect-ratio:16/10;font-size:3rem;">@item.Emoji</div>
-                                }
-                                <span class="d-flex align-items-start justify-content-between gap-3">
-                                    <span>
-                                        <span class="d-block fw-bold">@item.Name</span>
-                                        <span class="list-card-meta">@item.MealSlot</span>
-                                    </span>
-                                    <span class="fw-bold text-nowrap">R @item.Price.ToString("N2")</span>
-                                </span>
-                            </label>
-                        }
+                            </div>
+                        </section>
                     }
                 </div>
             }
         </form>
     </section>
 
-    <aside class="soft-card">
-        <h2 class="section-title">My Canteen Account</h2>
+    <aside class="dcx-canteen-side">
+        <section class="dcx-canteen-panel">
+            <div class="mb-3">
+                <div class="dcx-kicker mb-2">My Account</div>
+                <h2 class="dcx-section-heading mb-0">My canteen account</h2>
+            </div>
 
-        <details class="details-card" open>
-            <summary>
-                <span class="fw-bold">Monthly totals</span>
-                <span class="d-block list-card-meta">Quick view of recent canteen spend</span>
-            </summary>
-            <div class="details-body">
-                @if (Model.MonthlyTallies.Count == 0)
-                {
-                    <p class="text-muted mb-0">No canteen activity recorded yet.</p>
-                }
-                else
-                {
-                    <div class="d-grid gap-2">
-                        @foreach (var item in Model.MonthlyTallies)
-                        {
-                            <div class="list-card">
-                                <div class="d-flex justify-content-between gap-3">
-                                    <span class="fw-bold">@(new DateTime(item.Year, item.Month, 1).ToString("MMMM yyyy"))</span>
-                                    <span class="fw-bold">R @item.TotalAmount.ToString("N2")</span>
-                                </div>
-                            </div>
-                        }
+            <details class="dcx-account-card" open>
+                <summary class="dcx-account-card__summary">
+                    <div>
+                        <div class="dcx-account-card__title">Monthly totals</div>
+                        <div class="dcx-account-card__meta">Quick view of recent canteen spend</div>
                     </div>
-                }
-            </div>
-        </details>
+                </summary>
 
-        <details class="details-card">
-            <summary>
-                <span class="fw-bold">Recent orders</span>
-                <span class="d-block list-card-meta">Expand for item-level detail</span>
-            </summary>
-            <div class="details-body">
-                @if (Model.MyOrders.Count == 0)
-                {
-                    <p class="text-muted mb-0">No orders submitted yet.</p>
-                }
-                else
-                {
-                    foreach (var order in Model.MyOrders)
+                <div class="dcx-account-card__body">
+                    @if (Model.MonthlyTallies.Count == 0)
                     {
-                        <article class="list-card">
-                            <div class="d-flex justify-content-between gap-3">
-                                <div>
-                                    <div class="fw-bold">@order.ItemSummary</div>
-                                    <div class="list-card-meta">@order.MealSlot · @order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")</div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold">R @order.TotalAmount.ToString("N2")</div>
-                                    <div class="list-card-meta">@order.Status</div>
-                                </div>
-                            </div>
-                        </article>
+                        <p class="dcx-subtle-text mb-0">No canteen activity recorded yet.</p>
                     }
-                }
-            </div>
-        </details>
+                    else
+                    {
+                        <div class="dcx-account-list">
+                            @foreach (var item in Model.MonthlyTallies)
+                            {
+                                <article class="dcx-account-list__item">
+                                    <div class="d-flex justify-content-between gap-3">
+                                        <span class="fw-bold">@(new DateTime(item.Year, item.Month, 1).ToString("MMMM yyyy"))</span>
+                                        <span class="fw-bold">R @item.TotalAmount.ToString("N2")</span>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </div>
+            </details>
+
+            <details class="dcx-account-card">
+                <summary class="dcx-account-card__summary">
+                    <div>
+                        <div class="dcx-account-card__title">Recent orders</div>
+                        <div class="dcx-account-card__meta">Expand for item-level detail</div>
+                    </div>
+                </summary>
+
+                <div class="dcx-account-card__body">
+                    @if (Model.MyOrders.Count == 0)
+                    {
+                        <p class="dcx-subtle-text mb-0">No orders submitted yet.</p>
+                    }
+                    else
+                    {
+                        <div class="dcx-account-list">
+                            @foreach (var order in Model.MyOrders)
+                            {
+                                <article class="dcx-account-list__item">
+                                    <div class="d-flex justify-content-between gap-3">
+                                        <div>
+                                            <div class="fw-bold text-white">@order.ItemSummary</div>
+                                            <div class="dcx-account-card__meta">
+                                                @order.MealSlot · @order.OrderTimeUtc.ToLocalTime().ToString("dd MMM yyyy HH:mm")
+                                            </div>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="fw-bold text-white">R @order.TotalAmount.ToString("N2")</div>
+                                            <div class="dcx-account-card__meta">@order.Status</div>
+                                        </div>
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    }
+                </div>
+            </details>
+        </section>
     </aside>
 </div>

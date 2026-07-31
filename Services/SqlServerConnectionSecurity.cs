@@ -6,7 +6,11 @@ namespace DigifyCXIntranet.Services;
 
 public static class SqlServerConnectionSecurity
 {
-    public static void Validate(string connectionString, IHostEnvironment environment, ILogger logger)
+    public static void Validate(
+        string connectionString,
+        IHostEnvironment environment,
+        ILogger logger,
+        bool allowTrustServerCertificateForInternalTest = false)
     {
         var builder = new SqlConnectionStringBuilder(connectionString);
         var isSecure = builder.Encrypt && !builder.TrustServerCertificate;
@@ -17,6 +21,14 @@ public static class SqlServerConnectionSecurity
         }
 
         var message = "SQL Server connection should use Encrypt=True and TrustServerCertificate=False for trusted in-transit encryption.";
+        if (allowTrustServerCertificateForInternalTest && builder.Encrypt && builder.TrustServerCertificate)
+        {
+            logger.LogWarning(
+                "{Message} TrustServerCertificate=True is temporarily allowed because SqlServerSecurity:AllowTrustServerCertificateForInternalTest is enabled. Use this only for internal test/demo deployments and install a trusted SQL Server certificate before production go-live.",
+                message);
+            return;
+        }
+
         if (environment.IsDevelopment())
         {
             logger.LogWarning("{Message} Current connection is allowed because the app is running in Development.", message);

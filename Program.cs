@@ -10,11 +10,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Quartz;
-using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +67,15 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.Configure<ActivationOptions>(
+    builder.Configuration.GetSection(ActivationOptions.SectionName));
+builder.Services.Configure<SqlServerSecurityOptions>(
+    builder.Configuration.GetSection(SqlServerSecurityOptions.SectionName));
+
+// ── Zendesk inbound webhook (password reset trigger from IT) ──────────────
+builder.Services.Configure<ZendeskWebhookOptions>(
+    builder.Configuration.GetSection("ZendeskWebhook"));
+
 builder.Services.AddOptions<RateLimitPoliciesOptions>()
     .Bind(builder.Configuration.GetSection(RateLimitPoliciesOptions.SectionName))
     .ValidateDataAnnotations()
@@ -167,6 +176,7 @@ builder.Services.AddScoped<IEmailSender, SmtpOrOutboxEmailSender>();
 builder.Services.AddScoped<IEmailOutboxDispatcher, EmailOutboxDispatcher>();
 builder.Services.AddScoped<IUserRegistrySyncService, UserRegistrySyncService>();
 builder.Services.AddScoped<IMonthlyPayrollRunner, MonthlyPayrollRunner>();
+builder.Services.AddScoped<ConfiguredTestUserSeeder>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
 builder.Services.AddHttpClient(nameof(HackerNewsCacheService), (serviceProvider, client) =>
@@ -190,14 +200,24 @@ builder.Services.AddHttpClient(nameof(UserRegistrySyncWorker), (serviceProvider,
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 120));
 });
 
+builder.Services.AddHostedService<TechNewsRefreshHostedService>();
+builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
+builder.Services.AddHostedService<MonthlyPayrollHostedService>();
+builder.Services.AddHostedService<UserRegistrySyncWorker>();
+
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
     .AddCheck<DatabaseHealthCheck>("sqlserver", tags: new[] { "ready", "database" })
     .AddCheck<BackupHealthCheck>("backup", tags: new[] { "ready", "database" })
     .AddCheck<CriticalJobHealthCheck>("critical-jobs", tags: new[] { "ready" });
 
+// ── API controllers (used by Zendesk webhook) ─────────────────────────────
+builder.Services.AddControllers();
+
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
+var allowInsecureHttpForInternalTest =
+    !builder.Environment.IsDevelopment() && authMode.AllowInsecureHttpForInternalTest;
 
 if (useWindowsAuth)
 {
@@ -215,7 +235,7 @@ else
             options.ExpireTimeSpan = TimeSpan.FromHours(8);
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Lax;
-            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment()
+            options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
         });
@@ -239,6 +259,10 @@ builder.Services.AddAuthorization(options =>
         policy.RequireRole(AppRoles.CanteenAdmin, AppRoles.SystemAdmin, AppRoles.SuperAdmin));
     options.AddPolicy(AppPolicies.SystemOperations, policy =>
         policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
+    options.AddPolicy(AppPolicies.AnnouncementManagement, policy =>
+        policy.RequireRole(AppRoles.HrAdmin));
+    options.AddPolicy(AppPolicies.UserManagement, policy =>
+        policy.RequireRole(AppRoles.SystemAdmin, AppRoles.SuperAdmin));
 });
 
 builder.Services.AddRazorPages(options =>
@@ -251,10 +275,11 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/JobEdit", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/Policies", AppPolicies.HrOperations);
     options.Conventions.AuthorizePage("/Admin/PolicyEdit", AppPolicies.HrOperations);
-    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.SystemOperations);
-    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Announcements", AppPolicies.AnnouncementManagement);
+    options.Conventions.AuthorizePage("/Admin/AnnouncementEdit", AppPolicies.AnnouncementManagement);
     options.Conventions.AuthorizePage("/Admin/Faq", AppPolicies.SystemOperations);
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
+    options.Conventions.AuthorizePage("/Admin/Users", AppPolicies.UserManagement);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
@@ -275,11 +300,11 @@ builder.Services.AddRazorPages(options =>
         options.Conventions.AllowAnonymousToPage("/Account/Login");
         options.Conventions.AllowAnonymousToPage("/Account/AccessDenied");
         options.Conventions.AllowAnonymousToPage("/Account/Logout");
+        options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     }
 });
 
 var canteenOptions = builder.Configuration.GetSection(CanteenBatchingOptions.SectionName).Get<CanteenBatchingOptions>() ?? new CanteenBatchingOptions();
-var jobOptions = builder.Configuration.GetSection(JobSchedulingOptions.SectionName).Get<JobSchedulingOptions>() ?? new JobSchedulingOptions();
 TimeZoneInfo batchTimeZone;
 try
 {
@@ -292,68 +317,36 @@ catch
 
 builder.Services.AddQuartz(q =>
 {
-    if (jobOptions.UsePersistentStore)
-    {
-        q.UsePersistentStore(store =>
-        {
-            store.UseProperties = true;
-            store.UseSqlServer(connectionString);
-            if (jobOptions.UseClustering)
-            {
-                store.UseClustering();
-            }
-        });
-    }
-
-    var breakfastJobKey = new JobKey(JobNames.BreakfastCanteenBatch);
+    var breakfastJobKey = new JobKey(nameof(BreakfastCanteenBatchJob));
     q.AddJob<BreakfastCanteenBatchJob>(opts => opts.WithIdentity(breakfastJobKey));
     q.AddTrigger(opts => opts
         .ForJob(breakfastJobKey)
-        .WithIdentity($"{JobNames.BreakfastCanteenBatch}-trigger")
-        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
-        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
+        .WithIdentity($"{nameof(BreakfastCanteenBatchJob)}-trigger")
+        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron.InTimeZone(batchTimeZone)));
 
-    var lunchJobKey = new JobKey(JobNames.LunchCanteenBatch);
+    var lunchJobKey = new JobKey(nameof(LunchCanteenBatchJob));
     q.AddJob<LunchCanteenBatchJob>(opts => opts.WithIdentity(lunchJobKey));
     q.AddTrigger(opts => opts
         .ForJob(lunchJobKey)
-        .WithIdentity($"{JobNames.LunchCanteenBatch}-trigger")
-        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
-        .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
-
-    AddSimpleIntervalJob<TechNewsRefreshJob>(q, JobNames.TechNewsRefresh, TimeSpan.FromMinutes(jobOptions.TechNewsIntervalMinutes), jobOptions.StartupDelaySeconds);
-    AddSimpleIntervalJob<ZendeskPolicySyncJob>(q, JobNames.ZendeskPolicySync, TimeSpan.FromHours(jobOptions.ZendeskPolicySyncIntervalHours), jobOptions.StartupDelaySeconds + 30);
-    AddSimpleIntervalJob<UserRegistrySyncJob>(q, JobNames.UserRegistrySync, TimeSpan.FromHours(jobOptions.UserRegistrySyncIntervalHours), jobOptions.StartupDelaySeconds + 60);
-    AddSimpleIntervalJob<EmailOutboxDispatchJob>(q, JobNames.EmailOutboxDispatch, TimeSpan.FromMinutes(jobOptions.EmailDispatchIntervalMinutes), jobOptions.StartupDelaySeconds);
-
-    var payrollJobKey = new JobKey(JobNames.MonthlyPayroll);
-    q.AddJob<MonthlyPayrollJob>(opts => opts.WithIdentity(payrollJobKey));
-    q.AddTrigger(opts => opts
-        .ForJob(payrollJobKey)
-        .WithIdentity($"{JobNames.MonthlyPayroll}-trigger")
-        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
-        .WithCronSchedule(jobOptions.PayrollCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
+        .WithIdentity($"{nameof(LunchCanteenBatchJob)}-trigger")
+        .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone)));
 });
-
-static void AddSimpleIntervalJob<TJob>(IServiceCollectionQuartzConfigurator q, string jobName, TimeSpan interval, int startupDelaySeconds)
-    where TJob : IJob
-{
-    var jobKey = new JobKey(jobName);
-    q.AddJob<TJob>(opts => opts.WithIdentity(jobKey));
-    q.AddTrigger(opts => opts
-        .ForJob(jobKey)
-        .WithIdentity($"{jobName}-trigger")
-        .StartAt(DateBuilder.FutureDate(startupDelaySeconds, IntervalUnit.Second))
-        .WithSimpleSchedule(schedule => schedule
-            .WithInterval(interval)
-            .RepeatForever()
-            .WithMisfireHandlingInstructionNextWithRemainingCount()));
-}
 
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
 var app = builder.Build();
-SqlServerConnectionSecurity.Validate(connectionString, app.Environment, app.Logger);
+var sqlServerSecurity = app.Services.GetRequiredService<IOptions<SqlServerSecurityOptions>>().Value;
+SqlServerConnectionSecurity.Validate(
+    connectionString,
+    app.Environment,
+    app.Logger,
+    sqlServerSecurity.AllowTrustServerCertificateForInternalTest);
+
+if (allowInsecureHttpForInternalTest)
+{
+    app.Logger.LogWarning(
+        "HTTP authentication cookies are temporarily allowed because AuthMode:AllowInsecureHttpForInternalTest is enabled. Use this only for the internal port 8080 test binding and disable it when HTTPS is configured.");
+}
 
 app.UseForwardedHeaders();
 
@@ -364,11 +357,18 @@ if (app.Environment.IsDevelopment())
 else
 {
     app.UseExceptionHandler("/Error");
-    app.UseHsts();
+    if (!allowInsecureHttpForInternalTest)
+    {
+        app.UseHsts();
+    }
 }
 
 app.UseMiddleware<SecurityHeadersMiddleware>();
-app.UseHttpsRedirection();
+if (!allowInsecureHttpForInternalTest)
+{
+    app.UseHttpsRedirection();
+}
+
 app.UseStaticFiles();
 app.UseRouting();
 app.UseRateLimiter();
@@ -423,6 +423,9 @@ app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 
 app.MapRazorPages();
 
+// ── Map API controllers (Zendesk webhook lives here) ──────────────────────
+app.MapControllers();
+
 using (var scope = app.Services.CreateScope())
 {
     var startupLogger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>()
@@ -432,6 +435,8 @@ using (var scope = app.Services.CreateScope())
 
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await DatabaseSchemaRepair.EnsurePostMigrationSchemaAsync(db);
+    var testUserSeeder = scope.ServiceProvider.GetRequiredService<ConfiguredTestUserSeeder>();
+    await testUserSeeder.SeedAsync();
     await SeedData.InitializeAsync(db);
 }
 

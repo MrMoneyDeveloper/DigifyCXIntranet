@@ -1,0 +1,12 @@
+{
+  "To": "hr-payroll@digifycx.local",
+  "Subject": "Monthly Canteen Payroll Export - 2026-06",
+  "BodyText": "Attached is the monthly canteen payroll deduction workbook.",
+  "GeneratedUtc": "2026-06-25T00:35:09.9599614Z",
+  "Attachments": [
+    {
+      "FileName": "payroll_canteen_202606.xlsx",
+      "ContentType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }
+  ]
+}
