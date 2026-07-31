@@ -28,6 +28,10 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     public DbSet<FinanceAuditLog> FinanceAuditLogs => Set<FinanceAuditLog>();
     public DbSet<AccountActivationLog> AccountActivationLogs => Set<AccountActivationLog>();
     public DbSet<ForgotPasswordRequest> ForgotPasswordRequests => Set<ForgotPasswordRequest>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<BackgroundJobRun> BackgroundJobRuns => Set<BackgroundJobRun>();
+    public DbSet<EmailOutboxMessage> EmailOutboxMessages => Set<EmailOutboxMessage>();
+    public DbSet<EmailOutboxAttachment> EmailOutboxAttachments => Set<EmailOutboxAttachment>();
 
     public override int SaveChanges()
     {
@@ -48,5 +52,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
         builder.ConfigureCanteenDomain();
         builder.ConfigureHrDomain();
         builder.ConfigurePolicyDomain();
+        builder.ConfigureOperationalDomain();
     }
 }

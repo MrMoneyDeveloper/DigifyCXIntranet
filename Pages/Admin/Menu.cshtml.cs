@@ -28,6 +28,10 @@ public class MenuModel : PageModel
     public IFormFile? FoodImageUpload { get; set; }
 
     public List<MenuItem> Items { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 100;
 
     public async Task OnGetAsync()
     {
@@ -117,11 +121,15 @@ public class MenuModel : PageModel
 
     private async Task LoadAsync()
     {
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 25, 200);
         Items = await _db.MenuItems
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderBy(x => x.MealSlot)
             .ThenBy(x => x.DisplayOrder)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
     }
 

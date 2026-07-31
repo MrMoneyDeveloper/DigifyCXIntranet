@@ -1,5 +1,6 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -15,11 +16,13 @@ public class ActivateModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAuditService _auditService;
 
-    public ActivateModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public ActivateModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditService auditService)
     {
         _db = db;
         _userManager = userManager;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -76,12 +79,14 @@ public class ActivateModel : PageModel
 
         if (user == null)
         {
+            await _auditService.WriteAsync(Input.FullName, "AccountActivationFailed", "Account", "reason=no-match", false, errorCode: "NoEmployeeMatch", httpContext: HttpContext);
             ErrorMessage = "No employee record was found matching that name. Please check the spelling or contact HR.";
             return Page();
         }
 
         if (!string.IsNullOrWhiteSpace(user.PersonalEmail))
         {
+            await _auditService.WriteAsync(user.UserName ?? normalizedInput, "AccountActivationSkipped", "Account", "reason=already-activated", true, user.Id, httpContext: HttpContext);
             AlreadyActivated = true;
             return Page();
         }
@@ -102,6 +107,7 @@ public class ActivateModel : PageModel
             ActivatedUtc = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(user.UserName ?? normalizedInput, "AccountActivated", "Account", "personalEmailUpdated=true", true, user.Id, httpContext: HttpContext);
 
         TempData["ActivationUsername"] = user.UserName;
         return RedirectToPage("/Account/ResetPassword");

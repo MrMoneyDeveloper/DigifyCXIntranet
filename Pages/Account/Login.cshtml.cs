@@ -20,17 +20,20 @@ public class LoginModel : PageModel
     private readonly IWebHostEnvironment _environment;
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<ApplicationUser> _hasher;
+    private readonly IAuditService _auditService;
 
     public LoginModel(
         IOptions<AuthModeOptions> authModeOptions,
         IWebHostEnvironment environment,
         ApplicationDbContext db,
-        IPasswordHasher<ApplicationUser> hasher)
+        IPasswordHasher<ApplicationUser> hasher,
+        IAuditService auditService)
     {
         _authModeOptions = authModeOptions.Value;
         _environment = environment;
         _db = db;
         _hasher = hasher;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -68,6 +71,7 @@ public class LoginModel : PageModel
         {
             if (devUser.Password != inputPassword)
             {
+                await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=development-user", false, errorCode: "InvalidCredentials", httpContext: HttpContext);
                 ModelState.AddModelError(string.Empty, "Invalid username or password.");
                 return Page();
             }
@@ -87,6 +91,7 @@ public class LoginModel : PageModel
             var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
             var devPrincipal = new ClaimsPrincipal(devIdentity);
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, devPrincipal);
+            await _auditService.WriteAsync(devUser.Username, "LoginSucceeded", "Account", "source=development-user", httpContext: HttpContext);
 
             return Url.IsLocalUrl(ReturnUrl)
                 ? LocalRedirect(ReturnUrl)
@@ -102,6 +107,7 @@ public class LoginModel : PageModel
 
         if (dbUser == null)
         {
+            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=database-user", false, errorCode: "InvalidCredentials", httpContext: HttpContext);
             ModelState.AddModelError(string.Empty, "Invalid username or password.");
             return Page();
         }
@@ -109,6 +115,7 @@ public class LoginModel : PageModel
         // Employee must have completed account activation (PersonalEmail set + PasswordHash set)
         if (string.IsNullOrWhiteSpace(dbUser.PersonalEmail))
         {
+            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "reason=not-activated", false, dbUser.Id, "NotActivated", HttpContext);
             ModelState.AddModelError(string.Empty,
                 "Your account has not been activated yet. Please visit the Activate Account page first.");
             return Page();
@@ -117,6 +124,7 @@ public class LoginModel : PageModel
         if (string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
             dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
         {
+            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "reason=password-not-set", false, dbUser.Id, "PasswordNotSet", HttpContext);
             ModelState.AddModelError(string.Empty,
                 "You have not set a password yet. Please complete account activation first.");
             return Page();
@@ -126,6 +134,7 @@ public class LoginModel : PageModel
         var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
         if (verificationResult == PasswordVerificationResult.Failed)
         {
+            await _auditService.WriteAsync(inputUsername, "LoginFailed", "Account", "source=database-user", false, dbUser.Id, "InvalidCredentials", HttpContext);
             ModelState.AddModelError(string.Empty, "Invalid username or password.");
             return Page();
         }
@@ -146,6 +155,7 @@ public class LoginModel : PageModel
         var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await _auditService.WriteAsync(dbUser.UserName ?? inputUsername, "LoginSucceeded", "Account", "source=database-user", true, dbUser.Id, httpContext: HttpContext);
 
         return Url.IsLocalUrl(ReturnUrl)
             ? LocalRedirect(ReturnUrl)

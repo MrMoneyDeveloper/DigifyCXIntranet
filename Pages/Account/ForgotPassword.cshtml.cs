@@ -12,15 +12,18 @@ public class ForgotPasswordModel : PageModel
     private readonly IZendeskTicketService _zendesk;
     private readonly ApplicationDbContext  _db;
     private readonly ILogger<ForgotPasswordModel> _logger;
+    private readonly IAuditService _auditService;
 
     public ForgotPasswordModel(
         IZendeskTicketService zendesk,
         ApplicationDbContext  db,
-        ILogger<ForgotPasswordModel> logger)
+        ILogger<ForgotPasswordModel> logger,
+        IAuditService auditService)
     {
         _zendesk = zendesk;
         _db      = db;
         _logger  = logger;
+        _auditService = auditService;
     }
 
     // ── View state ──────────────────────────────────────────────────
@@ -79,6 +82,7 @@ public class ForgotPasswordModel : PageModel
         {
             _db.Set<ForgotPasswordRequest>().Add(record);
             await _db.SaveChangesAsync();
+            await _auditService.WriteAsync(fullName, "ForgotPasswordSubmitted", "ForgotPasswordRequest", $"ticket={result.TicketId}", result.Succeeded, record.Id.ToString(), result.Succeeded ? "" : "ZendeskFailed", HttpContext);
         }
         catch (Exception ex)
         {

@@ -1,4 +1,3 @@
-using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.Extensions.Options;
@@ -7,29 +6,29 @@ using Quartz;
 namespace DigifyCXIntranet.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class BreakfastCanteenBatchJob : IJob
+public class TechNewsRefreshJob : IJob
 {
-    private readonly ICanteenBatchService _canteenBatchService;
+    private readonly ITechNewsCacheService _cacheService;
     private readonly IBackgroundJobRunRecorder _runs;
     private readonly JobSchedulingOptions _options;
 
-    public BreakfastCanteenBatchJob(
-        ICanteenBatchService canteenBatchService,
+    public TechNewsRefreshJob(
+        ITechNewsCacheService cacheService,
         IBackgroundJobRunRecorder runs,
         IOptions<JobSchedulingOptions> options)
     {
-        _canteenBatchService = canteenBatchService;
+        _cacheService = cacheService;
         _runs = runs;
         _options = options.Value;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var runId = await _runs.StartedAsync(JobNames.BreakfastCanteenBatch, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
+        var runId = await _runs.StartedAsync(JobNames.TechNewsRefresh, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
         try
         {
-            await _canteenBatchService.RunBatchAsync(MealSlot.Breakfast, context.CancellationToken);
-            await _runs.CompletedAsync(runId, 0, "Breakfast batch completed.", context.CancellationToken);
+            await _cacheService.RefreshAsync(context.CancellationToken);
+            await _runs.CompletedAsync(runId, _cacheService.GetCurrentItems().Count, "Tech news refresh completed.", context.CancellationToken);
         }
         catch (Exception ex) when (context.RefireCount < _options.RetryCount)
         {

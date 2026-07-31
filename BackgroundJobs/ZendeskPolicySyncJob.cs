@@ -1,4 +1,3 @@
-using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.Extensions.Options;
@@ -7,29 +6,29 @@ using Quartz;
 namespace DigifyCXIntranet.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class BreakfastCanteenBatchJob : IJob
+public class ZendeskPolicySyncJob : IJob
 {
-    private readonly ICanteenBatchService _canteenBatchService;
+    private readonly IZendeskPolicySyncService _syncService;
     private readonly IBackgroundJobRunRecorder _runs;
     private readonly JobSchedulingOptions _options;
 
-    public BreakfastCanteenBatchJob(
-        ICanteenBatchService canteenBatchService,
+    public ZendeskPolicySyncJob(
+        IZendeskPolicySyncService syncService,
         IBackgroundJobRunRecorder runs,
         IOptions<JobSchedulingOptions> options)
     {
-        _canteenBatchService = canteenBatchService;
+        _syncService = syncService;
         _runs = runs;
         _options = options.Value;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var runId = await _runs.StartedAsync(JobNames.BreakfastCanteenBatch, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
+        var runId = await _runs.StartedAsync(JobNames.ZendeskPolicySync, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
         try
         {
-            await _canteenBatchService.RunBatchAsync(MealSlot.Breakfast, context.CancellationToken);
-            await _runs.CompletedAsync(runId, 0, "Breakfast batch completed.", context.CancellationToken);
+            await _syncService.SyncAsync(context.CancellationToken);
+            await _runs.CompletedAsync(runId, 0, "Zendesk policy sync completed.", context.CancellationToken);
         }
         catch (Exception ex) when (context.RefireCount < _options.RetryCount)
         {

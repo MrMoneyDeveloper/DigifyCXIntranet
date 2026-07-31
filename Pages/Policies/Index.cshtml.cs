@@ -17,6 +17,10 @@ public class IndexModel : PageModel
 
     [BindProperty(SupportsGet = true)]
     public string? Search { get; set; }
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 50;
 
     public List<PolicyGroup> Groups { get; private set; } = new();
 
@@ -33,10 +37,14 @@ public class IndexModel : PageModel
             query = query.Where(x => x.Title.Contains(Search) || x.Body.Contains(Search));
         }
 
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 10, 100);
         var items = await query
             .OrderBy(x => x.CategoryName)
             .ThenBy(x => x.SectionName)
             .ThenBy(x => x.Title)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
         Groups = items

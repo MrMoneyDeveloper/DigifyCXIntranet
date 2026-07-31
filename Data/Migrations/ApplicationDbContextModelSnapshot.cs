@@ -102,7 +102,60 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("IsDeleted", "IsActive", "IsPinned", "PublishDateUtc", "ExpirationDate");
+
                     b.ToTable("Announcements");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.AuditLog", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("Action").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<string>("Actor").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<string>("CorrelationId").IsRequired().HasMaxLength(80).HasColumnType("nvarchar(80)");
+                    b.Property<string>("Detail").IsRequired().HasMaxLength(4000).HasColumnType("nvarchar(4000)");
+                    b.Property<string>("Entity").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<string>("EntityId").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<string>("ErrorCode").IsRequired().HasMaxLength(80).HasColumnType("nvarchar(80)");
+                    b.Property<string>("RemoteIp").IsRequired().HasMaxLength(80).HasColumnType("nvarchar(80)");
+                    b.Property<string>("Route").IsRequired().HasMaxLength(256).HasColumnType("nvarchar(256)");
+                    b.Property<bool>("Succeeded").HasColumnType("bit");
+                    b.Property<DateTime>("TimestampUtc").HasColumnType("datetime2");
+                    b.Property<string>("UserAgent").IsRequired().HasMaxLength(512).HasColumnType("nvarchar(512)");
+
+                    b.HasKey("Id");
+                    b.HasIndex("Actor", "Action", "TimestampUtc");
+                    b.HasIndex("Entity", "EntityId", "TimestampUtc");
+                    b.HasIndex("TimestampUtc");
+                    b.ToTable("AuditLogs");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.BackgroundJobRun", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempt").HasColumnType("int");
+                    b.Property<DateTime?>("CompletedUtc").HasColumnType("datetime2");
+                    b.Property<int>("ItemsProcessed").HasColumnType("int");
+                    b.Property<string>("JobName").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<string>("Message").IsRequired().HasMaxLength(1000).HasColumnType("nvarchar(1000)");
+                    b.Property<DateTime?>("NextFireUtc").HasColumnType("datetime2");
+                    b.Property<DateTime>("StartedUtc").HasColumnType("datetime2");
+                    b.Property<string>("Status").IsRequired().HasMaxLength(80).HasColumnType("nvarchar(80)");
+
+                    b.HasKey("Id");
+                    b.HasIndex("JobName", "StartedUtc");
+                    b.HasIndex("Status", "StartedUtc");
+                    b.ToTable("BackgroundJobRuns");
                 });
 
             modelBuilder.Entity("DigifyCXIntranet.Models.ApplicationUser", b =>
@@ -283,7 +336,50 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasIndex("EmployeeUsername", "OrderTimeUtc");
 
+                    b.HasIndex("OrderTimeUtc", "Status", "CanteenBatchRunId");
+
                     b.ToTable("CanteenOrders");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.EmailOutboxMessage", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("Attempts").HasColumnType("int");
+                    b.Property<string>("BodyText").IsRequired().HasColumnType("nvarchar(max)");
+                    b.Property<DateTime>("CreatedUtc").HasColumnType("datetime2");
+                    b.Property<DateTime?>("LastAttemptUtc").HasColumnType("datetime2");
+                    b.Property<string>("LastError").IsRequired().HasMaxLength(1000).HasColumnType("nvarchar(1000)");
+                    b.Property<DateTime?>("SentUtc").HasColumnType("datetime2");
+                    b.Property<string>("Status").IsRequired().HasMaxLength(40).HasColumnType("nvarchar(40)");
+                    b.Property<string>("Subject").IsRequired().HasMaxLength(250).HasColumnType("nvarchar(250)");
+                    b.Property<string>("To").IsRequired().HasMaxLength(320).HasColumnType("nvarchar(320)");
+
+                    b.HasKey("Id");
+                    b.HasIndex("Status", "CreatedUtc");
+                    b.ToTable("EmailOutboxMessages");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.EmailOutboxAttachment", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<byte[]>("Bytes").IsRequired().HasColumnType("varbinary(max)");
+                    b.Property<string>("ContentType").IsRequired().HasMaxLength(120).HasColumnType("nvarchar(120)");
+                    b.Property<long>("EmailOutboxMessageId").HasColumnType("bigint");
+                    b.Property<string>("FileName").IsRequired().HasMaxLength(260).HasColumnType("nvarchar(260)");
+
+                    b.HasKey("Id");
+                    b.HasIndex("EmailOutboxMessageId");
+                    b.ToTable("EmailOutboxAttachments");
                 });
 
             modelBuilder.Entity("DigifyCXIntranet.Models.ExternalApplication", b =>
@@ -413,6 +509,8 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("TimestampUtc");
+
+                    b.HasIndex("Actor", "Action", "TimestampUtc");
 
                     b.ToTable("FinanceAuditLogs");
                 });
@@ -572,6 +670,8 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasIndex("IsDeleted", "IsActive", "ClosingDate");
 
+                    b.HasIndex("IsDeleted", "ClosingDate");
+
                     b.ToTable("JobPostings");
                 });
 
@@ -706,6 +806,10 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasIndex("EmployeeDomainName", "PolicyArticleId", "PolicyVersion")
                         .IsUnique();
+
+                    b.HasIndex("EmployeeDomainName", "TimestampUtc");
+
+                    b.HasIndex("PolicyArticleId", "TimestampUtc");
 
                     b.ToTable("PolicyAcknowledgements");
                 });
@@ -883,6 +987,8 @@ namespace DigifyCXIntranet.Data.Migrations
 
                     b.HasIndex("SectionName", "Title");
 
+                    b.HasIndex("IsPublished", "CategoryName", "SectionName", "UpdatedAtUtc");
+
                     b.ToTable("ZendeskPolicyArticles");
                 });
 
@@ -919,6 +1025,8 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("StartedUtc");
+
+                    b.HasIndex("Succeeded", "StartedUtc");
 
                     b.ToTable("ZendeskSyncLogs");
                 });
@@ -1092,6 +1200,17 @@ namespace DigifyCXIntranet.Data.Migrations
                     b.Navigation("ReferralInvite");
                 });
 
+            modelBuilder.Entity("DigifyCXIntranet.Models.EmailOutboxAttachment", b =>
+                {
+                    b.HasOne("DigifyCXIntranet.Models.EmailOutboxMessage", "Message")
+                        .WithMany("Attachments")
+                        .HasForeignKey("EmailOutboxMessageId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Message");
+                });
+
             modelBuilder.Entity("DigifyCXIntranet.Models.InternalJobApplication", b =>
                 {
                     b.HasOne("DigifyCXIntranet.Models.JobPosting", "JobPosting")
@@ -1168,6 +1287,11 @@ namespace DigifyCXIntranet.Data.Migrations
             modelBuilder.Entity("DigifyCXIntranet.Models.CanteenBatchRun", b =>
                 {
                     b.Navigation("Orders");
+                });
+
+            modelBuilder.Entity("DigifyCXIntranet.Models.EmailOutboxMessage", b =>
+                {
+                    b.Navigation("Attachments");
                 });
 #pragma warning restore 612, 618
         }

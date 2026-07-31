@@ -33,14 +33,21 @@ public class CanteenLedgerModel : PageModel
     public List<CanteenOrder> DetailRows { get; private set; } = new();
     public decimal TotalAmount { get; private set; }
     public int OrderCount { get; private set; }
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 100;
 
     public async Task OnGetAsync()
     {
         NormalizeDates();
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 25, 200);
         DetailRows = await BuildFilteredQuery()
             .OrderBy(x => x.EmployeeUsername)
             .ThenByDescending(x => x.OrderTimeUtc)
-            .Take(1000)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
 
         SummaryRows = BuildSummaryRows(DetailRows);

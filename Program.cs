@@ -9,9 +9,12 @@ using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Quartz;
+using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -64,6 +67,22 @@ builder.Services.Configure<ZendeskSyncOptions>(
     builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
 builder.Services.Configure<OutboxOptions>(
     builder.Configuration.GetSection(OutboxOptions.SectionName));
+builder.Services.AddOptions<RateLimitPoliciesOptions>()
+    .Bind(builder.Configuration.GetSection(RateLimitPoliciesOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<BackupHealthOptions>()
+    .Bind(builder.Configuration.GetSection(BackupHealthOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<JobSchedulingOptions>()
+    .Bind(builder.Configuration.GetSection(JobSchedulingOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<MonitoringOptions>()
+    .Bind(builder.Configuration.GetSection(MonitoringOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 builder.Services.AddOptions<TechNewsOptions>()
     .Bind(builder.Configuration.GetSection(TechNewsOptions.SectionName))
     .ValidateDataAnnotations()
@@ -83,9 +102,20 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardLimit = 2;
 });
 
+var rateLimitOptions = builder.Configuration.GetSection(RateLimitPoliciesOptions.SectionName).Get<RateLimitPoliciesOptions>() ?? new RateLimitPoliciesOptions();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var httpContext = context.HttpContext;
+        var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("RateLimiting");
+        logger.LogWarning("Rate limit rejected {Path} for {RemoteIp}.", httpContext.Request.Path, httpContext.Connection.RemoteIpAddress);
+        httpContext.Response.ContentType = "text/plain";
+        await httpContext.Response.WriteAsync("Too many requests. Please wait and try again.", cancellationToken);
+    };
+
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
         var key = context.Connection.RemoteIpAddress?.ToString()
@@ -94,13 +124,34 @@ builder.Services.AddRateLimiter(options =>
 
         return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 240,
-            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = rateLimitOptions.GlobalPermitLimit,
+            Window = TimeSpan.FromSeconds(rateLimitOptions.GlobalWindowSeconds),
             QueueLimit = 0,
             AutoReplenishment = true
         });
     });
+
+    AddFixedPolicy(options, "login", rateLimitOptions.Login);
+    AddFixedPolicy(options, "forgot-password", rateLimitOptions.ForgotPassword);
+    AddFixedPolicy(options, "account-activation", rateLimitOptions.AccountActivation);
+    AddFixedPolicy(options, "password-reset", rateLimitOptions.PasswordReset);
+    AddFixedPolicy(options, "external-application", rateLimitOptions.ExternalApplication);
 });
+
+static void AddFixedPolicy(RateLimiterOptions options, string policyName, EndpointRateLimitOptions policy)
+{
+    options.AddPolicy(policyName, context =>
+    {
+        var ip = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        return RateLimitPartition.GetFixedWindowLimiter($"{policyName}:{ip}", _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = policy.PermitLimit,
+            Window = TimeSpan.FromMinutes(policy.WindowMinutes),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
+}
 
 builder.Services.AddSingleton<IAdminAccessService, ConfigurationAdminAccessService>();
 builder.Services.AddTransient<IClaimsTransformation, ConfigurationRoleClaimsTransformation>();
@@ -110,7 +161,12 @@ builder.Services.AddScoped<IFileExportService, ClosedXmlFileExportService>();
 builder.Services.AddScoped<IZendeskPolicySyncService, ZendeskPolicySyncService>();
 builder.Services.AddScoped<IZendeskTicketService, ZendeskTicketService>();
 builder.Services.AddScoped<IFinanceAuditService, FinanceAuditService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
+builder.Services.AddScoped<IBackgroundJobRunRecorder, BackgroundJobRunRecorder>();
 builder.Services.AddScoped<IEmailSender, SmtpOrOutboxEmailSender>();
+builder.Services.AddScoped<IEmailOutboxDispatcher, EmailOutboxDispatcher>();
+builder.Services.AddScoped<IUserRegistrySyncService, UserRegistrySyncService>();
+builder.Services.AddScoped<IMonthlyPayrollRunner, MonthlyPayrollRunner>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
 builder.Services.AddHttpClient(nameof(HackerNewsCacheService), (serviceProvider, client) =>
@@ -134,13 +190,11 @@ builder.Services.AddHttpClient(nameof(UserRegistrySyncWorker), (serviceProvider,
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 120));
 });
 
-builder.Services.AddHostedService<TechNewsRefreshHostedService>();
-builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
-builder.Services.AddHostedService<MonthlyPayrollHostedService>();
-builder.Services.AddHostedService<UserRegistrySyncWorker>();
-
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("sqlserver");
+    .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
+    .AddCheck<DatabaseHealthCheck>("sqlserver", tags: new[] { "ready", "database" })
+    .AddCheck<BackupHealthCheck>("backup", tags: new[] { "ready", "database" })
+    .AddCheck<CriticalJobHealthCheck>("critical-jobs", tags: new[] { "ready" });
 
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
@@ -206,6 +260,16 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
     options.Conventions.AllowAnonymousToPage("/Account/ForgotPassword");
     options.Conventions.AllowAnonymousToPage("/Account/ResetPassword");
+    options.Conventions.AddPageApplicationModelConvention("/Account/Login", model =>
+        model.EndpointMetadata.Add(new EnableRateLimitingAttribute("login")));
+    options.Conventions.AddPageApplicationModelConvention("/Account/ForgotPassword", model =>
+        model.EndpointMetadata.Add(new EnableRateLimitingAttribute("forgot-password")));
+    options.Conventions.AddPageApplicationModelConvention("/Account/Activate", model =>
+        model.EndpointMetadata.Add(new EnableRateLimitingAttribute("account-activation")));
+    options.Conventions.AddPageApplicationModelConvention("/Account/ResetPassword", model =>
+        model.EndpointMetadata.Add(new EnableRateLimitingAttribute("password-reset")));
+    options.Conventions.AddPageApplicationModelConvention("/External/Apply", model =>
+        model.EndpointMetadata.Add(new EnableRateLimitingAttribute("external-application")));
     if (!useWindowsAuth)
     {
         options.Conventions.AllowAnonymousToPage("/Account/Login");
@@ -215,6 +279,7 @@ builder.Services.AddRazorPages(options =>
 });
 
 var canteenOptions = builder.Configuration.GetSection(CanteenBatchingOptions.SectionName).Get<CanteenBatchingOptions>() ?? new CanteenBatchingOptions();
+var jobOptions = builder.Configuration.GetSection(JobSchedulingOptions.SectionName).Get<JobSchedulingOptions>() ?? new JobSchedulingOptions();
 TimeZoneInfo batchTimeZone;
 try
 {
@@ -227,20 +292,63 @@ catch
 
 builder.Services.AddQuartz(q =>
 {
-    var breakfastJobKey = new JobKey(nameof(BreakfastCanteenBatchJob));
+    if (jobOptions.UsePersistentStore)
+    {
+        q.UsePersistentStore(store =>
+        {
+            store.UseProperties = true;
+            store.UseSqlServer(connectionString);
+            if (jobOptions.UseClustering)
+            {
+                store.UseClustering();
+            }
+        });
+    }
+
+    var breakfastJobKey = new JobKey(JobNames.BreakfastCanteenBatch);
     q.AddJob<BreakfastCanteenBatchJob>(opts => opts.WithIdentity(breakfastJobKey));
     q.AddTrigger(opts => opts
         .ForJob(breakfastJobKey)
-        .WithIdentity($"{nameof(BreakfastCanteenBatchJob)}-trigger")
-        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron.InTimeZone(batchTimeZone)));
+        .WithIdentity($"{JobNames.BreakfastCanteenBatch}-trigger")
+        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
+        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
 
-    var lunchJobKey = new JobKey(nameof(LunchCanteenBatchJob));
+    var lunchJobKey = new JobKey(JobNames.LunchCanteenBatch);
     q.AddJob<LunchCanteenBatchJob>(opts => opts.WithIdentity(lunchJobKey));
     q.AddTrigger(opts => opts
         .ForJob(lunchJobKey)
-        .WithIdentity($"{nameof(LunchCanteenBatchJob)}-trigger")
-        .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone)));
+        .WithIdentity($"{JobNames.LunchCanteenBatch}-trigger")
+        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
+        .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
+
+    AddSimpleIntervalJob<TechNewsRefreshJob>(q, JobNames.TechNewsRefresh, TimeSpan.FromMinutes(jobOptions.TechNewsIntervalMinutes), jobOptions.StartupDelaySeconds);
+    AddSimpleIntervalJob<ZendeskPolicySyncJob>(q, JobNames.ZendeskPolicySync, TimeSpan.FromHours(jobOptions.ZendeskPolicySyncIntervalHours), jobOptions.StartupDelaySeconds + 30);
+    AddSimpleIntervalJob<UserRegistrySyncJob>(q, JobNames.UserRegistrySync, TimeSpan.FromHours(jobOptions.UserRegistrySyncIntervalHours), jobOptions.StartupDelaySeconds + 60);
+    AddSimpleIntervalJob<EmailOutboxDispatchJob>(q, JobNames.EmailOutboxDispatch, TimeSpan.FromMinutes(jobOptions.EmailDispatchIntervalMinutes), jobOptions.StartupDelaySeconds);
+
+    var payrollJobKey = new JobKey(JobNames.MonthlyPayroll);
+    q.AddJob<MonthlyPayrollJob>(opts => opts.WithIdentity(payrollJobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(payrollJobKey)
+        .WithIdentity($"{JobNames.MonthlyPayroll}-trigger")
+        .StartAt(DateBuilder.FutureDate(jobOptions.StartupDelaySeconds, IntervalUnit.Second))
+        .WithCronSchedule(jobOptions.PayrollCron, cron => cron.InTimeZone(batchTimeZone).WithMisfireHandlingInstructionFireAndProceed()));
 });
+
+static void AddSimpleIntervalJob<TJob>(IServiceCollectionQuartzConfigurator q, string jobName, TimeSpan interval, int startupDelaySeconds)
+    where TJob : IJob
+{
+    var jobKey = new JobKey(jobName);
+    q.AddJob<TJob>(opts => opts.WithIdentity(jobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(jobKey)
+        .WithIdentity($"{jobName}-trigger")
+        .StartAt(DateBuilder.FutureDate(startupDelaySeconds, IntervalUnit.Second))
+        .WithSimpleSchedule(schedule => schedule
+            .WithInterval(interval)
+            .RepeatForever()
+            .WithMisfireHandlingInstructionNextWithRemainingCount()));
+}
 
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
@@ -267,7 +375,18 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health/database");
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("live")
+});
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health/database", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("database")
+});
 
 app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 {

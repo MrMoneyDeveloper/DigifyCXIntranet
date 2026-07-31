@@ -1,6 +1,6 @@
-using System.Net;
-using System.Net.Mail;
 using System.Text.Json;
+using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using Microsoft.Extensions.Options;
 
@@ -8,18 +8,18 @@ namespace DigifyCXIntranet.Services;
 
 public class SmtpOrOutboxEmailSender : IEmailSender
 {
-    private readonly SmtpOptions _smtp;
     private readonly OutboxOptions _outbox;
     private readonly ILogger<SmtpOrOutboxEmailSender> _logger;
     private readonly IWebHostEnvironment _env;
+    private readonly ApplicationDbContext _db;
 
     public SmtpOrOutboxEmailSender(
-        IOptions<SmtpOptions> smtpOptions,
+        ApplicationDbContext db,
         IOptions<OutboxOptions> outboxOptions,
         IWebHostEnvironment env,
         ILogger<SmtpOrOutboxEmailSender> logger)
     {
-        _smtp = smtpOptions.Value;
+        _db = db;
         _outbox = outboxOptions.Value;
         _env = env;
         _logger = logger;
@@ -27,60 +27,50 @@ public class SmtpOrOutboxEmailSender : IEmailSender
 
     public async Task<EmailSendResult> SendAsync(EmailMessage message, CancellationToken cancellationToken = default)
     {
-        if (_smtp.Enabled && !string.IsNullOrWhiteSpace(_smtp.Host))
+        var queued = new EmailOutboxMessage
+        {
+            To = message.To.Trim(),
+            Subject = message.Subject.Trim(),
+            BodyText = message.BodyText,
+            Status = EmailOutboxStatus.Pending,
+            CreatedUtc = DateTime.UtcNow,
+            Attachments = message.Attachments.Select((attachment, index) => new EmailOutboxAttachment
+            {
+                FileName = SafeFileNames.Normalize(attachment.FileName, $"attachment_{index + 1}.bin"),
+                ContentType = string.IsNullOrWhiteSpace(attachment.ContentType)
+                    ? "application/octet-stream"
+                    : attachment.ContentType.Trim(),
+                Bytes = attachment.Bytes
+            }).ToList()
+        };
+
+        _db.EmailOutboxMessages.Add(queued);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        string artifactPath = $"email-outbox:{queued.Id}";
+        if (_outbox.Enabled)
         {
             try
             {
-                await SendSmtpAsync(message, cancellationToken);
-                return new EmailSendResult
+                var diskPath = await WriteOutboxAsync(message, cancellationToken);
+                if (!string.IsNullOrWhiteSpace(diskPath))
                 {
-                    DeliveredViaSmtp = true,
-                    DeliveredViaOutbox = false
-                };
+                    artifactPath = $"{artifactPath};{diskPath}";
+                }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SMTP send failed, falling back to outbox for {To}", message.To);
+                _logger.LogWarning(ex, "Email was queued in the database but filesystem outbox write failed for {To}", message.To);
             }
         }
 
-        var outboxPath = await WriteOutboxAsync(message, cancellationToken);
+        _logger.LogInformation("Email queued in outbox message {MessageId} for {To}", queued.Id, queued.To);
         return new EmailSendResult
         {
             DeliveredViaSmtp = false,
-            DeliveredViaOutbox = !string.IsNullOrWhiteSpace(outboxPath),
-            ArtifactPath = outboxPath
+            DeliveredViaOutbox = true,
+            ArtifactPath = artifactPath
         };
-    }
-
-    private async Task SendSmtpAsync(EmailMessage message, CancellationToken cancellationToken)
-    {
-        using var mail = new MailMessage
-        {
-            From = new MailAddress(_smtp.FromAddress, _smtp.FromName),
-            Subject = message.Subject,
-            Body = message.BodyText,
-            IsBodyHtml = false
-        };
-        mail.To.Add(message.To);
-
-        foreach (var attachment in message.Attachments)
-        {
-            var ms = new MemoryStream(attachment.Bytes);
-            mail.Attachments.Add(new Attachment(ms, attachment.FileName, attachment.ContentType));
-        }
-
-        using var client = new SmtpClient(_smtp.Host, _smtp.Port)
-        {
-            EnableSsl = _smtp.UseSsl
-        };
-        if (!string.IsNullOrWhiteSpace(_smtp.Username))
-        {
-            client.Credentials = new NetworkCredential(_smtp.Username, _smtp.Password);
-        }
-
-        cancellationToken.ThrowIfCancellationRequested();
-        await client.SendMailAsync(mail, cancellationToken);
     }
 
     private async Task<string> WriteOutboxAsync(EmailMessage message, CancellationToken cancellationToken)

@@ -1,4 +1,3 @@
-using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.Extensions.Options;
@@ -7,29 +6,29 @@ using Quartz;
 namespace DigifyCXIntranet.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class BreakfastCanteenBatchJob : IJob
+public class MonthlyPayrollJob : IJob
 {
-    private readonly ICanteenBatchService _canteenBatchService;
+    private readonly IMonthlyPayrollRunner _runner;
     private readonly IBackgroundJobRunRecorder _runs;
     private readonly JobSchedulingOptions _options;
 
-    public BreakfastCanteenBatchJob(
-        ICanteenBatchService canteenBatchService,
+    public MonthlyPayrollJob(
+        IMonthlyPayrollRunner runner,
         IBackgroundJobRunRecorder runs,
         IOptions<JobSchedulingOptions> options)
     {
-        _canteenBatchService = canteenBatchService;
+        _runner = runner;
         _runs = runs;
         _options = options.Value;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var runId = await _runs.StartedAsync(JobNames.BreakfastCanteenBatch, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
+        var runId = await _runs.StartedAsync(JobNames.MonthlyPayroll, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
         try
         {
-            await _canteenBatchService.RunBatchAsync(MealSlot.Breakfast, context.CancellationToken);
-            await _runs.CompletedAsync(runId, 0, "Breakfast batch completed.", context.CancellationToken);
+            var rows = await _runner.RunAsync(context.CancellationToken);
+            await _runs.CompletedAsync(runId, rows, $"Payroll job completed. Employees={rows}.", context.CancellationToken);
         }
         catch (Exception ex) when (context.RefireCount < _options.RetryCount)
         {

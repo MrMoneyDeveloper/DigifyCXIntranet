@@ -14,6 +14,9 @@ public static class DomainModelBuilderExtensions
         builder.Entity<CanteenOrder>()
             .HasIndex(x => new { x.EmployeeUsername, x.OrderTimeUtc });
 
+        builder.Entity<CanteenOrder>()
+            .HasIndex(x => new { x.OrderTimeUtc, x.Status, x.CanteenBatchRunId });
+
         builder.Entity<MenuItem>()
             .Property(x => x.Price)
             .HasPrecision(18, 2);
@@ -31,6 +34,9 @@ public static class DomainModelBuilderExtensions
 
         builder.Entity<FinanceAuditLog>()
             .HasIndex(x => x.TimestampUtc);
+
+        builder.Entity<FinanceAuditLog>()
+            .HasIndex(x => new { x.Actor, x.Action, x.TimestampUtc });
     }
 
     public static void ConfigureHrDomain(this ModelBuilder builder)
@@ -44,6 +50,9 @@ public static class DomainModelBuilderExtensions
         builder.Entity<JobPosting>()
             .HasIndex(x => new { x.IsDeleted, x.IsActive, x.ClosingDate });
 
+        builder.Entity<JobPosting>()
+            .HasIndex(x => new { x.IsDeleted, x.ClosingDate });
+
         builder.Entity<ReferralInvite>()
             .HasIndex(x => x.Token)
             .IsUnique();
@@ -55,10 +64,52 @@ public static class DomainModelBuilderExtensions
             .HasIndex(x => new { x.EmployeeDomainName, x.PolicyArticleId, x.PolicyVersion })
             .IsUnique();
 
+        builder.Entity<PolicyAcknowledgement>()
+            .HasIndex(x => new { x.EmployeeDomainName, x.TimestampUtc });
+
+        builder.Entity<PolicyAcknowledgement>()
+            .HasIndex(x => new { x.PolicyArticleId, x.TimestampUtc });
+
         builder.Entity<ZendeskSyncLog>()
             .HasIndex(x => x.StartedUtc);
 
+        builder.Entity<ZendeskSyncLog>()
+            .HasIndex(x => new { x.Succeeded, x.StartedUtc });
+
         builder.Entity<ZendeskPolicyArticle>()
             .HasIndex(x => new { x.SectionName, x.Title });
+
+        builder.Entity<ZendeskPolicyArticle>()
+            .HasIndex(x => new { x.IsPublished, x.CategoryName, x.SectionName, x.UpdatedAtUtc });
+    }
+
+    public static void ConfigureOperationalDomain(this ModelBuilder builder)
+    {
+        builder.Entity<Announcement>()
+            .HasIndex(x => new { x.IsDeleted, x.IsActive, x.IsPinned, x.PublishDateUtc, x.ExpirationDate });
+
+        builder.Entity<AuditLog>()
+            .HasIndex(x => x.TimestampUtc);
+
+        builder.Entity<AuditLog>()
+            .HasIndex(x => new { x.Actor, x.Action, x.TimestampUtc });
+
+        builder.Entity<AuditLog>()
+            .HasIndex(x => new { x.Entity, x.EntityId, x.TimestampUtc });
+
+        builder.Entity<BackgroundJobRun>()
+            .HasIndex(x => new { x.JobName, x.StartedUtc });
+
+        builder.Entity<BackgroundJobRun>()
+            .HasIndex(x => new { x.Status, x.StartedUtc });
+
+        builder.Entity<EmailOutboxMessage>()
+            .HasIndex(x => new { x.Status, x.CreatedUtc });
+
+        builder.Entity<EmailOutboxMessage>()
+            .HasMany(x => x.Attachments)
+            .WithOne(x => x.Message)
+            .HasForeignKey(x => x.EmailOutboxMessageId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

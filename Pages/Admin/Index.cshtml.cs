@@ -1,4 +1,5 @@
 using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.RazorPages;
@@ -35,6 +36,7 @@ public class IndexModel : PageModel
     public int CanteenOrderCount { get; private set; }
     public int MenuItemCount { get; private set; }
     public int BatchRunCount { get; private set; }
+    public List<BackgroundJobRun> LatestJobRuns { get; private set; } = new();
     public bool CanManageCanteen { get; private set; }
     public bool CanManageHr { get; private set; }
     public bool CanManageSystem { get; private set; }
@@ -54,5 +56,10 @@ public class IndexModel : PageModel
         CanteenOrderCount = await _canteenDb.CanteenOrders.CountAsync();
         MenuItemCount = await _canteenDb.MenuItems.CountAsync(x => !x.IsDeleted);
         BatchRunCount = await _canteenDb.CanteenBatchRuns.CountAsync();
+        LatestJobRuns = await _db.BackgroundJobRuns
+            .AsNoTracking()
+            .OrderByDescending(x => x.StartedUtc)
+            .Take(10)
+            .ToListAsync();
     }
 }

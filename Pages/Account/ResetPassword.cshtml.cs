@@ -18,11 +18,13 @@ public class ResetPasswordModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly IPasswordHasher<ApplicationUser> _hasher;
+    private readonly IAuditService _auditService;
 
-    public ResetPasswordModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher)
+    public ResetPasswordModel(ApplicationDbContext db, IPasswordHasher<ApplicationUser> hasher, IAuditService auditService)
     {
         _db = db;
         _hasher = hasher;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -68,6 +70,7 @@ public class ResetPasswordModel : PageModel
 
         if (user == null)
         {
+            await _auditService.WriteAsync(normalised, "PasswordResetFailed", "Account", "reason=email-not-found", false, errorCode: "EmailNotFound", httpContext: HttpContext);
             ErrorMessage = "No account was found with that personal email. Please go back and activate your account first.";
             return Page();
         }
@@ -77,6 +80,7 @@ public class ResetPasswordModel : PageModel
         user.IsFirstTimeLogin = false;
         _db.Users.Update(user);
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(user.UserName ?? normalised, "PasswordResetSucceeded", "Account", "passwordUpdated=true", true, user.Id, httpContext: HttpContext);
 
         // Sign the user in via cookie auth — same mechanism as Login.cshtml.cs
         var claims = new List<Claim>

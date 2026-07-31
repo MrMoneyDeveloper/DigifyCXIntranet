@@ -1,5 +1,6 @@
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,13 +16,20 @@ public class AuditModel : PageModel
     }
 
     public List<FinanceAuditLog> Items { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 100;
 
     public async Task OnGetAsync()
     {
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 25, 200);
         Items = await _db.FinanceAuditLogs
             .AsNoTracking()
             .OrderByDescending(x => x.TimestampUtc)
-            .Take(500)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
     }
 }

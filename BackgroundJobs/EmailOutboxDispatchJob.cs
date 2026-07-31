@@ -1,4 +1,3 @@
-using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
 using Microsoft.Extensions.Options;
@@ -7,29 +6,29 @@ using Quartz;
 namespace DigifyCXIntranet.BackgroundJobs;
 
 [DisallowConcurrentExecution]
-public class BreakfastCanteenBatchJob : IJob
+public class EmailOutboxDispatchJob : IJob
 {
-    private readonly ICanteenBatchService _canteenBatchService;
+    private readonly IEmailOutboxDispatcher _dispatcher;
     private readonly IBackgroundJobRunRecorder _runs;
     private readonly JobSchedulingOptions _options;
 
-    public BreakfastCanteenBatchJob(
-        ICanteenBatchService canteenBatchService,
+    public EmailOutboxDispatchJob(
+        IEmailOutboxDispatcher dispatcher,
         IBackgroundJobRunRecorder runs,
         IOptions<JobSchedulingOptions> options)
     {
-        _canteenBatchService = canteenBatchService;
+        _dispatcher = dispatcher;
         _runs = runs;
         _options = options.Value;
     }
 
     public async Task Execute(IJobExecutionContext context)
     {
-        var runId = await _runs.StartedAsync(JobNames.BreakfastCanteenBatch, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
+        var runId = await _runs.StartedAsync(JobNames.EmailOutboxDispatch, context.NextFireTimeUtc?.UtcDateTime, context.RefireCount + 1, context.CancellationToken);
         try
         {
-            await _canteenBatchService.RunBatchAsync(MealSlot.Breakfast, context.CancellationToken);
-            await _runs.CompletedAsync(runId, 0, "Breakfast batch completed.", context.CancellationToken);
+            var sent = await _dispatcher.DispatchPendingAsync(_options.EmailDispatchBatchSize, context.CancellationToken);
+            await _runs.CompletedAsync(runId, sent, $"Dispatched={sent}", context.CancellationToken);
         }
         catch (Exception ex) when (context.RefireCount < _options.RetryCount)
         {

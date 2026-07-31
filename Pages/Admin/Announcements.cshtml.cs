@@ -11,16 +11,22 @@ namespace DigifyCXIntranet.Pages.Admin;
 public class AnnouncementsModel : PageModel
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditService _auditService;
 
-    public AnnouncementsModel(ApplicationDbContext db)
+    public AnnouncementsModel(ApplicationDbContext db, IAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     [BindProperty]
     public NewAnnouncementInput NewItem { get; set; } = new();
 
     public List<Announcement> Items { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 50;
 
     public async Task OnGetAsync()
     {
@@ -35,7 +41,7 @@ public class AnnouncementsModel : PageModel
             return Page();
         }
 
-        _db.Announcements.Add(new Announcement
+        var announcement = new Announcement
         {
             Title = NewItem.Title,
             Summary = NewItem.Summary,
@@ -46,9 +52,11 @@ public class AnnouncementsModel : PageModel
             PublishDateUtc = DateTime.UtcNow,
             ExpirationDate = NewItem.ExpirationDate,
             LastUpdatedBy = UserNameHelper.GetShortName(User)
-        });
+        };
+        _db.Announcements.Add(announcement);
 
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "Create", "Announcement", $"title={announcement.Title}", true, announcement.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
@@ -63,6 +71,7 @@ public class AnnouncementsModel : PageModel
         entity.IsActive = !entity.IsActive;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), entity.IsActive ? "Activate" : "Deactivate", "Announcement", $"title={entity.Title}", true, entity.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
@@ -78,15 +87,20 @@ public class AnnouncementsModel : PageModel
         entity.IsDeleted = true;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "Delete", "Announcement", $"title={entity.Title};softDelete=true", true, entity.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
     private async Task LoadAsync()
     {
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 10, 100);
         Items = await _db.Announcements
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.PublishDateUtc)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
     }
 

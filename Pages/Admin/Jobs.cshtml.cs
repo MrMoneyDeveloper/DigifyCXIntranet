@@ -12,11 +12,13 @@ public class JobsModel : PageModel
 {
     private readonly HrDbContext _db;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAuditService _auditService;
 
-    public JobsModel(HrDbContext db, IWebHostEnvironment environment)
+    public JobsModel(HrDbContext db, IWebHostEnvironment environment, IAuditService auditService)
     {
         _db = db;
         _environment = environment;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -26,6 +28,10 @@ public class JobsModel : PageModel
     public IFormFile? AdBackgroundUpload { get; set; }
 
     public List<JobPosting> Items { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 50;
 
     public async Task OnGetAsync()
     {
@@ -55,7 +61,7 @@ public class JobsModel : PageModel
             }
         }
 
-        _db.JobPostings.Add(new JobPosting
+        var job = new JobPosting
         {
             Title = NewItem.Title,
             Department = NewItem.Department,
@@ -71,9 +77,11 @@ public class JobsModel : PageModel
             LastUpdatedBy = UserNameHelper.GetShortName(User),
             CreatedDateUtc = DateTime.UtcNow,
             UpdatedDateUtc = DateTime.UtcNow
-        });
+        };
+        _db.JobPostings.Add(job);
 
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "Create", "JobPosting", $"title={job.Title}", true, job.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
@@ -89,6 +97,7 @@ public class JobsModel : PageModel
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         entity.UpdatedDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), entity.IsActive ? "Activate" : "Deactivate", "JobPosting", $"title={entity.Title}", true, entity.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
@@ -111,15 +120,20 @@ public class JobsModel : PageModel
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         entity.UpdatedDateUtc = DateTime.UtcNow;
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(UserNameHelper.GetShortName(User), "Delete", "JobPosting", $"title={entity.Title};softDelete=true", true, entity.Id.ToString(), httpContext: HttpContext);
         return RedirectToPage();
     }
 
     private async Task LoadAsync()
     {
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 10, 100);
         Items = await _db.JobPostings
             .AsNoTracking()
             .Where(x => !x.IsDeleted)
             .OrderByDescending(x => x.ClosingDate)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
     }
 

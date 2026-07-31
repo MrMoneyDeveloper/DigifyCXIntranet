@@ -34,6 +34,10 @@ public class ComplianceReportModel : PageModel
 
     public List<PolicyAcknowledgement> Items { get; private set; } = new();
     public List<SelectListItem> PolicyOptions { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 100;
 
     public async Task OnGetAsync()
     {
@@ -48,9 +52,12 @@ public class ComplianceReportModel : PageModel
             })
             .ToListAsync();
 
+        PageNumber = Math.Max(1, PageNumber);
+        PageSize = Math.Clamp(PageSize, 25, 200);
         Items = await BuildFilteredQuery()
             .OrderByDescending(x => x.TimestampUtc)
-            .Take(500)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .ToListAsync();
     }
 
