@@ -13,15 +13,21 @@ public class ApplyModel : PageModel
     private readonly HrDbContext _db;
     private readonly IZendeskTicketService _zendeskTicketService;
     private readonly IFinanceAuditService _auditService;
+    private readonly IAuditService _generalAuditService;
+    private readonly IIdentifierRateLimiter _identifierRateLimiter;
 
     public ApplyModel(
         HrDbContext db,
         IZendeskTicketService zendeskTicketService,
-        IFinanceAuditService auditService)
+        IFinanceAuditService auditService,
+        IAuditService generalAuditService,
+        IIdentifierRateLimiter identifierRateLimiter)
     {
         _db = db;
         _zendeskTicketService = zendeskTicketService;
         _auditService = auditService;
+        _generalAuditService = generalAuditService;
+        _identifierRateLimiter = identifierRateLimiter;
     }
 
     [BindProperty]
@@ -53,6 +59,21 @@ public class ApplyModel : PageModel
         catch (InvalidOperationException ex)
         {
             ModelState.AddModelError(nameof(ResumeFile), ex.Message);
+            return Page();
+        }
+
+        if (!_identifierRateLimiter.TryAcquire("external-application", Input.Token))
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            ModelState.AddModelError(string.Empty, "Too many requests. Please wait and try again.");
+            await _generalAuditService.WriteAsync(
+                "external",
+                "ExternalApplicationRateLimited",
+                "ExternalApplication",
+                "identifier-limit-rejected",
+                succeeded: false,
+                errorCode: "RateLimited",
+                httpContext: HttpContext);
             return Page();
         }
 
@@ -94,6 +115,13 @@ public class ApplyModel : PageModel
 
         await _db.SaveChangesAsync();
         await _auditService.WriteAsync("external", "ZendeskTicketCreated", "ExternalApplication", $"job={Job.Id};candidate={Input.CandidateEmail};ticket={ticket.TicketId}");
+        await _generalAuditService.WriteAsync(
+            "external",
+            "ExternalApplicationSubmitted",
+            "ExternalApplication",
+            $"job={Job.Id};ticket={ticket.TicketId}",
+            entityId: ticket.TicketId?.ToString() ?? string.Empty,
+            httpContext: HttpContext);
         TempData["ExternalApplyDone"] = "Application submitted successfully.";
         return RedirectToPage("/External/Apply", new { token = Input.Token });
     }

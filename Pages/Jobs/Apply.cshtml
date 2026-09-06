@@ -68,15 +68,13 @@ else
                 <input asp-for="Input.JobPostingId" type="hidden" />
 
                 <div class="col-md-6">
-                    <label asp-for="Input.EmployeeName" class="dcx-label mb-2"></label>
-                    <input asp-for="Input.EmployeeName" class="dcx-input" />
-                    <span asp-validation-for="Input.EmployeeName" class="dcx-field-error mt-1"></span>
+                    <label for="employee-name" class="dcx-label mb-2">Employee name</label>
+                    <input id="employee-name" value="@Model.EmployeeName" class="dcx-input" readonly aria-readonly="true" />
                 </div>
 
                 <div class="col-md-6">
-                    <label asp-for="Input.EmployeeEmail" class="dcx-label mb-2"></label>
-                    <input asp-for="Input.EmployeeEmail" class="dcx-input" />
-                    <span asp-validation-for="Input.EmployeeEmail" class="dcx-field-error mt-1"></span>
+                    <label for="employee-email" class="dcx-label mb-2">Employee email</label>
+                    <input id="employee-email" type="email" value="@Model.EmployeeEmail" class="dcx-input" readonly aria-readonly="true" />
                 </div>
 
                 <div class="col-12">

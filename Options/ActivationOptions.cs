@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DigifyCXIntranet.Options;
 
 /// <summary>
@@ -12,15 +14,7 @@ public class ActivationOptions
     /// The shared default password every new employee must enter on first activation.
     /// Change this value in appsettings.json — no redeployment required.
     /// </summary>
+    [Required]
     public string DefaultPassword { get; set; } = string.Empty;
 
-    /// <summary>
-    /// Apps Script web-app URL that returns the active employee name list as JSON.
-    /// </summary>
-    public string SheetApiUrl { get; set; } = string.Empty;
-
-    /// <summary>
-    /// Timeout in seconds for the Google Sheet Apps Script call.
-    /// </summary>
-    public int SheetTimeoutSeconds { get; set; } = 15;
 }

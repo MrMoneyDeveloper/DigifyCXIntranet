@@ -40,11 +40,18 @@ public class CanteenBatchService : ICanteenBatchService
         var localNow = _clock.NowInZone(_batchOptions.TimeZoneId);
         var runKey = $"{mealSlot}:{localNow:yyyyMMdd}";
 
-        var runExists = await _db.CanteenBatchRuns
-            .AnyAsync(x => x.RunKey == runKey, cancellationToken);
-        if (runExists)
+        var previousRun = await _db.CanteenBatchRuns
+            .AsNoTracking()
+            .FirstOrDefaultAsync(x => x.RunKey == runKey, cancellationToken);
+        if (previousRun is not null)
         {
-            return;
+            if (previousRun.SentSuccessfully)
+            {
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Canteen batch '{runKey}' has an incomplete previous run. Review the batch and email outbox before resending; automatic resend is disabled.");
         }
 
         var orders = await _db.CanteenOrders
@@ -79,13 +86,12 @@ public class CanteenBatchService : ICanteenBatchService
         }
 
         var fileName = $"canteen_{mealSlot.ToString().ToLowerInvariant()}_{DateTime.UtcNow:yyyyMMdd_HHmm}.xlsx";
-        var bytes = _fileExportService.BuildCanteenBatchWorkbook(
-            $"{mealSlot} Orders",
-            orders,
-            _clock.UtcNow);
-
         try
         {
+            var bytes = _fileExportService.BuildCanteenBatchWorkbook(
+                $"{mealSlot} Orders",
+                orders,
+                _clock.UtcNow);
             var sendResult = await _emailSender.SendAsync(new EmailMessage
             {
                 To = _routing.CanteenInbox,
@@ -110,6 +116,8 @@ public class CanteenBatchService : ICanteenBatchService
         {
             run.SentSuccessfully = false;
             run.ErrorMessage = ex.Message;
+            await _db.SaveChangesAsync(CancellationToken.None);
+            throw;
         }
 
         await _db.SaveChangesAsync(cancellationToken);

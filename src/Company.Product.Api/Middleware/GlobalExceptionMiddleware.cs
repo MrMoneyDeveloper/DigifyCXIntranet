@@ -53,6 +53,11 @@ public sealed class GlobalExceptionMiddleware
                 "Forbidden",
                 ApiErrorCodes.Forbidden,
                 (IReadOnlyDictionary<string, string[]>?)null),
+            BadHttpRequestException badRequest when badRequest.StatusCode == StatusCodes.Status413PayloadTooLarge => (
+                StatusCodes.Status413PayloadTooLarge,
+                "Request body too large",
+                ApiErrorCodes.RequestTooLarge,
+                (IReadOnlyDictionary<string, string[]>?)null),
             _ => (
                 StatusCodes.Status500InternalServerError,
                 "Unexpected server error",

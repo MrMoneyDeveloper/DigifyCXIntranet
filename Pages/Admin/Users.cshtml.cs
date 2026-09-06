@@ -13,17 +13,24 @@ public class UsersModel : PageModel
 {
     private readonly ApplicationDbContext _db;
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAuditService _auditService;
 
-    public UsersModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager)
+    public UsersModel(ApplicationDbContext db, UserManager<ApplicationUser> userManager, IAuditService auditService)
     {
         _db = db;
         _userManager = userManager;
+        _auditService = auditService;
     }
 
     [BindProperty]
     public NewUserInput NewUser { get; set; } = new();
 
     public List<UserRow> Users { get; private set; } = new();
+    [BindProperty(SupportsGet = true)]
+    public int PageNumber { get; set; } = 1;
+    [BindProperty(SupportsGet = true)]
+    public int PageSize { get; set; } = 50;
+    public int TotalCount { get; private set; }
     public IReadOnlyList<RoleOption> AssignableRoles { get; private set; } = Array.Empty<RoleOption>();
     public string? SuccessMessage { get; private set; }
     public string? ErrorMessage { get; private set; }
@@ -77,10 +84,26 @@ public class UsersModel : PageModel
         var result = await _userManager.CreateAsync(user);
         if (!result.Succeeded)
         {
+            await _auditService.WriteAsync(
+                UserNameHelper.GetShortName(User),
+                "CreateFailed",
+                "ApplicationUser",
+                $"role={NewUser.Role}",
+                succeeded: false,
+                errorCode: "IdentityCreateFailed",
+                httpContext: HttpContext);
             ErrorMessage = string.Join(" ", result.Errors.Select(x => x.Description));
             await LoadAsync();
             return Page();
         }
+
+        await _auditService.WriteAsync(
+            UserNameHelper.GetShortName(User),
+            "Create",
+            "ApplicationUser",
+            $"role={user.CustomRole}",
+            entityId: user.Id,
+            httpContext: HttpContext);
 
         TempData["UserCreateSuccess"] = $"{user.DisplayName} was added. They can activate their account with the default password.";
         return RedirectToPage();
@@ -90,11 +113,17 @@ public class UsersModel : PageModel
     {
         AssignableRoles = GetAssignableRoles();
         SuccessMessage = TempData["UserCreateSuccess"] as string;
+        PageSize = Math.Clamp(PageSize, 10, 100);
+        TotalCount = await _db.Users.OfType<ApplicationUser>().CountAsync();
+        var totalPages = Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize));
+        PageNumber = Math.Clamp(PageNumber, 1, totalPages);
 
         Users = await _db.Users
             .OfType<ApplicationUser>()
             .AsNoTracking()
             .OrderBy(x => x.DisplayName)
+            .Skip((PageNumber - 1) * PageSize)
+            .Take(PageSize)
             .Select(x => new UserRow(
                 x.DisplayName,
                 x.UserName ?? string.Empty,

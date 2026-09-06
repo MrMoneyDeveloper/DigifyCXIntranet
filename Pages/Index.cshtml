@@ -113,50 +113,5 @@
 </div>
 
 @section Scripts {
-    <script>
-        (async function () {
-            const loading = document.getElementById("technews-loading");
-            const error = document.getElementById("technews-error");
-            const list = document.getElementById("technews-list");
-            const updated = document.getElementById("technews-updated");
-
-            try {
-                const response = await fetch('/api/technews', { method: 'GET' });
-                if (!response.ok) throw new Error('Feed failed');
-                const data = await response.json();
-                loading.classList.add('d-none');
-
-                if (data.lastUpdatedUtc) {
-                    const dt = new Date(data.lastUpdatedUtc);
-                    updated.textContent = `Updated ${dt.toLocaleString()}`;
-                }
-
-                (data.items || []).slice(0, 5).forEach(item => {
-                    const link = item.url && item.url.length > 0
-                        ? item.url
-                        : `https://news.ycombinator.com/item?id=${item.id}`;
-                    const card = document.createElement('a');
-                    card.href = link;
-                    card.target = "_blank";
-                    card.rel = "noreferrer noopener";
-                    card.className = "tech-feed-item";
-
-                    const title = document.createElement('span');
-                    title.className = "tech-feed-title";
-                    title.textContent = item.title || "Untitled";
-
-                    const by = document.createElement('small');
-                    by.className = "tech-feed-meta";
-                    by.textContent = `by ${item.by || "unknown"}`;
-
-                    card.appendChild(title);
-                    card.appendChild(by);
-                    list.appendChild(card);
-                });
-            } catch {
-                loading.classList.add('d-none');
-                error.classList.remove('d-none');
-            }
-        })();
-    </script>
+    <script src="~/Pages/Index.cshtml.js" asp-append-version="true" defer></script>
 }

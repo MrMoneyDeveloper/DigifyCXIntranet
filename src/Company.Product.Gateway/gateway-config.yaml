@@ -5,21 +5,36 @@ listeners:
     protocol: https
     port: 443
 routes:
-  - name: orders-v1
+  - name: orders-read-v1
     upstreamPath: /api/v1/orders/{**catch-all}
     downstreamService: company-product-api
     downstreamPath: /api/v1/orders/{**catch-all}
-    methods: [GET, POST]
+    methods: [GET]
     auth:
       requireJwt: true
+      requiredScopes: [orders.read]
     rateLimit:
       requestsPerMinute: 120
     requestValidation:
       openApiDocument: /openapi/v1.json
+      maxBodyBytes: 1048576
+  - name: orders-write-v1
+    upstreamPath: /api/v1/orders/{**catch-all}
+    downstreamService: company-product-api
+    downstreamPath: /api/v1/orders/{**catch-all}
+    methods: [POST]
+    auth:
+      requireJwt: true
+      requiredScopes: [orders.write]
+    rateLimit:
+      requestsPerMinute: 30
+    requestValidation:
+      openApiDocument: /openapi/v1.json
+      maxBodyBytes: 1048576
 policies:
   cors:
     allowedOrigins: ["https://intranet.company.local"]
-    allowedMethods: [GET, POST, PUT, DELETE]
+    allowedMethods: [GET, POST]
     allowedHeaders: [Authorization, Content-Type, X-Correlation-ID]
   tls:
     minVersion: TLS1.2

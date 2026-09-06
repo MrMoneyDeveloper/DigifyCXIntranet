@@ -101,6 +101,11 @@
 
         @if (Model.CanManageSystem)
         {
+            <a asp-page="/Admin/Operations" class="dcx-admin-action">
+                <span class="dcx-admin-action__title">System Operations</span>
+                <span class="dcx-admin-action__meta">Review job schedules, outcomes, retries, and email queues.</span>
+            </a>
+
             <a asp-page="/Admin/Faq" class="dcx-admin-action">
                 <span class="dcx-admin-action__title">Manage FAQs</span>
                 <span class="dcx-admin-action__meta">Maintain help content for employees.</span>

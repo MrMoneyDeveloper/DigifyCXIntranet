@@ -26,6 +26,7 @@ public class IndexModel : PageModel
     public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)]
     public int PageSize { get; set; } = 50;
+    public int TotalCount { get; private set; }
 
     public List<PolicyGroup> Groups { get; private set; } = new();
 
@@ -45,12 +46,20 @@ public class IndexModel : PageModel
 
         PageNumber = Math.Max(1, PageNumber);
         PageSize = Math.Clamp(PageSize, 10, 100);
+        TotalCount = await query.CountAsync();
+        PageNumber = Math.Min(PageNumber, Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize)));
         var items = await query
             .OrderBy(x => x.CategoryName)
             .ThenBy(x => x.SectionName)
             .ThenBy(x => x.Title)
             .Skip((PageNumber - 1) * PageSize)
             .Take(PageSize)
+            .Select(x => new PolicyListItem(
+                x.Id,
+                x.Title,
+                x.CategoryName,
+                x.SectionName,
+                x.UpdatedAtUtc))
             .ToListAsync();
 
         Groups = items
@@ -63,5 +72,12 @@ public class IndexModel : PageModel
             .ToList();
     }
 
-    public record PolicyGroup(string Category, string Section, List<ZendeskPolicyArticle> Items);
+    public sealed record PolicyListItem(
+        int Id,
+        string Title,
+        string CategoryName,
+        string SectionName,
+        DateTime UpdatedAtUtc);
+
+    public record PolicyGroup(string Category, string Section, List<PolicyListItem> Items);
 }

@@ -5,17 +5,22 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-DigifyCXIntranet-afd7063a-9dda-4b3f-b6e5-53138f851079</UserSecretsId>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <WarningsAsErrors>$(WarningsAsErrors);NU1902;NU1903;NU1904</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ClosedXML" Version="0.104.2" />
-    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.20" />
-    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.20" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.20" />
-    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.20" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.20" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.20" />
+    <PackageReference Include="HtmlSanitizer" Version="9.1.973" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.Negotiate" Version="8.0.29" />
+    <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="8.0.29" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.29" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="8.0.29" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.29" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.29" />
     <PackageReference Include="Quartz.Extensions.Hosting" Version="3.13.1" />
+    <PackageReference Include="Quartz.Serialization.SystemTextJson" Version="3.13.1" />
   </ItemGroup>
 
   <ItemGroup>
@@ -30,15 +35,20 @@
     <Content Remove="packages\**\*" />
     <EmbeddedResource Remove="packages\**\*" />
     <None Remove="packages\**\*" />
-    <Content Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*;nuget.config" />
-    <None Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*;nuget.config" />
+    <Content Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;App_Data\DataProtection-Keys\**\*;wwwroot\uploads\**\*;nuget.config" />
+    <None Remove="artifacts\**\*;deploy\**\*;App_Data\Outbox\**\*;App_Data\DataProtection-Keys\**\*;wwwroot\uploads\**\*;nuget.config" />
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="artifacts\**\*.cs;App_Data\Outbox\**\*.cs" />
-    <Content Remove="artifacts\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*" />
-    <EmbeddedResource Remove="artifacts\**\*;App_Data\Outbox\**\*" />
-    <None Remove="artifacts\**\*;App_Data\Outbox\**\*;wwwroot\uploads\**\*" />
+    <Content Remove="package.json;package-lock.json;tailwind.config.js;wwwroot\package-lock.json;wwwroot\css\tailwind.input.css" />
+    <None Remove="package.json;package-lock.json;tailwind.config.js;wwwroot\package-lock.json;wwwroot\css\tailwind.input.css" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="artifacts\**\*.cs;App_Data\Outbox\**\*.cs;App_Data\DataProtection-Keys\**\*.cs" />
+    <Content Remove="artifacts\**\*;App_Data\Outbox\**\*;App_Data\DataProtection-Keys\**\*;wwwroot\uploads\**\*" />
+    <EmbeddedResource Remove="artifacts\**\*;App_Data\Outbox\**\*;App_Data\DataProtection-Keys\**\*" />
+    <None Remove="artifacts\**\*;App_Data\Outbox\**\*;App_Data\DataProtection-Keys\**\*;wwwroot\uploads\**\*" />
   </ItemGroup>
 
   <ItemGroup>

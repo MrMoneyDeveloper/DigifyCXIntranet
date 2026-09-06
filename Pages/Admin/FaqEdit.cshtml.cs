@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using DigifyCXIntranet.Data;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -9,10 +10,12 @@ namespace DigifyCXIntranet.Pages.Admin;
 public class FaqEditModel : PageModel
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditService _auditService;
 
-    public FaqEditModel(ApplicationDbContext db)
+    public FaqEditModel(ApplicationDbContext db, IAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -59,6 +62,13 @@ public class FaqEditModel : PageModel
         entity.IsActive = Item.IsActive;
 
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(
+            UserNameHelper.GetShortName(User),
+            "Update",
+            "FaqItem",
+            $"category={entity.Category};active={entity.IsActive}",
+            entityId: entity.Id.ToString(),
+            httpContext: HttpContext);
         return RedirectToPage("/Admin/Faq");
     }
 

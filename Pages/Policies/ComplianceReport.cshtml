@@ -27,6 +27,10 @@
     </header>
 
     <section class="dcx-report-filters">
+        @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage))
+        {
+            <div class="dcx-validation-summary mb-3">@Model.ErrorMessage</div>
+        }
         <form method="get" class="row g-3 align-items-end">
             <div class="col-md-3">
                 <label asp-for="PolicyArticleId" class="dcx-label mb-2">Policy</label>
@@ -92,5 +96,6 @@
                 </tbody>
             </table>
         </div>
+        <partial name="_Pagination" model="new PaginationViewModel(Model.PageNumber, Model.PageSize, Model.TotalCount)" />
     </section>
 </section>

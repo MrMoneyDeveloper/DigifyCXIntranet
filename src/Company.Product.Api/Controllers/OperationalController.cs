@@ -1,5 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
+using Microsoft.AspNetCore.Authorization;
+
 namespace Company.Product.Api.Controllers;
 
 [ApiController]
@@ -7,6 +9,7 @@ namespace Company.Product.Api.Controllers;
 public sealed class OperationalController : ControllerBase
 {
     [HttpGet("ping")]
+    [AllowAnonymous]
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     public IActionResult Ping()
     {

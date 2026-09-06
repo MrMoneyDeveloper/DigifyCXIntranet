@@ -148,7 +148,7 @@ else
 
                         @if (item.IsExternalReferral)
                         {
-                            <details class="details-card dcx-details-card">
+                            <details class="details-card dcx-details-card" open="@(!ViewData.ModelState.IsValid && Model.Referral.JobPostingId == item.Id)">
                                 <summary>
                                     <span class="fw-bold">Refer someone</span>
                                     <span class="d-block list-card-meta">Candidate details and optional CV</span>
@@ -164,36 +164,36 @@ else
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="Referral.JobPostingId" value="@item.Id" />
                                         <div class="col-md-6">
-                                            <label class="form-label">Candidate Name <span class="text-danger">*</span></label>
-                                            <input name="Referral.CandidateName" class="form-control" placeholder="Full name" required
+                                            <label for="referral-name-@item.Id" class="form-label">Candidate Name <span class="text-danger">*</span></label>
+                                            <input id="referral-name-@item.Id" name="Referral.CandidateName" class="form-control" placeholder="Full name" required
                                                    value="@(Model.Referral.JobPostingId == item.Id ? Model.Referral.CandidateName : "")" />
                                             <span class="text-danger small">
                                                 @Html.ValidationMessage("Referral.CandidateName")
                                             </span>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Candidate Email <span class="text-danger">*</span></label>
-                                            <input name="Referral.CandidateEmail" type="email" class="form-control" placeholder="candidate@email.com" required
+                                            <label for="referral-email-@item.Id" class="form-label">Candidate Email <span class="text-danger">*</span></label>
+                                            <input id="referral-email-@item.Id" name="Referral.CandidateEmail" type="email" class="form-control" placeholder="candidate@email.com" required
                                                    value="@(Model.Referral.JobPostingId == item.Id ? Model.Referral.CandidateEmail : "")" />
                                             <span class="text-danger small">
                                                 @Html.ValidationMessage("Referral.CandidateEmail")
                                             </span>
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">Phone Number<span class="text-muted"></span></label>
-                                            <input name="Referral.CandidatePhone" class="form-control" placeholder="+27 xx xxx xxxx"
+                                            <label for="referral-phone-@item.Id" class="form-label">Phone Number<span class="text-muted"></span></label>
+                                            <input id="referral-phone-@item.Id" name="Referral.CandidatePhone" type="tel" class="form-control" placeholder="+27 xx xxx xxxx"
                                                    value="@(Model.Referral.JobPostingId == item.Id ? Model.Referral.CandidatePhone : "")" />
                                         </div>
                                         <div class="col-md-6">
-                                            <label class="form-label">CV / Resume <span class="text-muted">(PDF or DOCX, max 5 MB)</span></label>
-                                            <input name="ReferralResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
+                                            <label for="referral-resume-@item.Id" class="form-label">CV / Resume <span class="text-muted">(PDF or DOCX, max 5 MB)</span></label>
+                                            <input id="referral-resume-@item.Id" name="ReferralResumeFile" type="file" accept=".pdf,.docx" class="form-control" />
                                             <span class="text-danger small">
                                                 @Html.ValidationMessage("ReferralResumeFile")
                                             </span>
                                         </div>
                                         <div class="col-12">
-                                            <label class="form-label">Notes <span class="text-muted">(optional)</span></label>
-                                            <textarea name="Referral.Notes" rows="3" class="form-control" placeholder="Why are you referring this candidate?">@(Model.Referral.JobPostingId == item.Id ? Model.Referral.Notes : "")</textarea>
+                                            <label for="referral-notes-@item.Id" class="form-label">Notes <span class="text-muted">(optional)</span></label>
+                                            <textarea id="referral-notes-@item.Id" name="Referral.Notes" rows="3" class="form-control" placeholder="Why are you referring this candidate?">@(Model.Referral.JobPostingId == item.Id ? Model.Referral.Notes : "")</textarea>
                                         </div>
                                         <div class="col-12 d-flex flex-wrap align-items-center gap-3">
                                             <button type="submit" class="dcx-btn">Submit Referral</button>

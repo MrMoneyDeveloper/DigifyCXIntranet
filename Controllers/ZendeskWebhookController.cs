@@ -1,9 +1,14 @@
+using System.ComponentModel.DataAnnotations;
+using System.Security.Cryptography;
+using System.Text;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -13,88 +18,121 @@ namespace DigifyCXIntranet.Controllers;
 [Route("api/zendesk")]
 public class ZendeskWebhookController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
-    private readonly ZendeskWebhookOptions _options;
-    private readonly ILogger<ZendeskWebhookController> _logger;
-
     private const string PlaceholderHash =
         "AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder";
+
+    private readonly ApplicationDbContext _db;
+    private readonly ZendeskWebhookOptions _options;
+    private readonly IAuditService _auditService;
+    private readonly ILogger<ZendeskWebhookController> _logger;
 
     public ZendeskWebhookController(
         ApplicationDbContext db,
         IOptions<ZendeskWebhookOptions> options,
+        IAuditService auditService,
         ILogger<ZendeskWebhookController> logger)
     {
         _db = db;
         _options = options.Value;
+        _auditService = auditService;
         _logger = logger;
     }
 
     [HttpPost("reset-password")]
     [AllowAnonymous]
-    public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordRequest request)
+    [IgnoreAntiforgeryToken]
+    [EnableRateLimiting("zendesk-webhook")]
+    public async Task<IActionResult> ResetPassword(
+        [FromBody] ResetPasswordRequest request,
+        CancellationToken cancellationToken)
     {
-        // ── DEBUG: log every incoming header so we can see exactly what Zendesk sends ──
-        var allHeaders = string.Join(" | ", Request.Headers.Select(h => $"{h.Key}={h.Value}"));
-        _logger.LogWarning("[ZendeskWebhook] Incoming headers: {Headers}", allHeaders);
-        _logger.LogWarning("[ZendeskWebhook] Expected secret value: '{Secret}'", _options.Secret);
-        // ── END DEBUG ──
-
-        // ── 1. Validate the shared secret ────────────────────────────────
         if (!Request.Headers.TryGetValue("DigifyCX_Reset_Password_Secret", out var incomingSecret) ||
-            !string.Equals(incomingSecret, _options.Secret, StringComparison.Ordinal))
+            !SecretsMatch(incomingSecret.ToString(), _options.Secret))
         {
-            _logger.LogWarning("[ZendeskWebhook] Rejected request — invalid or missing secret.");
+            _logger.LogWarning("Zendesk password-reset webhook rejected because authentication failed.");
             return Unauthorized(new { error = "Invalid webhook secret." });
         }
 
-        // ── 2. Validate payload ──────────────────────────────────────────
-        if (string.IsNullOrWhiteSpace(request.DisplayName))
-        {
-            _logger.LogWarning("[ZendeskWebhook] Rejected request — display_name is empty.");
-            return BadRequest(new { error = "display_name is required." });
-        }
-
-        var normalizedName = request.DisplayName.Trim().ToLower();
-
-        // ── 3. Find the employee in the database ─────────────────────────
-        var user = await _db.Users
+        var normalizedName = request.DisplayName.Trim().ToLowerInvariant();
+        var matchingUsers = await _db.Users
             .OfType<ApplicationUser>()
-            .FirstOrDefaultAsync(u =>
-                u.DisplayName != null &&
-                u.DisplayName.ToLower() == normalizedName);
+            .AsNoTracking()
+            .Where(candidate => candidate.DisplayName != null && candidate.DisplayName.ToLower() == normalizedName)
+            .Take(2)
+            .ToListAsync(cancellationToken);
 
-        if (user == null)
+        if (matchingUsers.Count != 1)
         {
+            var ambiguous = matchingUsers.Count > 1;
             _logger.LogWarning(
-                "[ZendeskWebhook] Reset requested for '{Name}' (ticket #{Ticket}) but no matching user found.",
-                request.DisplayName, request.TicketId);
-            return Ok(new { status = "not_found", message = $"No employee found with name '{request.DisplayName}'." });
+                "Zendesk password-reset webhook could not uniquely match ticket {TicketId} to a user.",
+                request.TicketId);
+            await _auditService.WriteAsync(
+                "zendesk",
+                "PasswordResetRequested",
+                "Account",
+                $"ticket={request.TicketId}",
+                succeeded: false,
+                entityId: request.TicketId,
+                errorCode: ambiguous ? "AmbiguousUser" : "UserNotFound",
+                httpContext: HttpContext,
+                cancellationToken: cancellationToken);
+            return Ok(new
+            {
+                status = ambiguous ? "ambiguous" : "not_found",
+                message = ambiguous
+                    ? "Multiple employee accounts match. Contact IT support to identify the account."
+                    : "No matching employee account was found."
+            });
         }
 
-        // ── 4. Reset back to first-time-login state ──────────────────────
-        // Use a targeted raw SQL UPDATE instead of EF's Update() to ensure
-        // only these three columns are written. This prevents a stale
-        // EF-tracked entity from overwriting other user fields and
-        // guarantees the reset state survives an immediate app restart.
+        var user = matchingUsers[0];
         var newSecurityStamp = Guid.NewGuid().ToString();
+        var newConcurrencyStamp = Guid.NewGuid().ToString();
         await _db.Database.ExecuteSqlRawAsync(
-            "UPDATE [AspNetUsers] SET [PasswordHash] = {0}, [IsFirstTimeLogin] = 1, [SecurityStamp] = {1} WHERE [Id] = {2}",
-            PlaceholderHash, newSecurityStamp, user.Id);
+            "UPDATE [AspNetUsers] SET [PasswordHash] = {0}, [IsFirstTimeLogin] = 1, [SecurityStamp] = {1}, [ConcurrencyStamp] = {2} WHERE [Id] = {3}",
+            new object[] { PlaceholderHash, newSecurityStamp, newConcurrencyStamp, user.Id },
+            cancellationToken);
 
         _logger.LogInformation(
-            "[ZendeskWebhook] Password reset for '{Name}' (UserId: {Id}) via Zendesk ticket #{Ticket}.",
-            user.DisplayName, user.Id, request.TicketId);
+            "Zendesk password-reset webhook reset user {UserId} for ticket {TicketId}.",
+            user.Id,
+            request.TicketId);
 
-        return Ok(new { status = "reset", message = $"Password reset for {user.DisplayName}. They can now activate at /Account/Activate." });
+        await _auditService.WriteAsync(
+            "zendesk",
+            "PasswordResetRequested",
+            "Account",
+            $"ticket={request.TicketId}",
+            succeeded: true,
+            entityId: user.Id,
+            httpContext: HttpContext,
+            cancellationToken: cancellationToken);
+
+        return Ok(new { status = "reset", message = "The matching account can now be activated." });
+    }
+
+    internal static bool SecretsMatch(string? supplied, string? expected)
+    {
+        if (string.IsNullOrEmpty(supplied) || string.IsNullOrEmpty(expected))
+        {
+            return false;
+        }
+
+        var suppliedBytes = Encoding.UTF8.GetBytes(supplied);
+        var expectedBytes = Encoding.UTF8.GetBytes(expected);
+        return suppliedBytes.Length == expectedBytes.Length &&
+               CryptographicOperations.FixedTimeEquals(suppliedBytes, expectedBytes);
     }
 }
 
 public sealed class ResetPasswordRequest
 {
+    [Required, MaxLength(120)]
     [System.Text.Json.Serialization.JsonPropertyName("display_name")]
     public string DisplayName { get; set; } = string.Empty;
 
+    [Required, MaxLength(80)]
     [System.Text.Json.Serialization.JsonPropertyName("ticket_id")]
     public string TicketId { get; set; } = string.Empty;
 }

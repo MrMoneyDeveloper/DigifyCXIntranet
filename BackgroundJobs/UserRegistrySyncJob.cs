@@ -28,7 +28,11 @@ public class UserRegistrySyncJob : IJob
         try
         {
             var result = await _syncService.SyncAsync(context.CancellationToken);
-            await _runs.CompletedAsync(runId, result.Created + result.Updated, $"Created={result.Created};Updated={result.Updated};Skipped={result.Skipped}", context.CancellationToken);
+            await _runs.CompletedAsync(
+                runId,
+                result.Created + result.Updated + result.Deleted,
+                $"Created={result.Created};Updated={result.Updated};Deleted={result.Deleted};Skipped={result.Skipped}",
+                context.CancellationToken);
         }
         catch (Exception ex) when (context.RefireCount < _options.RetryCount)
         {

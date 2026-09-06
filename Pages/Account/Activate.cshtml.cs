@@ -1,9 +1,9 @@
 using System.ComponentModel.DataAnnotations;
-using System.Text.Json;
 using System.Text.RegularExpressions;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
+using DigifyCXIntranet.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -17,21 +17,23 @@ namespace DigifyCXIntranet.Pages.Account;
 public class ActivateModel : PageModel
 {
     private readonly ApplicationDbContext _db;
-    private readonly IHttpClientFactory _httpClientFactory;
     private readonly ActivationOptions _activationOptions;
-    private readonly ILogger<ActivateModel> _logger;
+    private readonly IAuditService _auditService;
+    private readonly IIdentifierRateLimiter _identifierRateLimiter;
+    private readonly UserManager<ApplicationUser> _userManager;
 
     public ActivateModel(
         ApplicationDbContext db,
-        UserManager<ApplicationUser> userManager,
-        IHttpClientFactory httpClientFactory,
         IOptions<ActivationOptions> activationOptions,
-        ILogger<ActivateModel> logger)
+        IAuditService auditService,
+        IIdentifierRateLimiter identifierRateLimiter,
+        UserManager<ApplicationUser> userManager)
     {
         _db = db;
-        _httpClientFactory = httpClientFactory;
         _activationOptions = activationOptions.Value;
-        _logger = logger;
+        _auditService = auditService;
+        _identifierRateLimiter = identifierRateLimiter;
+        _userManager = userManager;
     }
 
     [BindProperty]
@@ -43,10 +45,12 @@ public class ActivateModel : PageModel
     public class InputModel
     {
         [Required(ErrorMessage = "Full name is required.")]
+        [MaxLength(120)]
         [Display(Name = "Full Name")]
         public string FullName { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Default password is required.")]
+        [StringLength(256)]
         [DataType(DataType.Password)]
         [Display(Name = "Default Password")]
         public string DefaultPassword { get; set; } = string.Empty;
@@ -70,15 +74,32 @@ public class ActivateModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
+        AccountActivationSession.Clear(TempData);
         if (!ModelState.IsValid)
         {
             ErrorMessage = "Please fill in all required fields correctly.";
             return Page();
         }
 
+        if (!_identifierRateLimiter.TryAcquire("account-activation", Input.FullName))
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            ErrorMessage = "Too many requests. Please wait and try again.";
+            await _auditService.WriteAsync(
+                Input.FullName,
+                "ActivationRateLimited",
+                "Account",
+                "identifier-limit-rejected",
+                succeeded: false,
+                errorCode: "RateLimited",
+                httpContext: HttpContext);
+            return Page();
+        }
+
         if (!string.Equals(Input.DefaultPassword, _activationOptions.DefaultPassword, StringComparison.Ordinal))
         {
-            ErrorMessage = "The default password you entered is incorrect. Please check with your manager, HR, or a System Admin.";
+            await AuditFailureAsync("InvalidActivationDetails");
+            ErrorMessage = "We could not verify those activation details. Check the information or contact HR or IT support.";
             return Page();
         }
 
@@ -90,25 +111,23 @@ public class ActivateModel : PageModel
         // EF's change tracker. Without AsNoTracking(), EF may return a stale
         // in-memory entity where IsFirstTimeLogin is still false, incorrectly
         // blocking re-activation after a password reset ticket is approved.
-        var user = await _db.Users
+        var matchingUsers = await _db.Users
             .OfType<ApplicationUser>()
             .AsNoTracking()
-            .FirstOrDefaultAsync(u =>
+            .Where(u =>
                 (u.DisplayName != null && u.DisplayName.ToLower() == normalizedInput) ||
-                (u.UserName != null && u.UserName.ToLower() == derivedUsername));
+                (u.UserName != null && u.UserName.ToLower() == derivedUsername))
+            .Take(2)
+            .ToListAsync();
 
-        if (user == null)
+        if (matchingUsers.Count != 1)
         {
-            var nameExistsInSheet = await CheckNameInSheetAsync(Input.FullName.Trim());
-            if (!nameExistsInSheet)
-            {
-                ErrorMessage = "Your name was not found in the employee registry or the system-admin user list. Please contact HR or IT support.";
-                return Page();
-            }
-
-            ErrorMessage = "No employee record was found matching that name. Please check the spelling or contact HR.";
+            await AuditFailureAsync("InvalidActivationDetails");
+            ErrorMessage = "We could not verify those activation details. Check the information or contact HR or IT support.";
             return Page();
         }
+
+        var user = matchingUsers[0];
 
         // ── Already-activated guard ─────────────────────────────────────
         // IsFirstTimeLogin is the single source of truth.
@@ -119,77 +138,44 @@ public class ActivateModel : PageModel
         // set their own password and the account is considered active.
         if (!user.IsFirstTimeLogin)
         {
+            await _auditService.WriteAsync(
+                user.UserName ?? Input.FullName,
+                "ActivationRejected",
+                "Account",
+                "reason=already-activated",
+                succeeded: false,
+                entityId: user.Id,
+                errorCode: "AlreadyActivated",
+                httpContext: HttpContext);
             AlreadyActivated = true;
             return Page();
         }
 
         var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-        if (HttpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-        {
-            ip = forwardedFor.ToString().Split(',')[0].Trim();
-        }
 
-        TempData["ActivationUsername"] = user.UserName;
-        TempData["ActivationIp"] = ip;
-        TempData["ActivationDisplay"] = user.DisplayName ?? user.UserName ?? string.Empty;
-        TempData["ActivationUserId"] = user.Id;
+        // Bind the grant to the account's current security stamp. Password resets
+        // invalidate this token, even if an old encrypted TempData cookie is replayed.
+        var resetToken = await _userManager.GeneratePasswordResetTokenAsync(user);
+        AccountActivationSession.Issue(TempData, user, resetToken, ip, DateTimeOffset.UtcNow);
+
+        await _auditService.WriteAsync(
+            user.UserName ?? Input.FullName,
+            "ActivationVerified",
+            "Account",
+            "password-setup-required",
+            entityId: user.Id,
+            httpContext: HttpContext);
 
         return RedirectToPage("/Account/ResetPassword");
     }
 
-    private async Task<bool> CheckNameInSheetAsync(string fullName)
-    {
-        if (string.IsNullOrWhiteSpace(_activationOptions.SheetApiUrl))
-        {
-            _logger.LogWarning("[Activation] SheetApiUrl is not configured; skipping Google Sheet validation.");
-            return true;
-        }
+    private Task AuditFailureAsync(string errorCode) => _auditService.WriteAsync(
+        Input.FullName,
+        "ActivationRejected",
+        "Account",
+        "reason=invalid-details",
+        succeeded: false,
+        errorCode: errorCode,
+        httpContext: HttpContext);
 
-        try
-        {
-            using var client = _httpClientFactory.CreateClient();
-            using var cts = new CancellationTokenSource(
-                TimeSpan.FromSeconds(Math.Clamp(_activationOptions.SheetTimeoutSeconds, 5, 60)));
-
-            var response = await client.GetAsync(_activationOptions.SheetApiUrl, cts.Token);
-            if (!response.IsSuccessStatusCode)
-            {
-                _logger.LogWarning("[Activation] Sheet API returned {Status}; failing open.", response.StatusCode);
-                return true;
-            }
-
-            var content = await response.Content.ReadAsStringAsync(cts.Token);
-            using var doc = JsonDocument.Parse(content);
-
-            if (doc.RootElement.ValueKind != JsonValueKind.Array)
-            {
-                return true;
-            }
-
-            var normalizedTarget = Normalise(fullName);
-
-            foreach (var element in doc.RootElement.EnumerateArray())
-            {
-                if (element.TryGetProperty("fullName", out var nameProp))
-                {
-                    if (string.Equals(Normalise(nameProp.GetString()), normalizedTarget, StringComparison.Ordinal))
-                    {
-                        return true;
-                    }
-                }
-                else if (element.ValueKind == JsonValueKind.String &&
-                         string.Equals(Normalise(element.GetString()), normalizedTarget, StringComparison.Ordinal))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "[Activation] Failed to reach Google Sheet API; failing open.");
-            return true;
-        }
-    }
 }

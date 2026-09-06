@@ -20,13 +20,16 @@ public class AuditModel : PageModel
     public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)]
     public int PageSize { get; set; } = 100;
+    public int TotalCount { get; private set; }
 
     public async Task OnGetAsync()
     {
         PageNumber = Math.Max(1, PageNumber);
         PageSize = Math.Clamp(PageSize, 25, 200);
-        Items = await _db.FinanceAuditLogs
-            .AsNoTracking()
+        var query = _db.FinanceAuditLogs.AsNoTracking();
+        TotalCount = await query.CountAsync();
+        PageNumber = Math.Min(PageNumber, Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize)));
+        Items = await query
             .OrderByDescending(x => x.TimestampUtc)
             .Skip((PageNumber - 1) * PageSize)
             .Take(PageSize)

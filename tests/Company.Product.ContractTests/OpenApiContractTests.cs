@@ -13,9 +13,9 @@ public sealed class OpenApiContractTests : IClassFixture<ContractWebApplicationF
     }
 
     [Fact]
-    public async Task SwaggerDocument_ContainsOrdersContract()
+    public async Task OpenApiDocument_ContainsOrdersContract()
     {
-        var response = await _client.GetAsync("/swagger/v1/swagger.json");
+        var response = await _client.GetAsync("/openapi/v1.json");
         response.EnsureSuccessStatusCode();
 
         var content = await response.Content.ReadAsStringAsync();

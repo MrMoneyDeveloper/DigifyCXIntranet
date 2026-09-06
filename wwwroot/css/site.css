@@ -1298,15 +1298,21 @@ body {
     }
 
     .dcx-nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         width: 100%;
+        gap: 0.5rem;
     }
 
         .dcx-nav .nav-link-soft {
-            flex: 1 1 auto;
-            min-width: 132px;
+            width: 100%;
+            min-width: 0;
+            padding: 0.7rem 0.6rem;
+            text-align: center;
         }
 
     .app-brand-header {
+        position: static;
         padding-bottom: 1rem;
     }
 }
@@ -2670,12 +2676,13 @@ body {
 
 .dcx-menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr));
     gap: 0.9rem;
 }
 
 .dcx-menu-card {
     display: block;
+    position: relative;
     cursor: pointer;
 }
 
@@ -4430,5 +4437,88 @@ body {
 @media (max-width: 767px) {
     .dcx-menu-image-edit {
         grid-template-columns: 1fr;
+    }
+}
+/* Shared server-side pagination */
+.dcx-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+}
+
+.dcx-menu-card__input:focus-visible + .dcx-menu-card__surface {
+    outline: 3px solid var(--dcx-mint);
+    outline-offset: 3px;
+}
+
+.dcx-pagination__controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .75rem;
+}
+
+.dcx-pagination__summary,
+.dcx-pagination__page {
+    color: var(--dcx-text-muted, #64748b);
+    font-size: .875rem;
+}
+
+.dcx-pagination .disabled {
+    cursor: not-allowed;
+    opacity: .45;
+    pointer-events: none;
+}
+
+/* Keep navigation and form feedback accessible without changing the layout. */
+.validation-summary-valid,
+.field-validation-valid {
+    display: none;
+}
+
+.dcx-skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 1000;
+    padding: 0.8rem 1.1rem;
+    border-radius: 0.65rem;
+    background: var(--dcx-mint);
+    color: var(--dcx-navy);
+    font-weight: 700;
+    transform: translateY(-200%);
+}
+
+.dcx-skip-link:focus {
+    transform: translateY(0);
+}
+
+body :is(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+    outline: 3px solid var(--dcx-mint);
+    outline-offset: 3px;
+}
+
+#main-content,
+.validation-summary-errors,
+[data-validation-summary] {
+    scroll-margin-top: 12rem;
+}
+
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

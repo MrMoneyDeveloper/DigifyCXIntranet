@@ -22,11 +22,12 @@ public class AnnouncementsModel : PageModel
     [BindProperty]
     public NewAnnouncementInput NewItem { get; set; } = new();
 
-    public List<Announcement> Items { get; private set; } = new();
+    public List<AnnouncementRow> Items { get; private set; } = new();
     [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)]
     public int PageSize { get; set; } = 50;
+    public int TotalCount { get; private set; }
 
     public async Task OnGetAsync()
     {
@@ -95,14 +96,30 @@ public class AnnouncementsModel : PageModel
     {
         PageNumber = Math.Max(1, PageNumber);
         PageSize = Math.Clamp(PageSize, 10, 100);
-        Items = await _db.Announcements
+        var query = _db.Announcements
             .AsNoTracking()
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted);
+        TotalCount = await query.CountAsync();
+        PageNumber = Math.Min(PageNumber, Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize)));
+        Items = await query
             .OrderByDescending(x => x.PublishDateUtc)
             .Skip((PageNumber - 1) * PageSize)
             .Take(PageSize)
+            .Select(x => new AnnouncementRow(
+                x.Id,
+                x.Title,
+                x.PublishDateUtc,
+                x.ExpirationDate,
+                x.IsActive))
             .ToListAsync();
     }
+
+    public sealed record AnnouncementRow(
+        int Id,
+        string Title,
+        DateTime PublishDateUtc,
+        DateTime? ExpirationDate,
+        bool IsActive);
 
     public class NewAnnouncementInput
     {

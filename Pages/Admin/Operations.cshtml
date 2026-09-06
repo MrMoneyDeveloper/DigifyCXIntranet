@@ -1,0 +1,66 @@
+@page
+@model DigifyCXIntranet.Pages.Admin.OperationsModel
+@{
+    ViewData["Title"] = "System Operations";
+}
+
+<section class="dcx-report-shell">
+    <header class="dcx-report-header">
+        <div>
+            <div class="dcx-kicker mb-3">System Operations</div>
+            <h1 class="dcx-report-title">Background job <span>status</span></h1>
+        </div>
+        <a asp-page="/Admin/Index" class="dcx-btn-ghost">Back to Admin</a>
+    </header>
+
+    <section class="dcx-ledger-kpis mb-4">
+        <article class="dcx-ledger-kpi">
+            <div class="dcx-ledger-kpi__label">Pending emails</div>
+            <div class="dcx-ledger-kpi__value">@Model.PendingEmails</div>
+        </article>
+        <article class="dcx-ledger-kpi">
+            <div class="dcx-ledger-kpi__label">Failed emails</div>
+            <div class="dcx-ledger-kpi__value">@Model.FailedEmails</div>
+        </article>
+    </section>
+
+    <section class="dcx-report-table-wrap">
+        <div class="table-responsive">
+            <table class="dcx-report-table">
+                <thead>
+                    <tr>
+                        <th>Job</th>
+                        <th>Status</th>
+                        <th>Last run UTC</th>
+                        <th>Last success UTC</th>
+                        <th>Last failure UTC</th>
+                        <th>Next fire UTC</th>
+                        <th>Retries</th>
+                        <th>Items</th>
+                        <th>Message</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var job in Model.Jobs)
+                    {
+                        <tr>
+                            <td class="text-break">@job.JobName</td>
+                            <td>
+                                <span class="dcx-status-pill @(job.LatestStatus == "Succeeded" ? "dcx-status-pill--success" : "dcx-status-pill--muted")">
+                                    @(job.Scheduled ? job.LatestStatus : "Not scheduled")
+                                </span>
+                            </td>
+                            <td>@(job.LastRunUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
+                            <td>@(job.LastSuccessUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
+                            <td>@(job.LastFailureUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
+                            <td>@(job.NextFireUtc?.ToString("yyyy-MM-dd HH:mm:ss") ?? "-")</td>
+                            <td>@job.RetryCount</td>
+                            <td>@job.ItemsProcessed</td>
+                            <td class="text-break">@(string.IsNullOrWhiteSpace(job.Message) ? "-" : job.Message)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>

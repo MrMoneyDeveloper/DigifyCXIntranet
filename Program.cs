@@ -7,19 +7,76 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.Negotiate;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Server.IIS;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 using Quartz;
+using System.Runtime.Versioning;
+using System.Text.Json;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
+if (OperatingSystem.IsWindows() && !builder.Environment.IsDevelopment())
+{
+    var eventLogSource = builder.Configuration[$"{MonitoringOptions.SectionName}:EventLogSourceName"];
+    ConfigureWindowsEventLog(builder.Logging, eventLogSource);
+}
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Connection string 'DefaultConnection' not found.");
+
+var dataProtectionOptions = builder.Configuration
+    .GetSection(DataProtectionKeyOptions.SectionName)
+    .Get<DataProtectionKeyOptions>() ?? new DataProtectionKeyOptions();
+var dataProtectionKeyPath = Path.GetFullPath(
+    Path.IsPathRooted(dataProtectionOptions.KeyRingPath)
+        ? dataProtectionOptions.KeyRingPath
+        : Path.Combine(builder.Environment.ContentRootPath, dataProtectionOptions.KeyRingPath));
+var webRootPath = Path.GetFullPath(
+    builder.Environment.WebRootPath ?? Path.Combine(builder.Environment.ContentRootPath, "wwwroot"));
+if (string.Equals(Path.TrimEndingDirectorySeparator(dataProtectionKeyPath),
+        Path.TrimEndingDirectorySeparator(webRootPath), StringComparison.OrdinalIgnoreCase) ||
+    dataProtectionKeyPath.StartsWith(
+        Path.TrimEndingDirectorySeparator(webRootPath) + Path.DirectorySeparatorChar,
+        StringComparison.OrdinalIgnoreCase))
+{
+    throw new InvalidOperationException("DataProtection:KeyRingPath must not be inside wwwroot.");
+}
+
+var dataProtectionBuilder = builder.Services
+    .AddDataProtection()
+    .SetApplicationName(dataProtectionOptions.ApplicationName)
+    .PersistKeysToFileSystem(new DirectoryInfo(dataProtectionKeyPath));
+if (dataProtectionOptions.ProtectKeysWithDpapi && OperatingSystem.IsWindows())
+{
+    dataProtectionBuilder.ProtectKeysWithDpapi();
+}
+
+var requestLimits = builder.Configuration
+    .GetSection(RequestLimitsOptions.SectionName)
+    .Get<RequestLimitsOptions>() ?? new RequestLimitsOptions();
+if (requestLimits.MaxMultipartBodyBytes > requestLimits.MaxRequestBodyBytes)
+{
+    throw new InvalidOperationException("RequestLimits:MaxMultipartBodyBytes cannot exceed MaxRequestBodyBytes.");
+}
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Limits.MaxRequestBodySize = requestLimits.MaxRequestBodyBytes;
+});
+builder.Services.Configure<IISServerOptions>(options =>
+    options.MaxRequestBodySize = requestLimits.MaxRequestBodyBytes);
+builder.Services.Configure<FormOptions>(options =>
+    options.MultipartBodyLengthLimit = requestLimits.MaxMultipartBodyBytes);
 
 void ConfigureSqlServer(DbContextOptionsBuilder options)
 {
@@ -37,8 +94,10 @@ builder.Services.AddDbContext<PolicyDbContext>(ConfigureSqlServer);
 
 builder.Services.AddIdentityCore<ApplicationUser>(options =>
 {
-    options.Password.RequireDigit = true;
+    options.Password.RequireDigit = false;
     options.Password.RequiredLength = 8;
+    options.Password.RequiredUniqueChars = 4;
+    options.Password.RequireLowercase = false;
     options.Password.RequireUppercase = false;
     options.Password.RequireNonAlphanumeric = false;
 })
@@ -47,34 +106,78 @@ builder.Services.AddIdentityCore<ApplicationUser>(options =>
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
-builder.Services.Configure<AdminAccessOptions>(
-    builder.Configuration.GetSection(AdminAccessOptions.SectionName));
-builder.Services.Configure<AuthModeOptions>(
-    builder.Configuration.GetSection(AuthModeOptions.SectionName));
-builder.Services.Configure<SmtpOptions>(
-    builder.Configuration.GetSection(SmtpOptions.SectionName));
-builder.Services.Configure<RoutingInboxesOptions>(
-    builder.Configuration.GetSection(RoutingInboxesOptions.SectionName));
-builder.Services.Configure<CanteenBatchingOptions>(
-    builder.Configuration.GetSection(CanteenBatchingOptions.SectionName));
-builder.Services.Configure<PayrollOptions>(
-    builder.Configuration.GetSection(PayrollOptions.SectionName));
-builder.Services.Configure<TechNewsOptions>(
-    builder.Configuration.GetSection(TechNewsOptions.SectionName));
-builder.Services.Configure<HomePageOptions>(
-    builder.Configuration.GetSection(HomePageOptions.SectionName));
-builder.Services.Configure<ZendeskSyncOptions>(
-    builder.Configuration.GetSection(ZendeskSyncOptions.SectionName));
-builder.Services.Configure<OutboxOptions>(
-    builder.Configuration.GetSection(OutboxOptions.SectionName));
-builder.Services.Configure<ActivationOptions>(
-    builder.Configuration.GetSection(ActivationOptions.SectionName));
-builder.Services.Configure<SqlServerSecurityOptions>(
-    builder.Configuration.GetSection(SqlServerSecurityOptions.SectionName));
+builder.Services.AddOptions<AdminAccessOptions>()
+    .Bind(builder.Configuration.GetSection(AdminAccessOptions.SectionName));
+builder.Services.AddOptions<AuthModeOptions>()
+    .Bind(builder.Configuration.GetSection(AuthModeOptions.SectionName));
+builder.Services.AddOptions<SmtpOptions>()
+    .Bind(builder.Configuration.GetSection(SmtpOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.Host),
+        "Smtp:Host is required when SMTP is enabled.")
+    .ValidateOnStart();
+builder.Services.AddOptions<RoutingInboxesOptions>()
+    .Bind(builder.Configuration.GetSection(RoutingInboxesOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<CanteenBatchingOptions>()
+    .Bind(builder.Configuration.GetSection(CanteenBatchingOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => Quartz.CronExpression.IsValidExpression(options.BreakfastCron) &&
+                         Quartz.CronExpression.IsValidExpression(options.LunchCron),
+        "Canteen batching schedules must be valid Quartz cron expressions.")
+    .Validate(options => IsValidTimeZone(options.TimeZoneId),
+        "CanteenBatching:TimeZoneId must identify an installed time zone.")
+    .ValidateOnStart();
+builder.Services.AddOptions<PayrollOptions>()
+    .Bind(builder.Configuration.GetSection(PayrollOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => IsValidTimeZone(options.TimeZoneId),
+        "Payroll:TimeZoneId must identify an installed time zone.")
+    .ValidateOnStart();
+builder.Services.AddOptions<HomePageOptions>()
+    .Bind(builder.Configuration.GetSection(HomePageOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<ZendeskSyncOptions>()
+    .Bind(builder.Configuration.GetSection(ZendeskSyncOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => string.IsNullOrWhiteSpace(options.BaseUrl) || IsAbsoluteHttpsUrl(options.BaseUrl),
+        "ZendeskSync:BaseUrl must be an absolute HTTPS URL when configured.")
+    .Validate(options => !options.UseApiToken ||
+                         (!string.IsNullOrWhiteSpace(options.Email) && !string.IsNullOrWhiteSpace(options.ApiToken)),
+        "ZendeskSync email and API token are required when API-token authentication is enabled.")
+    .ValidateOnStart();
+builder.Services.AddOptions<OutboxOptions>()
+    .Bind(builder.Configuration.GetSection(OutboxOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<ActivationOptions>()
+    .Bind(builder.Configuration.GetSection(ActivationOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<SqlServerSecurityOptions>()
+    .Bind(builder.Configuration.GetSection(SqlServerSecurityOptions.SectionName));
+builder.Services.AddOptions<DataProtectionKeyOptions>()
+    .Bind(builder.Configuration.GetSection(DataProtectionKeyOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<RequestLimitsOptions>()
+    .Bind(builder.Configuration.GetSection(RequestLimitsOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => options.MaxMultipartBodyBytes <= options.MaxRequestBodyBytes,
+        "RequestLimits:MaxMultipartBodyBytes cannot exceed MaxRequestBodyBytes.")
+    .ValidateOnStart();
+builder.Services.AddOptions<BrowserSecurityOptions>()
+    .Bind(builder.Configuration.GetSection(BrowserSecurityOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 // ── Zendesk inbound webhook (password reset trigger from IT) ──────────────
-builder.Services.Configure<ZendeskWebhookOptions>(
-    builder.Configuration.GetSection("ZendeskWebhook"));
+builder.Services.AddOptions<ZendeskWebhookOptions>()
+    .Bind(builder.Configuration.GetSection("ZendeskWebhook"))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
 
 builder.Services.AddOptions<RateLimitPoliciesOptions>()
     .Bind(builder.Configuration.GetSection(RateLimitPoliciesOptions.SectionName))
@@ -83,10 +186,16 @@ builder.Services.AddOptions<RateLimitPoliciesOptions>()
 builder.Services.AddOptions<BackupHealthOptions>()
     .Bind(builder.Configuration.GetSection(BackupHealthOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(options => !options.Enabled || !string.IsNullOrWhiteSpace(options.DatabaseName),
+        "BackupHealth:DatabaseName is required when backup health monitoring is enabled.")
     .ValidateOnStart();
 builder.Services.AddOptions<JobSchedulingOptions>()
     .Bind(builder.Configuration.GetSection(JobSchedulingOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(options => Quartz.CronExpression.IsValidExpression(options.PayrollCron),
+        "JobScheduling:PayrollCron must be a valid Quartz cron expression.")
+    .Validate(options => !options.UseClustering || options.UsePersistentStore,
+        "Quartz clustering requires JobScheduling:UsePersistentStore=true.")
     .ValidateOnStart();
 builder.Services.AddOptions<MonitoringOptions>()
     .Bind(builder.Configuration.GetSection(MonitoringOptions.SectionName))
@@ -104,6 +213,35 @@ builder.Services.AddOptions<UserRegistrySyncOptions>()
     .Validate(options => !options.Enabled || Uri.TryCreate(options.SheetApiUrl, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps,
         "UserRegistrySync:SheetApiUrl must be an absolute HTTPS URL when sync is enabled.")
     .ValidateOnStart();
+
+static bool IsAbsoluteHttpsUrl(string value) =>
+    Uri.TryCreate(value, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps;
+
+[SupportedOSPlatform("windows")]
+static void ConfigureWindowsEventLog(ILoggingBuilder logging, string? sourceName)
+{
+#pragma warning disable CA1416 // The caller is guarded by OperatingSystem.IsWindows().
+    logging.AddEventLog(settings =>
+        settings.SourceName = string.IsNullOrWhiteSpace(sourceName) ? "DigifyCXIntranet" : sourceName);
+#pragma warning restore CA1416
+}
+
+static bool IsValidTimeZone(string value)
+{
+    try
+    {
+        _ = TimeZoneInfo.FindSystemTimeZoneById(value);
+        return true;
+    }
+    catch (TimeZoneNotFoundException)
+    {
+        return false;
+    }
+    catch (InvalidTimeZoneException)
+    {
+        return false;
+    }
+}
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
@@ -127,9 +265,9 @@ builder.Services.AddRateLimiter(options =>
 
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
-        var key = context.Connection.RemoteIpAddress?.ToString()
-            ?? context.User.Identity?.Name
-            ?? "anonymous";
+        var key = context.User.Identity?.IsAuthenticated == true
+            ? $"user:{context.User.Identity.Name ?? "unknown"}"
+            : $"ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
 
         return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
         {
@@ -145,6 +283,8 @@ builder.Services.AddRateLimiter(options =>
     AddFixedPolicy(options, "account-activation", rateLimitOptions.AccountActivation);
     AddFixedPolicy(options, "password-reset", rateLimitOptions.PasswordReset);
     AddFixedPolicy(options, "external-application", rateLimitOptions.ExternalApplication);
+    AddFixedPolicy(options, "zendesk-webhook", rateLimitOptions.ZendeskWebhook);
+    AddFixedPolicy(options, "csp-report", rateLimitOptions.CspReport);
 });
 
 static void AddFixedPolicy(RateLimiterOptions options, string policyName, EndpointRateLimitOptions policy)
@@ -163,6 +303,10 @@ static void AddFixedPolicy(RateLimiterOptions options, string policyName, Endpoi
 }
 
 builder.Services.AddSingleton<IAdminAccessService, ConfigurationAdminAccessService>();
+builder.Services.AddSingleton<IIdentifierRateLimiter, IdentifierRateLimiter>();
+builder.Services.AddMemoryCache(options =>
+    options.SizeLimit = AppCookieAuthenticationEvents.ValidationCacheSizeLimit);
+builder.Services.AddScoped<AppCookieAuthenticationEvents>();
 builder.Services.AddTransient<IClaimsTransformation, ConfigurationRoleClaimsTransformation>();
 builder.Services.AddSingleton<IClock, DigifyCXIntranet.Services.SystemClock>();
 builder.Services.AddScoped<ICanteenBatchService, CanteenBatchService>();
@@ -177,6 +321,7 @@ builder.Services.AddScoped<IEmailOutboxDispatcher, EmailOutboxDispatcher>();
 builder.Services.AddScoped<IUserRegistrySyncService, UserRegistrySyncService>();
 builder.Services.AddScoped<IMonthlyPayrollRunner, MonthlyPayrollRunner>();
 builder.Services.AddScoped<ConfiguredTestUserSeeder>();
+builder.Services.AddSingleton<IZendeskHtmlSanitizer, ZendeskHtmlSanitizer>();
 builder.Services.AddSingleton<ITechNewsCacheService, HackerNewsCacheService>();
 
 builder.Services.AddHttpClient(nameof(HackerNewsCacheService), (serviceProvider, client) =>
@@ -194,25 +339,27 @@ builder.Services.AddHttpClient(nameof(ZendeskTicketService), (serviceProvider, c
     var options = serviceProvider.GetRequiredService<IOptions<ZendeskSyncOptions>>().Value;
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 90));
 });
-builder.Services.AddHttpClient(nameof(UserRegistrySyncWorker), (serviceProvider, client) =>
+builder.Services.AddHttpClient(nameof(UserRegistrySyncService), (serviceProvider, client) =>
 {
     var options = serviceProvider.GetRequiredService<IOptions<UserRegistrySyncOptions>>().Value;
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(options.TimeoutSeconds, 5, 120));
 });
-
-builder.Services.AddHostedService<TechNewsRefreshHostedService>();
-builder.Services.AddHostedService<ZendeskPolicySyncHostedService>();
-builder.Services.AddHostedService<MonthlyPayrollHostedService>();
-builder.Services.AddHostedService<UserRegistrySyncWorker>();
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
+});
 
 builder.Services.AddHealthChecks()
     .AddCheck("self", () => HealthCheckResult.Healthy(), tags: new[] { "live" })
+    .AddCheck<RuntimeResourceHealthCheck>("runtime-resources", tags: new[] { "ready", "runtime" })
     .AddCheck<DatabaseHealthCheck>("sqlserver", tags: new[] { "ready", "database" })
     .AddCheck<BackupHealthCheck>("backup", tags: new[] { "ready", "database" })
     .AddCheck<CriticalJobHealthCheck>("critical-jobs", tags: new[] { "ready" });
 
 // ── API controllers (used by Zendesk webhook) ─────────────────────────────
-builder.Services.AddControllers();
+builder.Services.AddControllers(options =>
+    options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute()));
 
 var authMode = builder.Configuration.GetSection(AuthModeOptions.SectionName).Get<AuthModeOptions>() ?? new AuthModeOptions();
 var useWindowsAuth = !builder.Environment.IsDevelopment() && authMode.UseWindowsAuthenticationInNonDevelopment;
@@ -233,13 +380,46 @@ else
             options.AccessDeniedPath = "/Account/AccessDenied";
             options.SlidingExpiration = true;
             options.ExpireTimeSpan = TimeSpan.FromHours(8);
+            options.EventsType = typeof(AppCookieAuthenticationEvents);
             options.Cookie.HttpOnly = true;
             options.Cookie.SameSite = SameSiteMode.Lax;
+            options.Cookie.IsEssential = true;
+            options.Cookie.Name = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
+                ? "DigifyCX.Auth"
+                : "__Host-DigifyCX.Auth";
             options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
         });
 }
+
+builder.Services.AddAntiforgery(options =>
+{
+    options.HeaderName = "X-CSRF-TOKEN";
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Path = "/";
+    options.Cookie.Name = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
+        ? "DigifyCX.Antiforgery"
+        : "__Host-DigifyCX.Antiforgery";
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
+builder.Services.Configure<CookieTempDataProviderOptions>(options =>
+{
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.Path = "/";
+    options.Cookie.Name = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
+        ? "DigifyCX.TempData"
+        : "__Host-DigifyCX.TempData";
+    options.Cookie.SecurePolicy = builder.Environment.IsDevelopment() || allowInsecureHttpForInternalTest
+        ? CookieSecurePolicy.SameAsRequest
+        : CookieSecurePolicy.Always;
+});
 
 builder.Services.AddAuthorization(options =>
 {
@@ -280,6 +460,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizePage("/Admin/Faq", AppPolicies.SystemOperations);
     options.Conventions.AuthorizePage("/Admin/FaqEdit", AppPolicies.SystemOperations);
     options.Conventions.AuthorizePage("/Admin/Users", AppPolicies.UserManagement);
+    options.Conventions.AuthorizePage("/Admin/Operations", AppPolicies.SystemOperations);
     options.Conventions.AuthorizeFolder("/Finance", AppPolicies.FinanceLedger);
     options.Conventions.AllowAnonymousToPage("/External/Apply");
     options.Conventions.AllowAnonymousToPage("/Account/Activate");
@@ -305,37 +486,123 @@ builder.Services.AddRazorPages(options =>
 });
 
 var canteenOptions = builder.Configuration.GetSection(CanteenBatchingOptions.SectionName).Get<CanteenBatchingOptions>() ?? new CanteenBatchingOptions();
-TimeZoneInfo batchTimeZone;
-try
-{
-    batchTimeZone = TimeZoneInfo.FindSystemTimeZoneById(canteenOptions.TimeZoneId);
-}
-catch
-{
-    batchTimeZone = TimeZoneInfo.Utc;
-}
+var payrollOptions = builder.Configuration.GetSection(PayrollOptions.SectionName).Get<PayrollOptions>() ?? new PayrollOptions();
+var jobSchedulingOptions = builder.Configuration.GetSection(JobSchedulingOptions.SectionName).Get<JobSchedulingOptions>() ?? new JobSchedulingOptions();
+var zendeskOptions = builder.Configuration.GetSection(ZendeskSyncOptions.SectionName).Get<ZendeskSyncOptions>() ?? new ZendeskSyncOptions();
+var userRegistryOptions = builder.Configuration.GetSection(UserRegistrySyncOptions.SectionName).Get<UserRegistrySyncOptions>() ?? new UserRegistrySyncOptions();
+var smtpOptions = builder.Configuration.GetSection(SmtpOptions.SectionName).Get<SmtpOptions>() ?? new SmtpOptions();
+var batchTimeZone = TimeZoneInfo.FindSystemTimeZoneById(canteenOptions.TimeZoneId);
+var payrollTimeZone = TimeZoneInfo.FindSystemTimeZoneById(payrollOptions.TimeZoneId);
 
 builder.Services.AddQuartz(q =>
 {
-    var breakfastJobKey = new JobKey(nameof(BreakfastCanteenBatchJob));
+    if (jobSchedulingOptions.UsePersistentStore)
+    {
+        q.UsePersistentStore(store =>
+        {
+            store.UseProperties = true;
+            store.RetryInterval = TimeSpan.FromSeconds(15);
+            store.UseSqlServer(connectionString);
+            store.UseSystemTextJsonSerializer();
+            if (jobSchedulingOptions.UseClustering)
+            {
+                store.UseClustering(clustering =>
+                {
+                    clustering.CheckinInterval = TimeSpan.FromSeconds(20);
+                    clustering.CheckinMisfireThreshold = TimeSpan.FromSeconds(60);
+                });
+            }
+        });
+    }
+
+    var breakfastJobKey = new JobKey(JobNames.BreakfastCanteenBatch);
     q.AddJob<BreakfastCanteenBatchJob>(opts => opts.WithIdentity(breakfastJobKey));
     q.AddTrigger(opts => opts
         .ForJob(breakfastJobKey)
-        .WithIdentity($"{nameof(BreakfastCanteenBatchJob)}-trigger")
-        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron.InTimeZone(batchTimeZone)));
+        .WithIdentity($"{JobNames.BreakfastCanteenBatch}-trigger")
+        .WithCronSchedule(canteenOptions.BreakfastCron, cron => cron
+            .InTimeZone(batchTimeZone)
+            .WithMisfireHandlingInstructionFireAndProceed()));
 
-    var lunchJobKey = new JobKey(nameof(LunchCanteenBatchJob));
+    var lunchJobKey = new JobKey(JobNames.LunchCanteenBatch);
     q.AddJob<LunchCanteenBatchJob>(opts => opts.WithIdentity(lunchJobKey));
     q.AddTrigger(opts => opts
         .ForJob(lunchJobKey)
-        .WithIdentity($"{nameof(LunchCanteenBatchJob)}-trigger")
-        .WithCronSchedule(canteenOptions.LunchCron, cron => cron.InTimeZone(batchTimeZone)));
+        .WithIdentity($"{JobNames.LunchCanteenBatch}-trigger")
+        .WithCronSchedule(canteenOptions.LunchCron, cron => cron
+            .InTimeZone(batchTimeZone)
+            .WithMisfireHandlingInstructionFireAndProceed()));
+
+    var payrollJobKey = new JobKey(JobNames.MonthlyPayroll);
+    q.AddJob<MonthlyPayrollJob>(opts => opts.WithIdentity(payrollJobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(payrollJobKey)
+        .WithIdentity($"{JobNames.MonthlyPayroll}-trigger")
+        .WithCronSchedule(jobSchedulingOptions.PayrollCron, cron => cron
+            .InTimeZone(payrollTimeZone)
+            .WithMisfireHandlingInstructionFireAndProceed()));
+
+    var techNewsJobKey = new JobKey(JobNames.TechNewsRefresh);
+    q.AddJob<TechNewsRefreshJob>(opts => opts.WithIdentity(techNewsJobKey));
+    q.AddTrigger(opts => opts
+        .ForJob(techNewsJobKey)
+        .WithIdentity($"{JobNames.TechNewsRefresh}-trigger")
+        .StartAt(DateTimeOffset.UtcNow.AddSeconds(jobSchedulingOptions.StartupDelaySeconds))
+        .WithSimpleSchedule(schedule => schedule
+            .WithIntervalInMinutes(jobSchedulingOptions.TechNewsIntervalMinutes)
+            .RepeatForever()
+            .WithMisfireHandlingInstructionNowWithExistingCount()));
+
+    if (!string.IsNullOrWhiteSpace(zendeskOptions.BaseUrl))
+    {
+        var zendeskJobKey = new JobKey(JobNames.ZendeskPolicySync);
+        q.AddJob<ZendeskPolicySyncJob>(opts => opts.WithIdentity(zendeskJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(zendeskJobKey)
+            .WithIdentity($"{JobNames.ZendeskPolicySync}-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(jobSchedulingOptions.StartupDelaySeconds))
+            .WithSimpleSchedule(schedule => schedule
+                .WithIntervalInHours(jobSchedulingOptions.ZendeskPolicySyncIntervalHours)
+                .RepeatForever()
+                .WithMisfireHandlingInstructionNowWithExistingCount()));
+    }
+
+    if (userRegistryOptions.Enabled)
+    {
+        var userSyncJobKey = new JobKey(JobNames.UserRegistrySync);
+        q.AddJob<UserRegistrySyncJob>(opts => opts.WithIdentity(userSyncJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(userSyncJobKey)
+            .WithIdentity($"{JobNames.UserRegistrySync}-trigger")
+            .StartAt(DateTimeOffset.UtcNow.AddSeconds(Math.Max(
+                userRegistryOptions.InitialDelaySeconds,
+                jobSchedulingOptions.StartupDelaySeconds)))
+            .WithSimpleSchedule(schedule => schedule
+                .WithIntervalInHours(jobSchedulingOptions.UserRegistrySyncIntervalHours)
+                .RepeatForever()
+                .WithMisfireHandlingInstructionNowWithExistingCount()));
+    }
+
+    if (smtpOptions.Enabled)
+    {
+        var emailJobKey = new JobKey(JobNames.EmailOutboxDispatch);
+        q.AddJob<EmailOutboxDispatchJob>(opts => opts.WithIdentity(emailJobKey));
+        q.AddTrigger(opts => opts
+            .ForJob(emailJobKey)
+            .WithIdentity($"{JobNames.EmailOutboxDispatch}-trigger")
+            .StartNow()
+            .WithSimpleSchedule(schedule => schedule
+                .WithIntervalInMinutes(jobSchedulingOptions.EmailDispatchIntervalMinutes)
+                .RepeatForever()
+                .WithMisfireHandlingInstructionNowWithExistingCount()));
+    }
 });
 
 builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
 var app = builder.Build();
 var sqlServerSecurity = app.Services.GetRequiredService<IOptions<SqlServerSecurityOptions>>().Value;
+var browserSecurity = app.Services.GetRequiredService<IOptions<BrowserSecurityOptions>>().Value;
 SqlServerConnectionSecurity.Validate(
     connectionString,
     app.Environment,
@@ -349,6 +616,7 @@ if (allowInsecureHttpForInternalTest)
 }
 
 app.UseForwardedHeaders();
+app.UseMiddleware<CorrelationIdMiddleware>();
 
 if (app.Environment.IsDevelopment())
 {
@@ -371,22 +639,32 @@ if (!allowInsecureHttpForInternalTest)
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
+app.UseMiddleware<AccessDeniedAuditMiddleware>();
 app.UseAuthorization();
 
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("live")
-});
+}).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("ready")
-});
+}).AllowAnonymous();
 app.MapHealthChecks("/health/database", new HealthCheckOptions
 {
     Predicate = check => check.Tags.Contains("database")
-});
+}).AllowAnonymous();
+app.MapHealthChecks("/health/runtime", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("runtime")
+}).AllowAnonymous();
+
+app.MapPost(browserSecurity.ReportPath, CspReportEndpoint.HandleAsync)
+    .AllowAnonymous()
+    .RequireRateLimiting("csp-report")
+    .WithMetadata(new RequestSizeLimitAttribute(CspReportEndpoint.MaxReportBytes));
 
 app.MapGet("/api/technews", (ITechNewsCacheService cacheService) =>
 {

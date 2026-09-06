@@ -23,7 +23,7 @@
 
 @if (!ViewData.ModelState.IsValid)
 {
-    <div asp-validation-summary="All" class="dcx-validation-summary mb-4"></div>
+    <div asp-validation-summary="All" class="dcx-validation-summary mb-4" role="alert"></div>
 }
 
 <div class="dcx-canteen-layout">
@@ -34,7 +34,7 @@
                     <div class="dcx-kicker mb-2">Today's Menu</div>
                     <h2 class="dcx-section-heading mb-0">Select an item to order</h2>
                 </div>
-                <button type="submit" class="dcx-btn">Place Order</button>
+                <button type="submit" class="dcx-btn" disabled="@(Model.MenuItems.Count == 0)">Place Order</button>
             </div>
 
             @if (Model.MenuItems.Count == 0)
@@ -62,12 +62,12 @@
                                 @foreach (var item in group)
                                 {
                                     <label class="dcx-menu-card">
-                                        <input type="radio" name="SelectedMenuItemId" value="@item.Id" class="dcx-menu-card__input" />
+                                        <input type="radio" name="SelectedMenuItemId" value="@item.Id" class="dcx-menu-card__input" checked="@(Model.SelectedMenuItemId == item.Id)" required />
                                         <span class="dcx-menu-card__surface">
                                             <span class="dcx-menu-card__media">
                                                 @if (!string.IsNullOrWhiteSpace(item.ImagePath))
                                                 {
-                                                    <img src="@item.ImagePath" alt="@item.Name" class="dcx-menu-card__image" />
+                                                    <img src="@item.ImagePath" alt="" class="dcx-menu-card__image" loading="lazy" decoding="async" />
                                                 }
                                                 else
                                                 {

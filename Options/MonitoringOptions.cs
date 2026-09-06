@@ -11,4 +11,10 @@ public class MonitoringOptions
 
     [Range(1, 168)]
     public int CriticalJobMaxAgeHours { get; set; } = 26;
+
+    [Range(50, 100)]
+    public int RuntimeMemoryLoadWarningPercent { get; set; } = 90;
+
+    [Range(1, 100000)]
+    public int RuntimeThreadPoolQueueWarningLength { get; set; } = 500;
 }

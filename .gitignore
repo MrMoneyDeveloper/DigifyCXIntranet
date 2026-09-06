@@ -11,6 +11,7 @@ appsettings.*.local.json
 *.secrets.json
 artifacts/
 App_Data/Outbox/
+App_Data/DataProtection-Keys/
 wwwroot/uploads/
 
 # User-specific files

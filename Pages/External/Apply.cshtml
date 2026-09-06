@@ -37,24 +37,25 @@
         }
 
         <section class="dcx-external-apply-panel">
+            <div asp-validation-summary="ModelOnly" class="dcx-validation-summary mb-4" role="alert"></div>
             <form method="post" enctype="multipart/form-data" class="row g-3">
                 <input asp-for="Input.Token" type="hidden" />
 
                 <div class="col-md-6">
                     <label asp-for="Input.CandidateName" class="dcx-label mb-2"></label>
-                    <input asp-for="Input.CandidateName" class="dcx-input" />
+                    <input asp-for="Input.CandidateName" class="dcx-input" autocomplete="name" />
                     <span asp-validation-for="Input.CandidateName" class="dcx-field-error mt-1"></span>
                 </div>
 
                 <div class="col-md-6">
                     <label asp-for="Input.CandidateEmail" class="dcx-label mb-2"></label>
-                    <input asp-for="Input.CandidateEmail" class="dcx-input" />
+                    <input asp-for="Input.CandidateEmail" type="email" class="dcx-input" autocomplete="email" />
                     <span asp-validation-for="Input.CandidateEmail" class="dcx-field-error mt-1"></span>
                 </div>
 
                 <div class="col-md-6">
                     <label asp-for="Input.CandidatePhone" class="dcx-label mb-2">Phone</label>
-                    <input asp-for="Input.CandidatePhone" class="dcx-input" />
+                    <input asp-for="Input.CandidatePhone" type="tel" class="dcx-input" autocomplete="tel" />
                     <span asp-validation-for="Input.CandidatePhone" class="dcx-field-error mt-1"></span>
                 </div>
 

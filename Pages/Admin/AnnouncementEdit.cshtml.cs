@@ -10,10 +10,12 @@ namespace DigifyCXIntranet.Pages.Admin;
 public class AnnouncementEditModel : PageModel
 {
     private readonly ApplicationDbContext _db;
+    private readonly IAuditService _auditService;
 
-    public AnnouncementEditModel(ApplicationDbContext db)
+    public AnnouncementEditModel(ApplicationDbContext db, IAuditService auditService)
     {
         _db = db;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -62,6 +64,13 @@ public class AnnouncementEditModel : PageModel
         entity.IsActive = Item.IsActive;
         entity.LastUpdatedBy = UserNameHelper.GetShortName(User);
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(
+            UserNameHelper.GetShortName(User),
+            "Update",
+            "Announcement",
+            $"title={entity.Title};active={entity.IsActive};pinned={entity.IsPinned}",
+            entityId: entity.Id.ToString(),
+            httpContext: HttpContext);
 
         return RedirectToPage("/Admin/Announcements");
     }

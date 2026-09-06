@@ -75,7 +75,7 @@
                     <h2 class="dcx-section-heading mb-0">Existing announcements</h2>
                 </div>
 
-                <span class="dcx-admin-count-pill">@Model.Items.Count Total</span>
+                <span class="dcx-admin-count-pill">@Model.TotalCount Total</span>
             </div>
 
             <div class="table-responsive">
@@ -137,6 +137,7 @@
                     </tbody>
                 </table>
             </div>
+            <partial name="_Pagination" model="new PaginationViewModel(Model.PageNumber, Model.PageSize, Model.TotalCount)" />
         </section>
     </div>
 </section>

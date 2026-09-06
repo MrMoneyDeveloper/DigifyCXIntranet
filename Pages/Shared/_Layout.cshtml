@@ -1,5 +1,5 @@
 @{
-    var path = Context?.Request?.Path.Value ?? string.Empty;
+    var path = Context?.Request?.Path.Value?.TrimEnd('/') ?? string.Empty;
     var isAuthPage =
         path.Equals("/Account/Login", StringComparison.OrdinalIgnoreCase) ||
         path.Equals("/Account/Register", StringComparison.OrdinalIgnoreCase) ||
@@ -7,12 +7,17 @@
         path.Equals("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase) ||
         path.Equals("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase);
 
-    string NavState(string target)
+    bool IsCurrentPage(string target)
     {
-        return path.Equals(target, StringComparison.OrdinalIgnoreCase) ? "nav-link-soft active" : "nav-link-soft";
+        var route = target.EndsWith("/Index", StringComparison.OrdinalIgnoreCase)
+            ? target[..^6]
+            : target;
+        return path.Equals(target, StringComparison.OrdinalIgnoreCase) ||
+               path.Equals(route, StringComparison.OrdinalIgnoreCase);
     }
 
-    var isAnnouncements = path.Equals("/Announcements/Index", StringComparison.OrdinalIgnoreCase);
+    string NavState(string target) => IsCurrentPage(target) ? "nav-link-soft active" : "nav-link-soft";
+    string? NavCurrent(string target) => IsCurrentPage(target) ? "page" : null;
 }
 @inject DigifyCXIntranet.Services.IAdminAccessService NavAdminAccess
 <!DOCTYPE html>
@@ -24,42 +29,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script>
-            window.tailwind = window.tailwind || {};
-            window.tailwind.config = {
-                theme: {
-                    extend: {
-                        colors: {
-                            brand: {
-                                500: "#0891b2",
-                                600: "#0e7490",
-                                700: "#155e75"
-                            }
-                        },
-                        keyframes: {
-                            bob: {
-                                "0%, 100%": { transform: "translateY(0px)" },
-                                "50%": { transform: "translateY(-6px)" }
-                            },
-                            reveal: {
-                                "0%": { opacity: "0", transform: "translateY(14px)" },
-                                "100%": { opacity: "1", transform: "translateY(0)" }
-                            }
-                        },
-                        animation: {
-                            bob: "bob 4s ease-in-out infinite",
-                            reveal: "reveal 560ms ease-out both"
-                        }
-                    }
-                }
-            };
-    </script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/tailwind.min.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/DigifyCXIntranet.styles.css" asp-append-version="true" />
 </head>
 <body class="dcx-shell min-h-screen antialiased flex flex-col">
+    <a class="dcx-skip-link" href="#main-content">Skip to main content</a>
     <div class="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[radial-gradient(circle_at_top_left,_rgba(132,220,215,0.12),_transparent_22%),linear-gradient(180deg,_#11182a_0%,_#171d31_44%,_#0e1422_100%)]">
         <div class="absolute inset-0 opacity-[0.16]" style="background-image: linear-gradient(rgba(132,220,215,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(132,220,215,.12) 1px, transparent 1px); background-size: 72px 72px;"></div>
         <div class="absolute -left-24 top-8 h-72 w-72 rounded-full bg-cyan-400/20 blur-3xl animate-bob"></div>
@@ -69,7 +44,7 @@
     <header class="app-brand-header sticky top-0 z-40 pt-4">
         <div class="mx-auto max-w-7xl px-4 lg:px-6">
             <div class="dcx-header">
-                <nav class="flex flex-wrap items-center justify-between gap-4 px-4 py-3 lg:px-6">
+                <nav class="flex flex-wrap items-center justify-between gap-4 px-4 py-3 lg:px-6" aria-label="Main navigation">
                     <a class="dcx-brand" asp-area="" asp-page="/Index">
                         <img src="~/images/branding/digifycx-logo.png"
                              alt="DigifyCX logo"
@@ -79,17 +54,17 @@
                     </a>
 
                     <ul class="dcx-nav m-0 list-none p-0">
-                        <li><a class="@NavState("/Index")" asp-page="/Index">Home</a></li>
-                        <li><a class="@NavState("/Canteen/Index")" asp-page="/Canteen/Index">Canteen</a></li>
+                        <li><a class="@NavState("/Index")" aria-current="@NavCurrent("/Index")" asp-page="/Index">Home</a></li>
+                        <li><a class="@NavState("/Canteen/Index")" aria-current="@NavCurrent("/Canteen/Index")" asp-page="/Canteen/Index">Canteen</a></li>
                         <li>
-                            <a class="@(isAnnouncements ? "nav-link-soft active" : "nav-link-soft")"
+                            <a class="@NavState("/Announcements/Index")" aria-current="@NavCurrent("/Announcements/Index")"
                                asp-page="/Announcements/Index">
                                 What's New?
                             </a>
                         </li>
-                        <li><a class="@NavState("/Jobs/Index")" asp-page="/Jobs/Index">Job Postings</a></li>
-                        <li><a class="@NavState("/Policies/Index")" asp-page="/Policies/Index">Policies</a></li>
-                        <li><a class="@NavState("/Faq/Index")" asp-page="/Faq/Index">FAQ</a></li>
+                        <li><a class="@NavState("/Jobs/Index")" aria-current="@NavCurrent("/Jobs/Index")" asp-page="/Jobs/Index">Job Postings</a></li>
+                        <li><a class="@NavState("/Policies/Index")" aria-current="@NavCurrent("/Policies/Index")" asp-page="/Policies/Index">Policies</a></li>
+                        <li><a class="@NavState("/Faq/Index")" aria-current="@NavCurrent("/Faq/Index")" asp-page="/Faq/Index">FAQ</a></li>
                     </ul>
 
                     <div class="flex-shrink-0">
@@ -169,13 +144,13 @@
         }
     </header>
 
-    <main role="main" class="app-main mx-auto w-full max-w-7xl px-4 lg:px-6 animate-reveal flex-grow">
+    <main id="main-content" tabindex="-1" class="app-main mx-auto w-full max-w-7xl px-4 lg:px-6 animate-reveal flex-grow">
         @RenderBody()
     </main>
 
     <footer class="app-brand-footer mt-auto w-full text-sm">
         <div class="app-footer-inner mx-auto max-w-7xl px-4 lg:px-6">
-            <img class="app-footer-building" src="~/images/branding/footer-building.png" alt="" aria-hidden="true" />
+            <img class="app-footer-building" src="~/images/branding/footer-building.png" alt="" aria-hidden="true" width="66" height="66" loading="lazy" decoding="async" />
             <dl class="app-footer-details">
                 <dt>Company</dt>
                 <dd>Digify CX</dd>

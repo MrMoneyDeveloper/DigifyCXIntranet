@@ -7,5 +7,7 @@ public static class ApiErrorCodes
     public const string DomainRuleViolation = "DOMAIN_RULE_VIOLATION";
     public const string Unauthorized = "UNAUTHORIZED";
     public const string Forbidden = "FORBIDDEN";
+    public const string RateLimitExceeded = "RATE_LIMIT_EXCEEDED";
+    public const string RequestTooLarge = "REQUEST_TOO_LARGE";
     public const string Unexpected = "UNEXPECTED_ERROR";
 }

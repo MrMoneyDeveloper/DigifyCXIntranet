@@ -8,7 +8,7 @@ public class UserRegistrySyncOptions
 
     public bool Enabled { get; set; } = true;
 
-    [Url]
+    // Program validates the HTTPS endpoint only when synchronization is enabled.
     public string SheetApiUrl { get; set; } = string.Empty;
 
     /// <summary>

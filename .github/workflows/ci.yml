@@ -19,11 +19,44 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install client dependencies
+        run: npm ci
+
+      - name: Audit client dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build client assets
+        run: |
+          npm run build:css
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          git diff --exit-code -- wwwroot/css/tailwind.min.css
+
       - name: Restore
         run: dotnet restore DigifyCXIntranet.sln
+
+      - name: Audit .NET dependencies
+        run: dotnet list DigifyCXIntranet.sln package --vulnerable --include-transitive
 
       - name: Build
         run: dotnet build DigifyCXIntranet.sln --no-restore --configuration Release
 
+      - name: Validate database migrations
+        run: |
+          dotnet tool restore
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          dotnet tool run dotnet-ef migrations script --idempotent --context ApplicationDbContext --project DigifyCXIntranet.csproj --startup-project DigifyCXIntranet.csproj --configuration Release --no-build --output artifacts/migrations.sql
+
       - name: Test
         run: dotnet test DigifyCXIntranet.sln --no-build --configuration Release
+
+      - name: Validate publish contents
+        run: |
+          dotnet publish DigifyCXIntranet.csproj --configuration Release --no-build --output artifacts/ci-publish
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./deploy/check-publish-secrets.ps1 -PublishPath artifacts/ci-publish

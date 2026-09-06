@@ -13,17 +13,20 @@ public class ForgotPasswordModel : PageModel
     private readonly ApplicationDbContext  _db;
     private readonly ILogger<ForgotPasswordModel> _logger;
     private readonly IAuditService _auditService;
+    private readonly IIdentifierRateLimiter _identifierRateLimiter;
 
     public ForgotPasswordModel(
         IZendeskTicketService zendesk,
         ApplicationDbContext  db,
         ILogger<ForgotPasswordModel> logger,
-        IAuditService auditService)
+        IAuditService auditService,
+        IIdentifierRateLimiter identifierRateLimiter)
     {
         _zendesk = zendesk;
         _db      = db;
         _logger  = logger;
         _auditService = auditService;
+        _identifierRateLimiter = identifierRateLimiter;
     }
 
     // ── View state ──────────────────────────────────────────────────
@@ -53,10 +56,25 @@ public class ForgotPasswordModel : PageModel
         if (!ModelState.IsValid)
             return Page();
 
+        if (!_identifierRateLimiter.TryAcquire("forgot-password", Input.FullName))
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            Submitted = true;
+            Succeeded = false;
+            ErrorMessage = "Too many requests. Please wait and try again.";
+            await _auditService.WriteAsync(
+                Input.FullName,
+                "ForgotPasswordRateLimited",
+                "Account",
+                "identifier-limit-rejected",
+                succeeded: false,
+                errorCode: "RateLimited",
+                httpContext: HttpContext);
+            return Page();
+        }
+
         // Capture IP server-side (invisible to the user on the form).
-        var ip = HttpContext.Connection.RemoteIpAddress?.ToString()
-                 ?? HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
-                 ?? "unknown";
+        var ip = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 
         var now             = DateTime.UtcNow;
         var fullName        = Input.FullName.Trim();

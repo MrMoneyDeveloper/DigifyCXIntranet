@@ -42,10 +42,18 @@ public class MonthlyPayrollRunner : IMonthlyPayrollRunner
             var localNow = _clock.NowInZone(_payrollOptions.TimeZoneId);
             var runDay = Math.Clamp(_payrollOptions.RunDayOfMonth, 1, 28);
             var runKey = $"{localNow:yyyyMM}:{runDay:D2}";
-            var alreadyRan = await db.PayrollRuns.AnyAsync(x => x.RunKey == runKey, cancellationToken);
-            if (alreadyRan)
+            var previousRun = await db.PayrollRuns
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.RunKey == runKey, cancellationToken);
+            if (previousRun is not null)
             {
-                return 0;
+                if (previousRun.SentSuccessfully)
+                {
+                    return 0;
+                }
+
+                throw new InvalidOperationException(
+                    $"Payroll export '{runKey}' has an incomplete previous run. Review the payroll run and email outbox before resending; automatic resend is disabled.");
             }
 
             var nowUtc = _clock.UtcNow.UtcDateTime;

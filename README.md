@@ -6,6 +6,8 @@ This repository also contains a separate `Company.Product` Clean Architecture ba
 
 > Documentation scope: this README describes the current source tree. It deliberately contains no passwords, API tokens, connection strings, or other deployment secrets.
 
+For a focused technical orientation covering architecture, integrations, runtime mechanisms, data ownership, hosting, and operational boundaries, see [System Context](docs/system-context.md).
+
 ## Contents
 
 - [Product scope](#product-scope)
@@ -102,9 +104,9 @@ flowchart TD
     Errors --> Headers["Security headers"]
     Headers --> Static["Static files"]
     Static --> Routing["Routing"]
-    Routing --> Limiter["Global fixed-window rate limiter"]
-    Limiter --> AuthN["Windows Negotiate or cookie authentication"]
-    AuthN --> AuthZ["Fallback authentication and role policies"]
+    Routing --> AuthN["Windows Negotiate or cookie authentication"]
+    AuthN --> Limiter["Global and route-specific rate limiters"]
+    Limiter --> AuthZ["Fallback authentication and role policies"]
     AuthZ --> Endpoint["Razor Page, health endpoint, minimal API, or controller"]
     Endpoint --> EF["EF Core service/context"]
     EF --> Database["SQL Server"]
@@ -140,7 +142,7 @@ The dependency tests enforce that `Domain` does not depend on API or Infrastruct
 | Authentication | ASP.NET Core Identity, cookie authentication, or Windows Negotiate authentication |
 | Authorization | Claims and policy-based role authorization |
 | Persistence | Entity Framework Core 8 with SQL Server |
-| Scheduling | Quartz.NET for breakfast/lunch jobs; `BackgroundService` for other recurring work |
+| Scheduling | Quartz.NET for canteen, payroll, email outbox, policy sync, user sync, and tech-news refresh |
 | Spreadsheet export | ClosedXML |
 | HTTP integrations | `IHttpClientFactory`, `System.Text.Json` |
 | Email delivery | SMTP or a local file outbox fallback |
@@ -150,7 +152,7 @@ The dependency tests enforce that `Domain` does not depend on API or Infrastruct
 | Hosting | IIS with ASP.NET Core Module V2 and a dedicated application pool |
 | Deployment automation | PowerShell publish, validation, backup, copy, environment, IIS, and firewall scripts |
 
-Node.js is not required to run the primary intranet. The deployed UI uses committed static assets.
+Node.js is required only when rebuilding the committed Tailwind CSS asset; it is not required by the deployed IIS process.
 
 ## Roles and authorization
 
@@ -190,7 +192,7 @@ The announcements policy currently requires `HrAdmin` specifically. `SystemAdmin
 | Cookie/database | Development, or the Windows-auth flag is false | Validates configured development users in Development or password hashes in `AspNetUsers` |
 | Temporary internal HTTP | Explicit `AuthMode:AllowInsecureHttpForInternalTest=true` | Allows cookies to follow the current HTTP request; must be disabled for final HTTPS production |
 
-Cookie sessions use HTTP-only, SameSite Lax cookies, an eight-hour lifetime, and sliding expiration. Production defaults require secure cookies and HTTPS.
+Cookie sessions use HTTP-only, SameSite Lax cookies, an eight-hour lifetime, and sliding expiration. Production defaults require secure cookies and HTTPS. Database sessions carry the user ID and Identity security stamp; the app revalidates them against SQL with a two-minute cache so password resets, account resets, deletions, and role changes revoke stale cookies promptly.
 
 ## Features
 
@@ -247,8 +249,8 @@ Cookie sessions use HTTP-only, SameSite Lax cookies, an eight-hour lifetime, and
 - SQL transport-security validation before serving traffic.
 - `/health/database` database health endpoint.
 - Global fixed-window request limiter.
-- Security headers on all primary app responses.
-- Daily policy sync, hourly tech-news refresh, scheduled user-registry sync, Quartz canteen jobs, and monthly payroll export.
+- Security headers on all primary app responses, staged Content Security Policy reporting, secure antiforgery/TempData cookies, and no-store handling for authenticated pages.
+- SQL-persistent Quartz scheduling for policy sync, tech-news refresh, user-registry sync, canteen jobs, email outbox dispatch, and monthly payroll export.
 - Publish-output secret scan and IIS deployment backup/rollback tooling.
 
 ## Business use cases
@@ -866,20 +868,23 @@ Database schema/data rollback is separate from file rollback. Take a SQL backup 
 - Explicit anonymous allowlist for activation, help/reset, and token-based external application pages.
 - Role/policy authorization on administrative and finance routes.
 - Identity password hashing and token providers.
-- HTTP-only, SameSite Lax cookies; secure-only production cookies by default.
+- Password rules emphasize length and unique characters without predictable composition requirements.
+- HTTP-only, SameSite Lax authentication cookies; strict antiforgery/TempData cookies; secure-only production cookies by default.
+- Identity security-stamp and role revalidation for database authentication cookies.
+- Persistent ASP.NET Core Data Protection keys with Windows DPAPI protection by default.
 - HSTS and HTTPS redirection outside the explicitly enabled internal HTTP test mode.
-- `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, and `Permissions-Policy` headers.
-- Fixed-window global rate limiting.
+- CSP reporting plus content type, frame, referrer, permissions, cross-origin, and cache-control headers.
+- Fixed-window global and route-specific rate limiting, including a hashed identifier limiter for account flows.
 - SQL encryption/trust validation with a narrowly scoped internal-test escape hatch.
 - File upload extension, size, and signature validation plus generated safe file names.
+- Bounded request and multipart body sizes, view-model-based form binding, and antiforgery validation for state-changing browser requests.
+- Structured, redacted audit events and correlation IDs for authentication, administration, exports, integrations, and jobs.
 - Publish-time exclusion and secret scanning.
 - Soft deletion for selected operational content.
 - Bounded read lists and `AsNoTracking` on many read-only queries.
 
 ### Production-readiness warnings
 
-- `Controllers/ZendeskWebhookController.cs` currently contains debug logging that records all inbound headers and the configured webhook secret. This must be removed before a security-reviewed production launch because logs can expose credentials.
-- Activation registry lookup currently fails open when its Sheet API is unavailable or malformed. Decide whether production account activation should fail closed.
 - `UserRegistrySync:DeleteRemovedUsers` can delete Identity accounts missing from the registry source. Keep source ownership, exclusions, test-user protection, backups, and audit expectations explicit.
 - The inbound password-reset webhook matches users by display name. Duplicate display names require an immutable employee identifier for reliable production operation.
 - Temporary HTTP-cookie and SQL certificate-trust switches are test-only controls and must not remain enabled at final go-live.
@@ -902,13 +907,13 @@ The current architecture is appropriate for that envelope when hosted as one IIS
 
 ### Scaling constraints
 
-- Hosted jobs run inside the IIS web process. Multiple app instances could execute the same non-Quartz workers; durable distributed scheduling/locking would be needed before horizontal scale-out.
+- Recurring jobs run through Quartz. Multiple app instances require `JobScheduling:UsePersistentStore=true`, `JobScheduling:UseClustering=true`, and the matching Quartz SQL schema before horizontal scale-out.
 - The tech-news cache is process-local and differs between app instances.
 - Uploaded files live on one server's local disk. Horizontal scale requires shared storage or object storage.
-- Session cookies are stateless, but Data Protection key persistence must be shared before using multiple IIS nodes.
+- Session cookies are stateless; multiple IIS nodes need a shared key ring and a cross-node key-protection mechanism instead of the single-node DPAPI default.
 - Cross-domain ownership relies on username strings rather than immutable user foreign keys.
 - Several pages share one SQL database through overlapping DbContexts; database connection pool and query telemetry should guide tuning.
-- The rate limiter selects remote IP before username. Behind a proxy or NAT, many users may share one partition unless forwarded client addresses are correct.
+- The transport limiter partitions authenticated traffic by user and anonymous traffic by the forwarded client IP. Sensitive account and public-form flows also use a bounded hashed-identifier limiter.
 - SQL Server Express has product limits; monitor database size, memory pressure, CPU, and concurrent workload before treating it as long-term production infrastructure.
 
 ### Recommended measurements before final production sign-off
@@ -933,7 +938,7 @@ Use an approved non-production database and test identities for load testing. Do
 - Policy acknowledgement joins the cached article by Zendesk article ID in application code, without a database foreign key.
 - User-specific canteen, recruitment, and policy activity joins Identity by normalized username strings, without database foreign keys.
 - Policy sync removes previously cached articles outside the configured section allowlist. Treat allowlist changes as a data-scope operation and review sync logs after changes.
-- The database health endpoint checks connectivity only; it does not validate worker freshness, Zendesk, SMTP, disk capacity, or registry availability.
+- Readiness checks SQL connectivity and critical-job freshness; database health also checks backup freshness when enabled. External-provider and disk-capacity probes remain deployment monitoring responsibilities.
 - There is no distributed tracing, metrics backend, centralized alerting, or durable cross-node scheduler in the current primary app.
 
 ## Change checklist

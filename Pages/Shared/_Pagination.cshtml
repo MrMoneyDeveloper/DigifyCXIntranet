@@ -1,0 +1,44 @@
+@model DigifyCXIntranet.Models.PaginationViewModel
+@using Microsoft.AspNetCore.WebUtilities
+@{
+    string PageUrl(int pageNumber)
+    {
+        var query = Context.Request.Query.ToDictionary(
+            item => item.Key,
+            item => (string?)item.Value.ToString(),
+            StringComparer.OrdinalIgnoreCase);
+        query["pageNumber"] = pageNumber.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        query["pageSize"] = Model.PageSize.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        return QueryHelpers.AddQueryString(Context.Request.Path, query);
+    }
+}
+
+@if (Model.TotalCount > 0)
+{
+    <nav class="dcx-pagination" aria-label="Pagination">
+        <span class="dcx-pagination__summary">
+            @Model.FirstItemNumber-@Model.LastItemNumber of @Model.TotalCount
+        </span>
+        <div class="dcx-pagination__controls">
+            @if (Model.HasPreviousPage)
+            {
+                <a href="@PageUrl(Model.PageNumber - 1)" class="dcx-mini-btn dcx-mini-btn--neutral">Previous</a>
+            }
+            else
+            {
+                <span class="dcx-mini-btn dcx-mini-btn--neutral disabled" aria-disabled="true">Previous</span>
+            }
+
+            <span class="dcx-pagination__page">Page @Model.PageNumber of @Model.TotalPages</span>
+
+            @if (Model.HasNextPage)
+            {
+                <a href="@PageUrl(Model.PageNumber + 1)" class="dcx-mini-btn dcx-mini-btn--neutral">Next</a>
+            }
+            else
+            {
+                <span class="dcx-mini-btn dcx-mini-btn--neutral disabled" aria-disabled="true">Next</span>
+            }
+        </div>
+    </nav>
+}

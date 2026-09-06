@@ -14,17 +14,20 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
     private readonly PolicyDbContext _db;
     private readonly HttpClient _httpClient;
     private readonly ZendeskSyncOptions _options;
+    private readonly IZendeskHtmlSanitizer _htmlSanitizer;
     private readonly ILogger<ZendeskPolicySyncService> _logger;
 
     public ZendeskPolicySyncService(
         PolicyDbContext db,
         IHttpClientFactory httpClientFactory,
         IOptions<ZendeskSyncOptions> options,
+        IZendeskHtmlSanitizer htmlSanitizer,
         ILogger<ZendeskPolicySyncService> logger)
     {
         _db = db;
         _httpClient = httpClientFactory.CreateClient(nameof(ZendeskPolicySyncService));
         _options = options.Value;
+        _htmlSanitizer = htmlSanitizer;
         _logger = logger;
     }
 
@@ -91,8 +94,10 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
                 }
 
                 var title   = article.GetProperty("title").GetString() ?? "Untitled";
-                var body    = article.TryGetProperty("body",     out var bodyNode) ? bodyNode.GetString() ?? string.Empty : string.Empty;
-                var htmlUrl = article.TryGetProperty("html_url", out var urlNode)  ? urlNode.GetString()  ?? string.Empty : string.Empty;
+                var body = _htmlSanitizer.Sanitize(
+                    article.TryGetProperty("body", out var bodyNode) ? bodyNode.GetString() ?? string.Empty : string.Empty);
+                var htmlUrl = _htmlSanitizer.SanitizeHttpsUrl(
+                    article.TryGetProperty("html_url", out var urlNode) ? urlNode.GetString() : null) ?? string.Empty;
 
                 sections.TryGetValue(sectionId, out var section);
                 ZendeskLookup? category = null;
@@ -186,19 +191,51 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
     private async Task<List<JsonElement>> GetPagedElementsAsync(string pathOrUrl, string collectionName, CancellationToken cancellationToken)
     {
         var results  = new List<JsonElement>();
-        var nextPage = BuildUrl(pathOrUrl);
+        var nextPage = pathOrUrl;
+        var visitedPages = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var pageCount = 0;
 
         while (!string.IsNullOrWhiteSpace(nextPage))
         {
-            using var request = new HttpRequestMessage(HttpMethod.Get, nextPage);
+            var requestUrl = BuildUrl(nextPage);
+            if (++pageCount > _options.MaxPages)
+            {
+                throw new InvalidDataException($"Zendesk pagination exceeded the configured {_options.MaxPages}-page limit.");
+            }
+
+            if (!visitedPages.Add(requestUrl))
+            {
+                throw new InvalidDataException("Zendesk pagination returned a cycle.");
+            }
+
+            using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
             AddAuthorization(request);
-            using var response = await _httpClient.SendAsync(request, cancellationToken);
+            using var response = await _httpClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken);
             response.EnsureSuccessStatusCode();
 
-            var json = await response.Content.ReadAsStringAsync(cancellationToken);
-            using var doc = JsonDocument.Parse(json);
+            if (response.Content.Headers.ContentLength > _options.MaxPageBytes)
+            {
+                throw new InvalidDataException("Zendesk returned a response larger than the configured page limit.");
+            }
+
+            await response.Content
+                .LoadIntoBufferAsync(_options.MaxPageBytes)
+                .WaitAsync(cancellationToken);
+            await using var content = await response.Content.ReadAsStreamAsync(cancellationToken);
+            using var doc = await JsonDocument.ParseAsync(
+                content,
+                new JsonDocumentOptions { MaxDepth = 64 },
+                cancellationToken);
             if (doc.RootElement.TryGetProperty(collectionName, out var collection))
             {
+                if (collection.ValueKind != JsonValueKind.Array)
+                {
+                    throw new InvalidDataException($"Zendesk response property '{collectionName}' was not an array.");
+                }
+
                 foreach (var element in collection.EnumerateArray())
                     results.Add(element.Clone());
             }
@@ -212,13 +249,8 @@ public class ZendeskPolicySyncService : IZendeskPolicySyncService
         return results;
     }
 
-    private string BuildUrl(string pathOrUrl)
-    {
-        if (Uri.TryCreate(pathOrUrl, UriKind.Absolute, out var uri))
-            return uri.ToString();
-
-        return $"{_options.BaseUrl.TrimEnd('/')}/{pathOrUrl.TrimStart('/')}";
-    }
+    private string BuildUrl(string pathOrUrl) =>
+        ExternalApiUriPolicy.ResolveSameOrigin(_options.BaseUrl, pathOrUrl).AbsoluteUri;
 
     private void AddAuthorization(HttpRequestMessage request)
     {

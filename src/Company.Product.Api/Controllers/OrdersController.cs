@@ -7,6 +7,7 @@ using Company.Product.Contracts.Responses.Common;
 using Company.Product.Contracts.Responses.Orders;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Company.Product.Api.Controllers;
 
@@ -16,6 +17,7 @@ public sealed class OrdersController : ControllerBase
 {
     [HttpPost]
     [Authorize(Policy = ApiPolicies.OrdersWrite)]
+    [EnableRateLimiting("orders-write")]
     [ProducesResponseType(typeof(object), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

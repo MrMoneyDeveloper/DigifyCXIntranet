@@ -37,16 +37,19 @@ else
         }
 
         <section class="dcx-policy-reader mb-3 zendesk-policy-content">
-            @Html.Raw(Model.Item.Body)
+            @Html.Raw(Model.SanitizedBody)
         </section>
 
         <div class="d-flex flex-wrap gap-3 mb-3">
-            <a href="@Model.Item.HtmlUrl"
-               target="_blank"
-               rel="noreferrer noopener"
-               class="dcx-btn-secondary">
-                Open Source Article
-            </a>
+            @if (Model.SafeHtmlUrl is not null)
+            {
+                <a href="@Model.SafeHtmlUrl"
+                   target="_blank"
+                   rel="noreferrer noopener"
+                   class="dcx-btn-secondary">
+                    Open Source Article
+                </a>
+            }
         </div>
 
         @if (Model.AlreadyAcknowledged)

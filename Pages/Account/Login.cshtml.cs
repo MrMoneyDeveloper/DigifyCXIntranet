@@ -1,6 +1,4 @@
 using System.ComponentModel.DataAnnotations;
-using System.Security.Claims;
-using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
 using DigifyCXIntranet.Services;
@@ -9,7 +7,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Pages.Account;
@@ -18,19 +15,22 @@ public class LoginModel : PageModel
 {
     private readonly AuthModeOptions _authModeOptions;
     private readonly IWebHostEnvironment _environment;
-    private readonly ApplicationDbContext _db;
-    private readonly IPasswordHasher<ApplicationUser> _hasher;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IAuditService _auditService;
+    private readonly IIdentifierRateLimiter _identifierRateLimiter;
 
     public LoginModel(
         IOptions<AuthModeOptions> authModeOptions,
         IWebHostEnvironment environment,
-        ApplicationDbContext db,
-        IPasswordHasher<ApplicationUser> hasher)
+        UserManager<ApplicationUser> userManager,
+        IAuditService auditService,
+        IIdentifierRateLimiter identifierRateLimiter)
     {
         _authModeOptions = authModeOptions.Value;
-        _environment     = environment;
-        _db              = db;
-        _hasher          = hasher;
+        _environment = environment;
+        _userManager = userManager;
+        _auditService = auditService;
+        _identifierRateLimiter = identifierRateLimiter;
     }
 
     [BindProperty]
@@ -42,23 +42,8 @@ public class LoginModel : PageModel
             .ToList();
 
     public bool ShowDemoCredentials => _environment.IsDevelopment();
-
     public string ReturnUrl { get; private set; } = "/Index";
-
-    /// <summary>
-    /// Set to true when the user's credentials were rejected due to a wrong password
-    /// so the view can show the prominent Forgot Password call-to-action.
-    /// </summary>
     public bool ShowForgotPasswordPrompt { get; private set; }
-
-    /// <summary>
-    /// The display name that was looked up, carried into the view so the amber banner
-    /// can build a pre-filled link to /Account/ForgotPassword.
-    /// Using DisplayName (e.g. "Wendy Moodley") instead of the raw username
-    /// (e.g. "wendy.moodley") ensures the Zendesk webhook can match the
-    /// employee record in the database.
-    /// Only populated when ShowForgotPasswordPrompt is true.
-    /// </summary>
     public string FailedUsername { get; private set; } = string.Empty;
 
     public void OnGet(string? returnUrl = null)
@@ -69,14 +54,27 @@ public class LoginModel : PageModel
     public async Task<IActionResult> OnPostAsync(string? returnUrl = null)
     {
         ReturnUrl = string.IsNullOrWhiteSpace(returnUrl) ? "/Index" : returnUrl;
-
         if (!ModelState.IsValid)
+        {
             return Page();
+        }
 
         var inputUsername = Input.Username.Trim();
         var inputPassword = Input.Password;
-
-        // ── 1. Hardcoded dev credentials ──────────────────────────────────
+        if (!_identifierRateLimiter.TryAcquire("login", inputUsername))
+        {
+            Response.StatusCode = StatusCodes.Status429TooManyRequests;
+            ModelState.AddModelError(string.Empty, "Too many requests. Please wait and try again.");
+            await _auditService.WriteAsync(
+                inputUsername,
+                "LoginRateLimited",
+                "Account",
+                "identifier-limit-rejected",
+                succeeded: false,
+                errorCode: "RateLimited",
+                httpContext: HttpContext);
+            return Page();
+        }
         var devUser = _environment.IsDevelopment()
             ? _authModeOptions.DevelopmentUsers.FirstOrDefault(
                 x => string.Equals(x.Username, inputUsername, StringComparison.OrdinalIgnoreCase))
@@ -86,95 +84,91 @@ public class LoginModel : PageModel
         {
             if (devUser.Password != inputPassword)
             {
-                // Wrong password for a dev user — show the generic error (no forgot-password
-                // prompt for hardcoded dev accounts, they don't use Zendesk).
-                ModelState.AddModelError(string.Empty, "Invalid username or password.");
-                return Page();
+                return await InvalidLoginAsync(inputUsername, "InvalidCredentials");
             }
 
-            var devClaims = new List<Claim>
-            {
-                new(ClaimTypes.Name,      devUser.Username.Trim()),
-                new(ClaimTypes.GivenName, string.IsNullOrWhiteSpace(devUser.DisplayName)
-                    ? devUser.Username
-                    : devUser.DisplayName),
-                new(ClaimTypes.Role, AppRoles.NormalizeOrEmployee(devUser.Role))
-            };
-
-            var devIdentity  = new ClaimsIdentity(devClaims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var devPrincipal = new ClaimsPrincipal(devIdentity);
+            var devPrincipal = AppAuthenticationClaims.CreateDevelopmentPrincipal(
+                devUser.Username.Trim(),
+                string.IsNullOrWhiteSpace(devUser.DisplayName) ? devUser.Username : devUser.DisplayName,
+                AppRoles.NormalizeOrEmployee(devUser.Role));
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, devPrincipal);
+            await _auditService.WriteAsync(
+                devUser.Username,
+                "LoginSucceeded",
+                "Account",
+                "source=development-user",
+                httpContext: HttpContext);
 
-            return Url.IsLocalUrl(ReturnUrl)
-                ? LocalRedirect(ReturnUrl)
-                : RedirectToPage("/Index");
+            return RedirectToLocal(ReturnUrl);
         }
 
-        // ── 2. Database employee accounts ─────────────────────────────────
-        var normalizedUsername = inputUsername.ToUpperInvariant();
-        var dbUser = await _db.Users
-            .AsNoTracking()
-            .FirstOrDefaultAsync(u => u.NormalizedUserName == normalizedUsername);
+        var dbUser = await _userManager.FindByNameAsync(inputUsername);
 
-        if (dbUser == null)
+        if (dbUser is null ||
+            dbUser.IsFirstTimeLogin ||
+            string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
+            dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome", StringComparison.Ordinal))
         {
-            ModelState.AddModelError(string.Empty, "Invalid username or password.");
-            return Page();
+            return await InvalidLoginAsync(inputUsername, "InvalidCredentials");
         }
 
-        if (string.IsNullOrWhiteSpace(dbUser.PasswordHash) ||
-            dbUser.PasswordHash.StartsWith("AQAAAAIAAYagAAAAEOf12Welcome"))
+        if (!await _userManager.CheckPasswordAsync(dbUser, inputPassword))
         {
-            ModelState.AddModelError(string.Empty,
-                "You have not set a password yet. Please complete account activation first.");
-            return Page();
+            return await InvalidLoginAsync(inputUsername, "InvalidCredentials");
         }
 
-        var verificationResult = _hasher.VerifyHashedPassword(dbUser, dbUser.PasswordHash, inputPassword);
-        if (verificationResult == PasswordVerificationResult.Failed)
+        if (string.IsNullOrWhiteSpace(dbUser.SecurityStamp))
         {
-            // Wrong password: flag the view to show the Forgot Password prompt.
-            // Pass DisplayName (e.g. "Wendy Moodley") — NOT the raw username
-            // (e.g. "wendy.moodley") — so the ForgotPassword page pre-fills
-            // the full name that the Zendesk webhook needs to match the DB record.
-            ShowForgotPasswordPrompt = true;
-            FailedUsername = !string.IsNullOrWhiteSpace(dbUser.DisplayName)
-                ? dbUser.DisplayName.Trim()
-                : inputUsername;
-            ModelState.AddModelError(string.Empty, "Incorrect password.");
-            return Page();
+            var stampResult = await _userManager.UpdateSecurityStampAsync(dbUser);
+            if (!stampResult.Succeeded)
+            {
+                return await InvalidLoginAsync(inputUsername, "InvalidAccountState");
+            }
         }
 
-        var role        = AppRoles.NormalizeOrEmployee(dbUser.CustomRole);
-        var displayName = string.IsNullOrWhiteSpace(dbUser.DisplayName)
-            ? (dbUser.UserName ?? inputUsername)
-            : dbUser.DisplayName;
-
-        var claims = new List<Claim>
-        {
-            new(ClaimTypes.Name,      dbUser.UserName ?? inputUsername),
-            new(ClaimTypes.GivenName, displayName),
-            new(ClaimTypes.Role,      role)
-        };
-
-        var identity  = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
+        var principal = AppAuthenticationClaims.CreateDatabasePrincipal(dbUser, inputUsername);
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await _auditService.WriteAsync(
+            dbUser.UserName ?? inputUsername,
+            "LoginSucceeded",
+            "Account",
+            "source=identity-database",
+            entityId: dbUser.Id,
+            httpContext: HttpContext);
 
-        return Url.IsLocalUrl(ReturnUrl)
-            ? LocalRedirect(ReturnUrl)
+        return RedirectToLocal(ReturnUrl);
+    }
+
+    private async Task<IActionResult> InvalidLoginAsync(string username, string errorCode)
+    {
+        ShowForgotPasswordPrompt = true;
+        FailedUsername = username;
+        ModelState.AddModelError(string.Empty, "Invalid username or password.");
+        await _auditService.WriteAsync(
+            username,
+            "LoginFailed",
+            "Account",
+            "source=cookie-login",
+            succeeded: false,
+            errorCode: errorCode,
+            httpContext: HttpContext);
+        return Page();
+    }
+
+    private IActionResult RedirectToLocal(string returnUrl)
+    {
+        return Url.IsLocalUrl(returnUrl)
+            ? LocalRedirect(returnUrl)
             : RedirectToPage("/Index");
     }
 
     public class InputModel
     {
-        [Required]
-        [MaxLength(50)]
+        [Required, MaxLength(50)]
         public string Username { get; set; } = string.Empty;
 
-        [Required]
+        [Required, StringLength(256)]
         [DataType(DataType.Password)]
         public string Password { get; set; } = string.Empty;
     }
-
 }

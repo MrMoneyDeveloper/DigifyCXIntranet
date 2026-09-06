@@ -27,10 +27,14 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
             return Task.FromResult(AuthenticateResult.NoResult());
         }
 
+        var suppliedScopes = Request.Headers[HeaderName].ToString();
+        var scopes = string.Equals(suppliedScopes, "true", StringComparison.OrdinalIgnoreCase)
+            ? $"{ApiPolicies.OrdersRead} {ApiPolicies.OrdersWrite}"
+            : suppliedScopes;
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, "integration-test-user"),
-            new Claim("scope", $"{ApiPolicies.OrdersRead} {ApiPolicies.OrdersWrite}")
+            new Claim("scope", scopes)
         };
 
         var identity = new ClaimsIdentity(claims, SchemeName);

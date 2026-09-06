@@ -41,7 +41,7 @@ public class AuditService : IAuditService
                 UserAgent = Clean(request?.Headers.UserAgent.ToString(), 512),
                 Route = Clean(request?.Path.Value, 256),
                 TimestampUtc = DateTime.UtcNow,
-                Detail = Clean(Redact(detail), 4000)
+                Detail = Clean(AuditRedactor.Redact(detail), 4000)
             });
 
             await _db.SaveChangesAsync(cancellationToken);
@@ -60,26 +60,7 @@ public class AuditService : IAuditService
             return string.Empty;
         }
 
-        if (httpContext.Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor))
-        {
-            return forwardedFor.ToString().Split(',')[0].Trim();
-        }
-
         return httpContext.Connection.RemoteIpAddress?.ToString() ?? string.Empty;
-    }
-
-    private static string Redact(string value)
-    {
-        if (string.IsNullOrWhiteSpace(value))
-        {
-            return string.Empty;
-        }
-
-        return value
-            .Replace("password=", "password=[redacted]", StringComparison.OrdinalIgnoreCase)
-            .Replace("token=", "token=[redacted]", StringComparison.OrdinalIgnoreCase)
-            .Replace("apikey=", "apikey=[redacted]", StringComparison.OrdinalIgnoreCase)
-            .Replace("apiToken=", "apiToken=[redacted]", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string Clean(string? value, int maxLength, string fallback = "")

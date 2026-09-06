@@ -10,16 +10,33 @@ using Microsoft.Extensions.Options;
 using Microsoft.OpenApi.Models;
 using Company.Product.Api.Authorization;
 using Company.Product.Api.Middleware;
+using Company.Product.Api.OpenApi;
 using Company.Product.Api.Options;
 using Company.Product.Infrastructure.Persistence;
 using Company.Product.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Server.IIS;
 using System.Threading.RateLimiting;
+using System.Globalization;
+using System.Security.Claims;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuredRequestLimits = builder.Configuration
+    .GetSection(ApiRequestLimitsOptions.SectionName)
+    .Get<ApiRequestLimitsOptions>() ?? new ApiRequestLimitsOptions();
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.AddServerHeader = false;
+    options.Limits.MaxRequestBodySize = configuredRequestLimits.MaxRequestBodyBytes;
+});
+builder.Services.Configure<IISServerOptions>(options =>
+    options.MaxRequestBodySize = configuredRequestLimits.MaxRequestBodyBytes);
 
 builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow)
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -39,12 +56,23 @@ builder.Services.AddControllers()
 
             problem.Extensions["errorCode"] = Company.Product.Contracts.Errors.ApiErrorCodes.ValidationFailed;
             problem.Extensions["errors"] = validationErrors;
+            problem.Extensions["correlationId"] = context.HttpContext.TraceIdentifier;
 
             return new BadRequestObjectResult(problem);
         };
     });
 
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddOptions<ApiRequestLimitsOptions>()
+    .Bind(builder.Configuration.GetSection(ApiRequestLimitsOptions.SectionName))
+    .ValidateDataAnnotations()
+    .ValidateOnStart();
+builder.Services.AddOptions<ApiRateLimitOptions>()
+    .Bind(builder.Configuration.GetSection(ApiRateLimitOptions.SectionName))
+    .ValidateDataAnnotations()
+    .Validate(options => options.OrdersWritePermitLimit <= options.GlobalPermitLimit,
+        "RateLimits:OrdersWritePermitLimit cannot exceed RateLimits:GlobalPermitLimit.")
+    .ValidateOnStart();
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
@@ -54,35 +82,97 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 var allowedOrigins = builder.Configuration
     .GetSection("Security:Cors:AllowedOrigins")
     .Get<string[]>() ?? ["https://intranet.company.local"];
+if (allowedOrigins.Length == 0 ||
+    allowedOrigins.Any(origin => !Uri.TryCreate(origin, UriKind.Absolute, out var uri) ||
+                                 (!builder.Environment.IsDevelopment() && uri.Scheme != Uri.UriSchemeHttps)))
+{
+    throw new InvalidOperationException("Security:Cors:AllowedOrigins must contain valid absolute HTTPS origins outside development.");
+}
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("DefaultCors", policy =>
     {
         policy.WithOrigins(allowedOrigins)
-            .WithMethods("GET", "POST", "PUT", "DELETE")
+            .WithMethods("GET", "POST")
             .WithHeaders("Authorization", "Content-Type", CorrelationIdMiddleware.HeaderName);
     });
 });
 
+var rateLimitOptions = builder.Configuration
+    .GetSection(ApiRateLimitOptions.SectionName)
+    .Get<ApiRateLimitOptions>() ?? new ApiRateLimitOptions();
+
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        var httpContext = context.HttpContext;
+        var logger = httpContext.RequestServices.GetRequiredService<ILoggerFactory>()
+            .CreateLogger("RateLimiting");
+        logger.LogWarning(
+            "Rate limit rejected {Path} for {RemoteIp}. CorrelationId={CorrelationId}",
+            httpContext.Request.Path,
+            httpContext.Connection.RemoteIpAddress,
+            httpContext.TraceIdentifier);
+
+        var problem = new ProblemDetails
+        {
+            Status = StatusCodes.Status429TooManyRequests,
+            Title = "Too many requests",
+            Detail = "Please wait and try again."
+        };
+        problem.Extensions["errorCode"] = Company.Product.Contracts.Errors.ApiErrorCodes.RateLimitExceeded;
+        problem.Extensions["correlationId"] = httpContext.TraceIdentifier;
+        if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+        {
+            httpContext.Response.Headers.RetryAfter = Math.Max(
+                    1,
+                    (int)Math.Ceiling(retryAfter.TotalSeconds))
+                .ToString(CultureInfo.InvariantCulture);
+        }
+        httpContext.Response.ContentType = "application/problem+json";
+        await httpContext.Response.WriteAsJsonAsync(problem, cancellationToken);
+    };
     options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
     {
-        var key = context.Connection.RemoteIpAddress?.ToString()
-            ?? context.User.Identity?.Name
-            ?? "anonymous";
+        var key = GetRateLimitPartitionKey(context, "global");
 
         return RateLimitPartition.GetFixedWindowLimiter(key, _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 120,
-            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = rateLimitOptions.GlobalPermitLimit,
+            Window = TimeSpan.FromSeconds(rateLimitOptions.WindowSeconds),
             QueueLimit = 0,
             AutoReplenishment = true
         });
     });
+
+    options.AddPolicy("orders-write", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            GetRateLimitPartitionKey(context, "orders-write"),
+            _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = rateLimitOptions.OrdersWritePermitLimit,
+                Window = TimeSpan.FromSeconds(rateLimitOptions.WindowSeconds),
+                QueueLimit = 0,
+                AutoReplenishment = true
+            }));
 });
+
+static string GetRateLimitPartitionKey(HttpContext context, string policyName)
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var subject = context.User.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? context.User.FindFirstValue("sub")
+            ?? context.User.Identity.Name
+            ?? "unknown";
+        return $"{policyName}:user:{subject}";
+    }
+
+    return $"{policyName}:ip:{context.Connection.RemoteIpAddress?.ToString() ?? "unknown"}";
+}
 
 builder.Services.AddSwaggerGen(options =>
 {
@@ -104,16 +194,23 @@ builder.Services.AddSwaggerGen(options =>
     };
 
     options.AddSecurityDefinition("Bearer", bearerScheme);
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        [bearerScheme] = Array.Empty<string>()
-    });
+    options.SchemaFilter<StrictRequestSchemaFilter>();
+    options.OperationFilter<AuthorizationOperationFilter>();
+});
+
+builder.Services.AddHsts(options =>
+{
+    options.MaxAge = TimeSpan.FromDays(365);
+    options.IncludeSubDomains = true;
 });
 
 builder.Services
     .AddOptions<JwtOptions>()
     .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
     .ValidateDataAnnotations()
+    .Validate(options => Uri.TryCreate(options.Authority, UriKind.Absolute, out var uri) &&
+                         (!options.RequireHttpsMetadata || uri.Scheme == Uri.UriSchemeHttps),
+        "Authentication:Jwt:Authority must be an absolute HTTPS URL when HTTPS metadata is required.")
     .ValidateOnStart();
 
 builder.Services.AddApplication();
@@ -138,6 +235,10 @@ builder.Services
 
 builder.Services.AddAuthorization(options =>
 {
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+
     options.AddPolicy(ApiPolicies.OrdersRead, policy =>
     {
         policy.RequireAuthenticatedUser();
@@ -163,12 +264,7 @@ SqlServerConnectionSecurity.Validate(configuredConnectionString, app.Environment
 
 app.UseForwardedHeaders();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-else
+if (!app.Environment.IsDevelopment())
 {
     app.UseHsts();
 }
@@ -184,23 +280,31 @@ if (runMigrations)
 app.UseMiddleware<CorrelationIdMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 app.UseMiddleware<SecurityHeadersMiddleware>();
+app.UseMiddleware<RequestBodyLimitMiddleware>();
+app.UseMiddleware<ApiAccessResultMiddleware>();
 
 app.UseHttpsRedirection();
+app.UseSwagger(options => options.RouteTemplate = "openapi/{documentName}.json");
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwaggerUI(options =>
+        options.SwaggerEndpoint("/openapi/v1.json", "Company Product API v1"));
+}
 app.UseRouting();
 app.UseCors("DefaultCors");
-app.UseRateLimiter();
 app.UseAuthentication();
+app.UseRateLimiter();
 app.UseAuthorization();
 
 app.MapControllers();
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("live")
-});
+}).AllowAnonymous();
 app.MapHealthChecks("/health/ready", new HealthCheckOptions
 {
     Predicate = registration => registration.Tags.Contains("ready")
-});
+}).AllowAnonymous();
 
 app.Run();
 

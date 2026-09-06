@@ -27,11 +27,12 @@ public class JobsModel : PageModel
     [BindProperty]
     public IFormFile? AdBackgroundUpload { get; set; }
 
-    public List<JobPosting> Items { get; private set; } = new();
+    public List<JobPostingRow> Items { get; private set; } = new();
     [BindProperty(SupportsGet = true)]
     public int PageNumber { get; set; } = 1;
     [BindProperty(SupportsGet = true)]
     public int PageSize { get; set; } = 50;
+    public int TotalCount { get; private set; }
 
     public async Task OnGetAsync()
     {
@@ -128,14 +129,25 @@ public class JobsModel : PageModel
     {
         PageNumber = Math.Max(1, PageNumber);
         PageSize = Math.Clamp(PageSize, 10, 100);
-        Items = await _db.JobPostings
+        var query = _db.JobPostings
             .AsNoTracking()
-            .Where(x => !x.IsDeleted)
+            .Where(x => !x.IsDeleted);
+        TotalCount = await query.CountAsync();
+        PageNumber = Math.Min(PageNumber, Math.Max(1, (int)Math.Ceiling(TotalCount / (double)PageSize)));
+        Items = await query
             .OrderByDescending(x => x.ClosingDate)
             .Skip((PageNumber - 1) * PageSize)
             .Take(PageSize)
+            .Select(x => new JobPostingRow(x.Id, x.Title, x.Department, x.UseVisualAd, x.IsActive))
             .ToListAsync();
     }
+
+    public sealed record JobPostingRow(
+        int Id,
+        string Title,
+        string Department,
+        bool UseVisualAd,
+        bool IsActive);
 
     public class NewJobInput
     {

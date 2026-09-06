@@ -13,14 +13,21 @@ public class ViewModel : PageModel
 {
     private readonly PolicyDbContext _db;
     private readonly ZendeskSyncOptions _zendeskSyncOptions;
+    private readonly IZendeskHtmlSanitizer _htmlSanitizer;
 
-    public ViewModel(PolicyDbContext db, IOptions<ZendeskSyncOptions> zendeskSyncOptions)
+    public ViewModel(
+        PolicyDbContext db,
+        IOptions<ZendeskSyncOptions> zendeskSyncOptions,
+        IZendeskHtmlSanitizer htmlSanitizer)
     {
         _db = db;
         _zendeskSyncOptions = zendeskSyncOptions.Value;
+        _htmlSanitizer = htmlSanitizer;
     }
 
     public ZendeskPolicyArticle? Item { get; private set; }
+    public string SanitizedBody { get; private set; } = string.Empty;
+    public string? SafeHtmlUrl { get; private set; }
     public bool AlreadyAcknowledged { get; private set; }
 
     [TempData]
@@ -78,6 +85,9 @@ public class ViewModel : PageModel
         {
             return;
         }
+
+        SanitizedBody = _htmlSanitizer.Sanitize(Item.Body);
+        SafeHtmlUrl = _htmlSanitizer.SanitizeHttpsUrl(Item.HtmlUrl);
 
         var employee = UserNameHelper.GetShortName(User);
         AlreadyAcknowledged = await _db.PolicyAcknowledgements.AsNoTracking().AnyAsync(x =>

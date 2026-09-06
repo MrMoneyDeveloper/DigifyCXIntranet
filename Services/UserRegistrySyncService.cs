@@ -1,4 +1,7 @@
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Globalization;
+using System.Text;
 using DigifyCXIntranet.Data;
 using DigifyCXIntranet.Models;
 using DigifyCXIntranet.Options;
@@ -8,12 +11,23 @@ using Microsoft.Extensions.Options;
 
 namespace DigifyCXIntranet.Services;
 
-public class UserRegistrySyncService : IUserRegistrySyncService
+public sealed class UserRegistrySyncService : IUserRegistrySyncService
 {
+    private const string PlaceholderHash =
+        "AQAAAAIAAYagAAAAEOf12WelcomeDigifyCX2024!Placeholder";
+
+    private static readonly HashSet<string> SkippedLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Employee Name",
+        "Trainee Name",
+        "trainee.name"
+    };
+
     private readonly ApplicationDbContext _dbContext;
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly HttpClient _httpClient;
     private readonly IOptionsMonitor<UserRegistrySyncOptions> _options;
+    private readonly IOptionsMonitor<AuthModeOptions> _authModeOptions;
     private readonly ILogger<UserRegistrySyncService> _logger;
 
     public UserRegistrySyncService(
@@ -21,12 +35,14 @@ public class UserRegistrySyncService : IUserRegistrySyncService
         UserManager<ApplicationUser> userManager,
         IHttpClientFactory httpClientFactory,
         IOptionsMonitor<UserRegistrySyncOptions> options,
+        IOptionsMonitor<AuthModeOptions> authModeOptions,
         ILogger<UserRegistrySyncService> logger)
     {
         _dbContext = dbContext;
         _userManager = userManager;
-        _httpClientFactory = httpClientFactory;
+        _httpClient = httpClientFactory.CreateClient(nameof(UserRegistrySyncService));
         _options = options;
+        _authModeOptions = authModeOptions;
         _logger = logger;
     }
 
@@ -35,106 +51,234 @@ public class UserRegistrySyncService : IUserRegistrySyncService
         var options = _options.CurrentValue;
         if (!options.Enabled)
         {
-            _logger.LogInformation("[UserRegistrySync] Sync is disabled by configuration.");
-            return new UserRegistrySyncResult(0, 0, 0);
+            return new UserRegistrySyncResult(0, 0, 0, 0);
         }
 
-        _logger.LogInformation("[UserRegistrySync] Starting sync from Google Sheet.");
-        var client = _httpClientFactory.CreateClient(nameof(UserRegistrySyncWorker));
-        var response = await client.GetAsync(options.SheetApiUrl, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        using var response = await _httpClient.GetAsync(options.SheetApiUrl, cancellationToken);
+        response.EnsureSuccessStatusCode();
+        await using var content = await response.Content.ReadAsStreamAsync(cancellationToken);
+        var externalUsers = await JsonSerializer.DeserializeAsync<List<ExternalUserDto>>(
+            content,
+            cancellationToken: cancellationToken);
+
+        if (externalUsers is null || externalUsers.Count == 0)
         {
-            throw new InvalidOperationException($"Sheet API returned {(int)response.StatusCode}.");
+            _logger.LogWarning("User registry returned no employees; no database changes were made.");
+            return new UserRegistrySyncResult(0, 0, 0, 0);
         }
 
-        var content = await response.Content.ReadAsStringAsync(cancellationToken);
-        using var doc = JsonDocument.Parse(content);
-        if (doc.RootElement.ValueKind != JsonValueKind.Array)
-        {
-            throw new InvalidOperationException("Sheet API returned an unexpected response format.");
-        }
-
-        var externalUsers = JsonSerializer.Deserialize<List<ExternalUserDto>>(content);
-        if (externalUsers == null || externalUsers.Count == 0)
-        {
-            return new UserRegistrySyncResult(0, 0, 0);
-        }
-
-        var normalizedNames = externalUsers
-            .Where(x => !string.IsNullOrWhiteSpace(x.fullName))
-            .Select(x => NormalizeUsername(x.fullName))
-            .Distinct(StringComparer.Ordinal)
+        var distinctNames = externalUsers
+            .Where(user => !string.IsNullOrWhiteSpace(user.FullName) && !IsSkippedLabel(user.FullName))
+            .Select(user => user.FullName.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        var candidates = distinctNames
+            .Select(fullName => TryNormalizeRegistryUser(fullName, out var candidate)
+                ? candidate
+                : null)
+            .Where(candidate => candidate is not null)
+            .Select(candidate => candidate!)
+            .ToList();
+        var ambiguousUsernames = candidates
+            .GroupBy(candidate => candidate.NormalizedUsername, StringComparer.Ordinal)
+            .Where(group => group.Count() > 1)
+            .Select(group => group.Key)
+            .ToHashSet(StringComparer.Ordinal);
+        var validUsers = candidates
+            .Where(candidate => !ambiguousUsernames.Contains(candidate.NormalizedUsername))
+            .ToList();
+        if (validUsers.Count == 0)
+        {
+            _logger.LogWarning("User registry contained no valid employee rows; no database changes were made.");
+            return new UserRegistrySyncResult(0, 0, 0, externalUsers.Count);
+        }
 
+        if (ambiguousUsernames.Count > 0)
+        {
+            _logger.LogWarning(
+                "User registry skipped {Count} ambiguous normalized usernames.",
+                ambiguousUsernames.Count);
+        }
+
+        var sheetUsernames = candidates
+            .Select(candidate => candidate.NormalizedUsername)
+            .ToHashSet(StringComparer.Ordinal);
         var existingUsers = await _dbContext.Users
             .OfType<ApplicationUser>()
-            .Where(user => user.NormalizedUserName != null && normalizedNames.Contains(user.NormalizedUserName))
-            .ToDictionaryAsync(user => user.NormalizedUserName!, StringComparer.Ordinal, cancellationToken);
+            .Where(user => user.NormalizedUserName != null && user.NormalizedUserName != string.Empty)
+            .ToDictionaryAsync(
+                user => user.NormalizedUserName!,
+                StringComparer.Ordinal,
+                cancellationToken);
 
         var created = 0;
         var updated = 0;
-        var skipped = 0;
+        var deleted = 0;
+        var skipped = externalUsers.Count - validUsers.Count;
 
-        foreach (var extUser in externalUsers)
+        foreach (var registryUser in validUsers)
         {
-            if (string.IsNullOrWhiteSpace(extUser.fullName))
-            {
-                continue;
-            }
-
-            var fullName = extUser.fullName.Trim();
-            var generatedUsername = fullName.Replace(" ", ".").ToLowerInvariant();
-            var normalizedUsername = NormalizeUsername(fullName);
-
+            var fullName = registryUser.DisplayName;
+            var normalizedUsername = registryUser.NormalizedUsername;
             if (existingUsers.TryGetValue(normalizedUsername, out var existingUser))
             {
-                if (existingUser.DisplayName != fullName)
+                var changed = false;
+                if (!string.Equals(existingUser.DisplayName, fullName, StringComparison.Ordinal))
                 {
                     existingUser.DisplayName = fullName;
-                    updated++;
+                    changed = true;
                 }
 
-                skipped++;
+                if (string.IsNullOrWhiteSpace(existingUser.PasswordHash))
+                {
+                    existingUser.PasswordHash = PlaceholderHash;
+                    existingUser.IsFirstTimeLogin = true;
+                    changed = true;
+                }
+
+                if (changed)
+                {
+                    updated++;
+                }
+                else
+                {
+                    skipped++;
+                }
+
                 continue;
             }
 
+            var username = registryUser.Username;
             var newUser = new ApplicationUser
             {
-                UserName = generatedUsername,
+                UserName = username,
                 NormalizedUserName = normalizedUsername,
-                Email = $"{generatedUsername}@digifycx.internal",
-                NormalizedEmail = $"{generatedUsername}@digifycx.internal".ToUpperInvariant(),
                 DisplayName = fullName,
-                CustomRole = "Employee",
+                CustomRole = AppRoles.Employee,
                 IsFirstTimeLogin = true,
-                PersonalEmail = null,
                 EmailConfirmed = true,
-                SecurityStamp = Guid.NewGuid().ToString()
+                SecurityStamp = Guid.NewGuid().ToString(),
+                PasswordHash = PlaceholderHash
             };
-
             var result = await _userManager.CreateAsync(newUser);
-            if (result.Succeeded)
+            if (!result.Succeeded)
             {
-                created++;
-                existingUsers[normalizedUsername] = newUser;
-                continue;
+                throw new InvalidOperationException(
+                    $"User registry could not create {username}: {string.Join(", ", result.Errors.Select(error => error.Code))}");
             }
 
-            throw new InvalidOperationException($"Failed to create {generatedUsername}: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            created++;
+            existingUsers[normalizedUsername] = newUser;
+        }
+
+        if (options.DeleteRemovedUsers)
+        {
+            var protectedUsernames = GetProtectedUsernames();
+            var staleUsers = existingUsers.Values
+                .Where(user =>
+                    !string.IsNullOrWhiteSpace(user.NormalizedUserName) &&
+                    AppRoles.NormalizeOrEmployee(user.CustomRole) == AppRoles.Employee &&
+                    !sheetUsernames.Contains(user.NormalizedUserName) &&
+                    !protectedUsernames.Contains(user.NormalizedUserName))
+                .ToList();
+
+            foreach (var staleUser in staleUsers)
+            {
+                var result = await _userManager.DeleteAsync(staleUser);
+                if (!result.Succeeded)
+                {
+                    throw new InvalidOperationException(
+                        $"User registry could not remove {staleUser.UserName}: {string.Join(", ", result.Errors.Select(error => error.Code))}");
+                }
+
+                deleted++;
+            }
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("[UserRegistrySync] Sync complete. Created={Created} Updated={Updated} Skipped={Skipped}", created, updated, skipped);
-        return new UserRegistrySyncResult(created, updated, skipped);
+        _logger.LogInformation(
+            "User registry sync completed. Created={Created} Updated={Updated} Deleted={Deleted} Skipped={Skipped}",
+            created,
+            updated,
+            deleted,
+            skipped);
+        return new UserRegistrySyncResult(created, updated, deleted, skipped);
     }
 
-    private static string NormalizeUsername(string fullName)
+    private HashSet<string> GetProtectedUsernames()
     {
-        return fullName.Trim().Replace(" ", ".").ToUpperInvariant();
+        var authMode = _authModeOptions.CurrentValue;
+        if (!authMode.SeedConfiguredTestUsers)
+        {
+            return new HashSet<string>(StringComparer.Ordinal);
+        }
+
+        return authMode.DevelopmentUsers
+            .Where(user => !string.IsNullOrWhiteSpace(user.Username))
+            .Select(user => _userManager.NormalizeName(user.Username.Trim()))
+            .Where(username => !string.IsNullOrWhiteSpace(username))
+            .Select(username => username!)
+            .ToHashSet(StringComparer.Ordinal);
     }
 
-    private class ExternalUserDto
+    private static bool IsSkippedLabel(string fullName) => SkippedLabels.Contains(fullName.Trim());
+
+    internal static bool TryNormalizeRegistryUser(string? value, out RegistryUser? registryUser)
     {
-        public string fullName { get; set; } = string.Empty;
+        registryUser = null;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var displayName = string.Join(
+            " ",
+            value.Replace("\u00a0", " ").Replace("\u200b", string.Empty)
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        if (displayName.Length is 0 or > 120 || IsSkippedLabel(displayName))
+        {
+            return false;
+        }
+
+        var username = new StringBuilder(displayName.Length);
+        foreach (var character in displayName.Normalize(NormalizationForm.FormD))
+        {
+            if (CharUnicodeInfo.GetUnicodeCategory(character) == UnicodeCategory.NonSpacingMark)
+            {
+                continue;
+            }
+
+            if (char.IsWhiteSpace(character))
+            {
+                if (username.Length > 0 && username[^1] != '.')
+                {
+                    username.Append('.');
+                }
+                continue;
+            }
+
+            var normalized = char.ToLowerInvariant(character);
+            if (char.IsAsciiLetterOrDigit(normalized) || normalized is '-' or '_' or '.' or '@' or '+')
+            {
+                username.Append(normalized);
+            }
+        }
+
+        var usernameValue = username.ToString().Trim('.');
+        if (usernameValue.Length is 0 or > 256)
+        {
+            return false;
+        }
+
+        registryUser = new RegistryUser(displayName, usernameValue, usernameValue.ToUpperInvariant());
+        return true;
+    }
+
+    internal sealed record RegistryUser(string DisplayName, string Username, string NormalizedUsername);
+
+    private sealed class ExternalUserDto
+    {
+        [JsonPropertyName("fullName")]
+        public string FullName { get; set; } = string.Empty;
     }
 }

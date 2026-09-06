@@ -32,6 +32,8 @@ public class ApplyModel : PageModel
     public IFormFile? ResumeFile { get; set; }
 
     public JobPosting? Job { get; private set; }
+    public string EmployeeName { get; private set; } = string.Empty;
+    public string EmployeeEmail { get; private set; } = string.Empty;
 
     [TempData] public string JobApplyMessage   { get; set; } = string.Empty;
     [TempData] public string JobApplyTicketId  { get; set; } = string.Empty;
@@ -42,14 +44,14 @@ public class ApplyModel : PageModel
         Job = await _db.JobPostings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id && x.IsActive && !x.IsDeleted);
         if (Job is null) return NotFound();
 
-        Input.JobPostingId  = id;
-        Input.EmployeeName  = UserNameHelper.GetShortName(User);
-        Input.EmployeeEmail = User.FindFirstValue(ClaimTypes.Email) ?? $"{Input.EmployeeName}@company.local";
+        Input.JobPostingId = id;
+        LoadEmployeeIdentity();
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync()
     {
+        LoadEmployeeIdentity();
         Job = await _db.JobPostings.AsNoTracking().FirstOrDefaultAsync(x => x.Id == Input.JobPostingId && x.IsActive && !x.IsDeleted);
         if (Job is null) return NotFound();
 
@@ -70,8 +72,8 @@ public class ApplyModel : PageModel
         // Ticket routing (form, group, tags) is unaffected.
         var result = await _zendeskTicketService.CreateInternalApplicationTicketAsync(
             Job,
-            Input.EmployeeName,
-            Input.EmployeeEmail,
+            EmployeeName,
+            EmployeeEmail,
             employeeId:   string.Empty,
             managerEmail: string.Empty,
             Input.Notes,
@@ -82,7 +84,7 @@ public class ApplyModel : PageModel
         if (!result.Succeeded)
         {
             await _auditService.WriteAsync(actor, "ZendeskTicketFailed", "InternalJobApplication",
-                $"job={Job.Id};employee={Input.EmployeeEmail};error={result.Message}");
+                $"job={Job.Id};employee={EmployeeEmail};error={result.Message}");
             ModelState.AddModelError(string.Empty, result.Message);
             return Page();
         }
@@ -90,8 +92,8 @@ public class ApplyModel : PageModel
         _db.InternalJobApplications.Add(new InternalJobApplication
         {
             JobPostingId     = Job.Id,
-            EmployeeUsername = Input.EmployeeName,
-            EmployeeEmail    = Input.EmployeeEmail,
+            EmployeeUsername = EmployeeName,
+            EmployeeEmail    = EmployeeEmail,
             Notes            = Input.Notes,
             ZendeskTicketId  = result.TicketId,
             ZendeskTicketUrl = result.TicketUrl,
@@ -99,7 +101,7 @@ public class ApplyModel : PageModel
         });
         await _db.SaveChangesAsync();
         await _auditService.WriteAsync(actor, "ZendeskTicketCreated", "InternalJobApplication",
-            $"job={Job.Id};employee={Input.EmployeeEmail};ticket={result.TicketId}");
+            $"job={Job.Id};employee={EmployeeEmail};ticket={result.TicketId}");
 
         JobApplyMessage   = $"Application submitted successfully for \u201c{Job.Title}\u201d.";
         JobApplyTicketId  = result.TicketId?.ToString() ?? string.Empty;
@@ -108,15 +110,21 @@ public class ApplyModel : PageModel
         return RedirectToPage("/Jobs/Index");
     }
 
+    private void LoadEmployeeIdentity()
+    {
+        (EmployeeName, EmployeeEmail) = ResolveEmployeeIdentity(User);
+    }
+
+    internal static (string Name, string Email) ResolveEmployeeIdentity(ClaimsPrincipal user)
+    {
+        var name = UserNameHelper.GetShortName(user);
+        var email = user.FindFirstValue(ClaimTypes.Email);
+        return (name, string.IsNullOrWhiteSpace(email) ? $"{name}@company.local" : email);
+    }
+
     public class InputModel
     {
         public int JobPostingId { get; set; }
-
-        [Required, MaxLength(120)]
-        public string EmployeeName { get; set; } = string.Empty;
-
-        [Required, EmailAddress, MaxLength(200)]
-        public string EmployeeEmail { get; set; } = string.Empty;
 
         [MaxLength(2000)]
         public string Notes { get; set; } = string.Empty;

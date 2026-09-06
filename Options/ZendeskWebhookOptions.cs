@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace DigifyCXIntranet.Options;
 
 /// <summary>
@@ -13,5 +15,6 @@ public sealed class ZendeskWebhookOptions
     /// The shared secret that Zendesk sends in the X-Zendesk-Webhook-Secret header.
     /// Must match what is configured in the Zendesk webhook settings.
     /// </summary>
+    [Required]
     public string Secret { get; set; } = string.Empty;
 }

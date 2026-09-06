@@ -11,11 +11,13 @@ public class JobEditModel : PageModel
 {
     private readonly HrDbContext _db;
     private readonly IWebHostEnvironment _environment;
+    private readonly IAuditService _auditService;
 
-    public JobEditModel(HrDbContext db, IWebHostEnvironment environment)
+    public JobEditModel(HrDbContext db, IWebHostEnvironment environment, IAuditService auditService)
     {
         _db = db;
         _environment = environment;
+        _auditService = auditService;
     }
 
     [BindProperty]
@@ -95,6 +97,13 @@ public class JobEditModel : PageModel
         entity.UpdatedDateUtc = DateTime.UtcNow;
 
         await _db.SaveChangesAsync();
+        await _auditService.WriteAsync(
+            UserNameHelper.GetShortName(User),
+            "Update",
+            "JobPosting",
+            $"title={entity.Title};active={entity.IsActive}",
+            entityId: entity.Id.ToString(),
+            httpContext: HttpContext);
         return RedirectToPage("/Admin/Jobs");
     }
 

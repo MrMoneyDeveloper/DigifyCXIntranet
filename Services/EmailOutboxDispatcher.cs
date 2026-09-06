@@ -26,16 +26,26 @@ public class EmailOutboxDispatcher : IEmailOutboxDispatcher
 
     public async Task<int> DispatchPendingAsync(int batchSize, CancellationToken cancellationToken = default)
     {
-        var messages = await _db.EmailOutboxMessages
-            .Include(x => x.Attachments)
+        var messageIds = await _db.EmailOutboxMessages
+            .AsNoTracking()
             .Where(x => x.Status == EmailOutboxStatus.Pending || x.Status == EmailOutboxStatus.Processing)
             .OrderBy(x => x.CreatedUtc)
+            .ThenBy(x => x.Id)
+            .Select(x => x.Id)
             .Take(Math.Clamp(batchSize, 1, 100))
             .ToListAsync(cancellationToken);
 
         var sent = 0;
-        foreach (var message in messages)
+        foreach (var messageId in messageIds)
         {
+            var message = await _db.EmailOutboxMessages
+                .Include(x => x.Attachments)
+                .SingleOrDefaultAsync(x => x.Id == messageId, cancellationToken);
+            if (message is null)
+            {
+                continue;
+            }
+
             message.Status = EmailOutboxStatus.Processing;
             message.Attempts++;
             message.LastAttemptUtc = DateTime.UtcNow;
@@ -47,6 +57,10 @@ public class EmailOutboxDispatcher : IEmailOutboxDispatcher
                 message.Status = EmailOutboxStatus.Sent;
                 message.SentUtc = DateTime.UtcNow;
                 message.LastError = string.Empty;
+                foreach (var attachment in message.Attachments)
+                {
+                    attachment.Bytes = Array.Empty<byte>();
+                }
                 sent++;
             }
             catch (Exception ex)
@@ -57,6 +71,7 @@ public class EmailOutboxDispatcher : IEmailOutboxDispatcher
             }
 
             await _db.SaveChangesAsync(cancellationToken);
+            _db.ChangeTracker.Clear();
         }
 
         return sent;

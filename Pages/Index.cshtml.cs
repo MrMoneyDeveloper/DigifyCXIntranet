@@ -47,26 +47,28 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        var cancellationToken = HttpContext.RequestAborted;
+        var nowUtc = DateTime.UtcNow;
         DisplayName = UserNameHelper.GetShortName(User);
         IsAdmin = _adminAccessService.IsAdmin(User);
         RoleName = _adminAccessService.GetPrimaryRole(User);
 
         Announcements = await _db.Announcements
             .AsNoTracking()
-            .Where(x => x.IsActive && !x.IsDeleted && (x.ExpirationDate == null || x.ExpirationDate >= DateTime.UtcNow.Date))
+            .Where(x => x.IsActive && !x.IsDeleted && (x.ExpirationDate == null || x.ExpirationDate >= nowUtc.Date))
             .OrderByDescending(x => x.IsPinned)
             .ThenByDescending(x => x.CreatedDateUtc)
             .Take(5)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
-        var recentCutoff = DateTime.UtcNow.AddDays(-Math.Clamp(_homePageOptions.RecentJobDays, 1, 365));
+        var recentCutoff = nowUtc.AddDays(-Math.Clamp(_homePageOptions.RecentJobDays, 1, 365));
         JobPostings = await _hrDb.JobPostings
             .AsNoTracking()
             .Where(x => x.IsActive && !x.IsDeleted && x.CreatedDateUtc >= recentCutoff)
             .OrderByDescending(x => x.CreatedDateUtc)
             .ThenBy(x => x.ClosingDate)
             .Take(5)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // Fetch top 5 for the homepage panel display
         Policies = await _policyDb.ZendeskPolicyArticles
@@ -75,20 +77,20 @@ public class IndexModel : PageModel
             .InAllowedZendeskSections(_zendeskSyncOptions)
             .OrderByDescending(x => x.UpdatedAtUtc)
             .Take(5)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         // Separate accurate count — not capped by Take(5)
         PolicyCount = await _policyDb.ZendeskPolicyArticles
             .AsNoTracking()
             .Where(x => x.IsPublished)
             .InAllowedZendeskSections(_zendeskSyncOptions)
-            .CountAsync();
+            .CountAsync(cancellationToken);
 
-        var username = UserNameHelper.GetShortName(User);
-        var today = DateTime.UtcNow;
+        var monthStart = new DateTime(nowUtc.Year, nowUtc.Month, 1, 0, 0, 0, DateTimeKind.Utc);
+        var nextMonthStart = monthStart.AddMonths(1);
         CurrentMonthCanteenTotal = await _canteenDb.CanteenOrders
             .AsNoTracking()
-            .Where(x => x.EmployeeUsername == username && x.OrderTimeUtc.Year == today.Year && x.OrderTimeUtc.Month == today.Month)
-            .SumAsync(x => (decimal?)x.TotalAmount) ?? 0m;
+            .Where(x => x.EmployeeUsername == DisplayName && x.OrderTimeUtc >= monthStart && x.OrderTimeUtc < nextMonthStart)
+            .SumAsync(x => (decimal?)x.TotalAmount, cancellationToken) ?? 0m;
     }
 }
