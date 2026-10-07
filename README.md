@@ -1,5 +1,12 @@
 # DigifyCX Intranet
 
+## Technical handover and dependencies
+
+- [Technical handover](HANDOVER.md): ownership, setup, credential rotation, verification and recovery.
+- [Dependency and API/OAuth configuration list](DEPENDENCIES.md): runtime, external services and configuration inventory.
+
+**Handover requirement:** all API/OAuth credentials and related shared/deployment secrets in use must be rotated or reissued, configured and tested under the receiving owner. Completion must be recorded; these documentation changes do not rotate live credentials.
+
 DigifyCX Intranet is an internal employee-services platform built on ASP.NET Core 8. The primary application combines company communications, canteen ordering and payroll exports, internal recruitment, policy acknowledgement, account lifecycle management, and role-scoped administration in one IIS-hosted web application.
 
 This repository also contains a separate `Company.Product` Clean Architecture baseline for an orders API. That baseline is part of the solution and test suite, but it is not wired into or deployed with the DigifyCX intranet.
